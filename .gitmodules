@@ -1,0 +1,545 @@
+[submodule "admin/tool/ally"]
+	path = admin/tool/ally
+	url = https://github.com/anthology-ally/moodle-tool_ally.git
+[submodule "admin/tool/crawler"]
+	path = admin/tool/crawler
+	url = https://github.com/catalyst/moodle-tool_crawler.git
+[submodule "admin/tool/mergeusers"]
+	path = admin/tool/mergeusers
+	url = https://github.com/jpahullo/moodle-tool_mergeusers.git
+[submodule "admin/tool/migratehvp2h5p"]
+	path = admin/tool/migratehvp2h5p
+	url = https://github.com/moodlehq/moodle-tool_migratehvp2h5p.git
+	branch = main
+[submodule "admin/tool/s3_fs"]
+	path = admin/tool/s3_fs
+	url = https://github.com/catalyst/moodle-tool_objectfs.git
+[submodule "auth/basic"]
+	path = auth/basic
+	url = https://github.com/catalyst/moodle-auth_basic.git
+[submodule "availability/condition/password"]
+	path = availability/condition/password
+	url = https://github.com/moodle-an-hochschulen/moodle-availability_password.git
+	branch = main
+[submodule "availability/condition/relativedate"]
+	path = availability/condition/relativedate
+	url = https://github.com/ewallah/moodle-availability_relativedate.git
+	branch = main
+[submodule "blocks/backadel"]
+	path = blocks/backadel
+	url = https://github.com/lsuits/lsu-block_backadel.git
+[submodule "blocks/ce_enrollinfo"]
+	path = blocks/ce_enrollinfo
+	url = https://github.com/lsuonline/moodle-block_ce_enrollinfo.git
+	branch = main
+[submodule "blocks/configurable_reports"]
+	path = blocks/configurable_reports
+	url = https://github.com/ULCC/moodle-block_configurable_reports.git
+[submodule "blocks/course_hider"]
+	path = blocks/course_hider
+	url = https://github.com/lsuonline/moodle-block-course_hider.git
+	branch = main
+[submodule "blocks/etextbook"]
+	path = blocks/etextbook
+	url = https://github.com/lsuonline/moodle-block_etextbook.git
+[submodule "blocks/helpdesk"]
+	path = blocks/helpdesk
+	url = https://github.com/lsuits/lsu-block_helpdesk.git
+[submodule "blocks/link_logins"]
+	path = blocks/link_logins
+	url = https://github.com/lsuonline/moodle-block_link_logins.git
+	branch = main
+[submodule "blocks/lsu_people"]
+	path = blocks/lsu_people
+	url = https://github.com/lsuonline/moodle-block_lsu_people.git
+	branch = main
+[submodule "blocks/lsuxe"]
+	path = blocks/lsuxe
+	url = https://github.com/lsuonline/moodle-block_lsuxe.git
+	branch = main
+[submodule "blocks/material_download"]
+	path = blocks/material_download
+	url = https://github.com/TUM-MZ/moodle-block_material-download.git
+[submodule "blocks/mhaairs"]
+	path = blocks/mhaairs
+	url = https://github.com/itamart/moodle-block_mhaairs.git
+[submodule "blocks/migrate_users"]
+	path = blocks/migrate_users
+	url = https://github.com/lsuonline/lsuce-block_migrate_users.git
+[submodule "blocks/panopto"]
+	path = blocks/panopto
+	url = https://github.com/Panopto/Moodle-2.0-plugin-for-Panopto.git
+[submodule "blocks/pu"]
+	path = blocks/pu
+	url = https://github.com/lsuonline/block_pu.git
+	branch = main
+[submodule "blocks/quickmail"]
+	path = blocks/quickmail
+	url = https://github.com/lsuonline/lsuce-block_quickmail.git
+[submodule "blocks/quiz_results"]
+	path = blocks/quiz_results
+	url = https://github.com/moodlehq/moodle-block_quiz_results.git
+[submodule "blocks/simple_restore"]
+	path = blocks/simple_restore
+	url = https://github.com/lsuits/lsu-block_simple_restore.git
+[submodule "blocks/student_gradeviewer"]
+	path = blocks/student_gradeviewer
+	url = https://github.com/lsuits/lsu-block_student_gradeviewer.git
+[submodule "blocks/ues_logs"]
+	path = blocks/ues_logs
+	url = https://github.com/lsuits/lsu-block_ues_logs.git
+[submodule "blocks/ues_meta_viewer"]
+	path = blocks/ues_meta_viewer
+	url = https://github.com/lsuits/lsu-block_ues_meta_viewer.git
+[submodule "blocks/ues_reprocess"]
+	path = blocks/ues_reprocess
+	url = https://github.com/lsuits/lsu-block_ues_reprocess.git
+[submodule "blocks/wds_postgrades"]
+	path = blocks/wds_postgrades
+	url = https://github.com/lsuonline/moodle-block_wds_postgrades.git
+	branch = main
+[submodule "blocks/wds_sportsgrades"]
+	path = blocks/wds_sportsgrades
+	url = https://github.com/lsuonline/moodle-block_wds_sportsgrades.git
+	branch = main
+[submodule "blocks/wdsprefs"]
+	path = blocks/wdsprefs
+	url = https://github.com/lsuonline/moodle-block_wdsprefs.git
+	branch = main
+[submodule "cache/stores/rediscluster"]
+	path = cache/stores/rediscluster
+	url = https://github.com/open-lms-open-source/moodle-cachestore_rediscluster.git
+	branch = main
+[submodule "dataformat/xml"]
+	path = dataformat/xml
+	url = https://github.com/paulholden/moodle-dataformat_xml.git
+[submodule "enrol/arlo"]
+	path = enrol/arlo
+	url = https://github.com/lsuonline/moodle-enrol_arlo.git
+[submodule "enrol/d1"]
+	path = enrol/d1
+	url = https://github.com/lsuonline/moodle-enrol_d1.git
+	branch = main
+[submodule "enrol/reenroller"]
+	path = enrol/reenroller
+	url = https://github.com/lsuonline/moodle-enrol_reenroller.git
+	branch = main
+[submodule "enrol/studentstaff"]
+	path = enrol/studentstaff
+	url = https://github.com/lsuonline/moodle-enrol_studentstaff.git
+	branch = main
+[submodule "enrol/workdayhrm"]
+	path = enrol/workdayhrm
+	url = https://github.com/lsuonline/moodle-enrol_workdayhrm.git
+	branch = main
+[submodule "enrol/workdaystudent"]
+	path = enrol/workdaystudent
+	url = https://github.com/lsuonline/moodle-enrol_workdaystudent.git
+	branch = main
+[submodule "filter/ally"]
+	path = filter/ally
+	url = https://github.com/anthology-ally/moodle-filter_ally.git
+[submodule "filter/wiris"]
+	path = filter/wiris
+	url = https://github.com/wiris/moodle-filter_wiris.git
+	branch = main
+[submodule "grade/import/smart"]
+	path = grade/import/smart
+	url = https://github.com/lsuonline/moodle-grade_import_smart.git
+	branch = main
+[submodule "grade/report/forecast"]
+	path = grade/report/forecast
+	url = https://github.com/lsuits/lsu-gradereport_forecast.git
+[submodule "grade/report/grade_breakdown"]
+	path = grade/report/grade_breakdown
+	url = https://github.com/lsuits/lsu-gradereport_grade_breakdown.git
+[submodule "grade/report/gradebook_builder"]
+	path = grade/report/gradebook_builder
+	url = https://github.com/lsuits/lsu-gradereport_gradebook_builder.git
+[submodule "grade/report/rubrics"]
+	path = grade/report/rubrics
+	url = https://github.com/brickfield/moodle-gradereport_rubrics.git
+	branch = main
+[submodule "lib/editor/atto/plugins/cloze"]
+	path = lib/editor/atto/plugins/cloze
+	url = https://github.com/dthies/moodle-atto_cloze.git
+[submodule "lib/editor/atto/plugins/count"]
+	path = lib/editor/atto/plugins/count
+	url = https://github.com/damyon/moodle-atto_count.git
+[submodule "lib/editor/atto/plugins/fontfamily"]
+	path = lib/editor/atto/plugins/fontfamily
+	url = https://github.com/projectestac/moodle-atto_fontfamily.git
+[submodule "lib/editor/atto/plugins/fontsize"]
+	path = lib/editor/atto/plugins/fontsize
+	url = https://github.com/andrewnicols/moodle-atto_fontsize.git
+	branch = main
+[submodule "lib/editor/atto/plugins/fullscreen"]
+	path = lib/editor/atto/plugins/fullscreen
+	url = https://github.com/dthies/moodle-atto_fullscreen.git
+[submodule "lib/editor/atto/plugins/morefontcolors"]
+	path = lib/editor/atto/plugins/morefontcolors
+	url = https://github.com/ndunand/moodle-atto_morefontcolors.git
+[submodule "lib/editor/atto/plugins/panoptobutton"]
+	path = lib/editor/atto/plugins/panoptobutton
+	url = https://github.com/lucisgit/moodle-repository_panopto.git
+[submodule "lib/editor/atto/plugins/panoptoltibutton"]
+	path = lib/editor/atto/plugins/panoptoltibutton
+	url = https://github.com/lucisgit/moodle-block_panopto.git
+[submodule "lib/editor/atto/plugins/phonetic"]
+	path = lib/editor/atto/plugins/phonetic
+	url = https://github.com/lsuonline/moodle_atto_phonetic.git
+	branch = main
+[submodule "lib/editor/atto/plugins/teamsmeeting"]
+	path = lib/editor/atto/plugins/teamsmeeting
+	url = https://github.com/enovation/moodle-atto_teamsmeeting.git
+[submodule "lib/editor/atto/plugins/vidgridbutton"]
+	path = lib/editor/atto/plugins/vidgridbutton
+	url = https://github.com/ilosvideos/moodleAttoPlugin.git
+[submodule "lib/editor/atto/plugins/wiris"]
+	path = lib/editor/atto/plugins/wiris
+	url = https://github.com/wiris/moodle-atto_wiris.git
+	branch = main
+[submodule "lib/editor/atto/plugins/wordimport"]
+	path = lib/editor/atto/plugins/wordimport
+	url = https://github.com/ecampbell/moodle-atto_wordimport.git
+[submodule "lib/editor/tiny/plugins/cloze"]
+	path = lib/editor/tiny/plugins/cloze
+	url = https://github.com/srobotta/moodle-tiny_cloze.git
+	branch = main
+[submodule "lib/editor/tiny/plugins/fontcolor"]
+	path = lib/editor/tiny/plugins/fontcolor
+	url = https://github.com/bfh/moodle-tiny_fontcolor.git
+	branch = main
+[submodule "lib/editor/tiny/plugins/fontfamily"]
+	path = lib/editor/tiny/plugins/fontfamily
+	url = https://github.com/finspire-fi/moodle-tiny_fontfamily.git
+	branch = main
+[submodule "lib/editor/tiny/plugins/fontsize"]
+	path = lib/editor/tiny/plugins/fontsize
+	url = https://github.com/finspire-fi/moodle-tiny_fontsize.git
+	branch = main
+[submodule "lib/editor/tiny/plugins/kalturamedia"]
+	path = lib/editor/tiny/plugins/kalturamedia
+	url = https://github.com/kaltura/moodle-tinymce_kalturamedia.git
+[submodule "lib/editor/tiny/plugins/panoptoltibutton"]
+	path = lib/editor/tiny/plugins/panoptoltibutton
+	url = https://github.com/Panopto/moodle-tiny_panoptoltibutton.git
+[submodule "lib/editor/tiny/plugins/wiris"]
+	path = lib/editor/tiny/plugins/wiris
+	url = https://github.com/wiris/moodle-tiny_wiris.git
+	branch = main
+[submodule "lib/editor/tiny/plugins/wordimport"]
+	path = lib/editor/tiny/plugins/wordimport
+	url = https://codeberg.org/linos/moodle-tiny_wordimport.git
+	branch = main
+[submodule "lib/editor/tiny/plugins/wordlimit"]
+	path = lib/editor/tiny/plugins/wordlimit
+	url = https://codeberg.org/linos/moodle-tiny_wordlimit.git
+	branch = main
+[submodule "local/adminer"]
+	path = local/adminer
+	url = https://github.com/adminerevo/adminerevo.git
+	branch = main
+[submodule "local/bulkenrol"]
+	path = local/bulkenrol
+	url = https://github.com/moodle-an-hochschulen/moodle-local_bulkenrol.git
+	branch = main
+[submodule "local/d1"]
+	path = local/d1
+	url = https://github.com/lsuonline/moodle-local_d1.git
+	branch = main
+[submodule "local/honorlockproctoring"]
+	path = local/honorlockproctoring
+	url = https://github.com/HonorLock/moodle-local_honorlockproctoring.git
+	branch = main
+[submodule "local/kalpanmaps"]
+	path = local/kalpanmaps
+	url = https://github.com/lsuonline/local_kalpanmaps.git
+	branch = main
+[submodule "local/kaltura"]
+	path = local/kaltura
+	url = https://github.com/kaltura/moodle-local_kaltura.git
+[submodule "local/lsucli"]
+	path = local/lsucli
+	url = https://github.com/lsuonline/moodle_local-lsucli.git
+	branch = main
+[submodule "local/redislock"]
+	path = local/redislock
+	url = https://github.com/open-lms-open-source/moodle-local_redislock.git
+[submodule "local/reminders"]
+	path = local/reminders
+	url = https://github.com/isuru89/moodle-local_reminders.git
+[submodule "local/remote_courses"]
+	path = local/remote_courses
+	url = https://github.com/LafColITS/moodle-local_remote_courses.git
+	branch = main
+[submodule "local/syllabusuploader"]
+	path = local/syllabusuploader
+	url = https://github.com/lsuonline/moodle-local_syllabusuploader.git
+	branch = main
+[submodule "local/wirisquizzes"]
+	path = local/wirisquizzes
+	url = https://github.com/wiris/moodle-local_wirisquizzes.git
+	branch = main
+[submodule "mod/attendance"]
+	path = mod/attendance
+	url = https://github.com/danmarsden/moodle-mod_attendance.git
+[submodule "mod/board"]
+	path = mod/board
+	url = https://github.com/brickfield/moodle-mod_board.git
+	branch = main
+[submodule "mod/book/tool/wordimport"]
+	path = mod/book/tool/wordimport
+	url = https://github.com/ecampbell/moodle-booktool_wordimport.git
+[submodule "mod/choicegroup"]
+	path = mod/choicegroup
+	url = https://github.com/ndunand/moodle-mod_choicegroup.git
+[submodule "mod/customcert"]
+	path = mod/customcert
+	url = https://github.com/mdjnelson/moodle-mod_customcert.git
+	branch = main
+[submodule "mod/flashcard"]
+	path = mod/flashcard
+	url = https://github.com/vfremaux/moodle-mod_flashcard.git
+[submodule "mod/hvp"]
+	path = mod/hvp
+	url = https://github.com/h5p/moodle-mod_hvp.git
+[submodule "mod/journal"]
+	path = mod/journal
+	url = https://github.com/elearningsoftware/moodle-mod_journal.git
+[submodule "mod/lightboxgallery"]
+	path = mod/lightboxgallery
+	url = https://github.com/open-lms-open-source/moodle-mod_lightboxgallery.git
+[submodule "mod/panoptosubmission"]
+	path = mod/panoptosubmission
+	url = https://github.com/Panopto/moodle-mod_panoptosubmission.git
+[submodule "mod/questionnaire"]
+	path = mod/questionnaire
+	url = https://github.com/PoetOS/moodle-mod_questionnaire.git
+	branch = main
+[submodule "mod/quiz/report/downloadsubmissions"]
+	path = mod/quiz/report/downloadsubmissions
+	url = https://github.com/IITBombayWeb/moodle-quiz_downloadsubmissions.git
+[submodule "mod/turnitintooltwo"]
+	path = mod/turnitintooltwo
+	url = https://github.com/turnitin/moodle-mod_turnitintooltwo.git
+[submodule "plagiarism/turnitin"]
+	path = plagiarism/turnitin
+	url = https://github.com/turnitin/moodle-plagiarism_turnitin.git
+[submodule "question/behaviour/deferredfeedbackexplain"]
+	path = question/behaviour/deferredfeedbackexplain
+	url = https://github.com/timhunt/moodle-qbehaviour_deferredfeedbackexplain.git
+	branch = main
+[submodule "question/behaviour/regexpadaptivewithhelp"]
+	path = question/behaviour/regexpadaptivewithhelp
+	url = https://github.com/rezeau/moodle-qbehaviour_regexpadaptivewithhelp.git
+	branch = main
+[submodule "question/behaviour/regexpadaptivewithhelpnopenalty"]
+	path = question/behaviour/regexpadaptivewithhelpnopenalty
+	url = https://github.com/rezeau/moodle-qbehaviour_regexpadaptivewithhelpnopenalty.git
+	branch = main
+[submodule "question/format/wordtable"]
+	path = question/format/wordtable
+	url = https://github.com/ecampbell/moodle-qformat_wordtable.git
+[submodule "question/type/essayautograde"]
+	path = question/type/essayautograde
+	url = https://github.com/gbateson/moodle-qtype_essayautograde.git
+[submodule "question/type/essaywiris"]
+	path = question/type/essaywiris
+	url = https://github.com/wiris/moodle-qtype_essaywiris.git
+	branch = main
+[submodule "question/type/gapfill"]
+	path = question/type/gapfill
+	url = https://github.com/marcusgreen/moodle-qtype_gapfill.git
+	branch = main
+[submodule "question/type/matchwiris"]
+	path = question/type/matchwiris
+	url = https://github.com/wiris/moodle-qtype_matchwiris.git
+	branch = main
+[submodule "question/type/multianswerwiris"]
+	path = question/type/multianswerwiris
+	url = https://github.com/wiris/moodle-qtype_multianswerwiris.git
+	branch = main
+[submodule "question/type/multichoicewiris"]
+	path = question/type/multichoicewiris
+	url = https://github.com/wiris/moodle-qtype_multichoicewiris.git
+	branch = main
+[submodule "question/type/oumultiresponse"]
+	path = question/type/oumultiresponse
+	url = https://github.com/moodleou/moodle-qtype_oumultiresponse.git
+	branch = main
+[submodule "question/type/regexp"]
+	path = question/type/regexp
+	url = https://github.com/rezeau/moodle-qtype_regexp.git
+	branch = main
+[submodule "question/type/shortanswerwiris"]
+	path = question/type/shortanswerwiris
+	url = https://github.com/wiris/moodle-qtype_shortanswerwiris.git
+	branch = main
+[submodule "question/type/truefalsewiris"]
+	path = question/type/truefalsewiris
+	url = https://github.com/wiris/moodle-qtype_truefalsewiris.git
+	branch = main
+[submodule "question/type/wq"]
+	path = question/type/wq
+	url = https://github.com/wiris/moodle-qtype_wq.git
+	branch = main
+[submodule "report/allylti"]
+	path = report/allylti
+	url = https://github.com/anthology-ally/moodle-report_allylti.git
+[submodule "report/componentgrades"]
+	path = report/componentgrades
+	url = https://github.com/marcusgreen/moodle-report_componentgrades.git
+[submodule "report/coursesize"]
+	path = report/coursesize
+	url = https://github.com/lsuonline/moodle-report_coursesize.git
+	branch = main
+[submodule "report/customsql"]
+	path = report/customsql
+	url = https://github.com/lsuonline/lsuce-report_customsql.git
+[submodule "report/editdates"]
+	path = report/editdates
+	url = https://github.com/moodleou/moodle-report_editdates.git
+	branch = main
+[submodule "report/lpmonitoring"]
+	path = report/lpmonitoring
+	url = https://github.com/StudiUM/moodle-report_lpmonitoring.git
+	branch = main
+[submodule "report/lsusql"]
+	path = report/lsusql
+	url = https://github.com/lsuonline/moodle-report_lsusql.git
+	branch = main
+[submodule "theme/snap"]
+	path = theme/snap
+	url = https://github.com/lsuonline/lsuce-theme_snap.git
+[submodule "filter/kaltura"]
+	path = filter/kaltura
+	url = https://github.com/kaltura/moodle_plugin.git
+[submodule "lib/editor/atto/plugins/kalturamedia"]
+	path = lib/editor/atto/plugins/kalturamedia
+	url = https://github.com/kaltura/moodle_plugin.git
+[submodule "mod/kalvidassign"]
+	path = mod/kalvidassign
+	url = https://github.com/kaltura/moodle_plugin.git
+[submodule "mod/kalvidres"]
+	path = mod/kalvidres
+	url = https://github.com/kaltura/moodle_plugin.git
+[submodule "blocks/kalturamediagallery"]
+	path = blocks/kalturamediagallery
+	url = https://github.com/kaltura/moodle-local_kalturamediagallery.git
+[submodule "local/kalturamediagallery"]
+	path = local/kalturamediagallery
+	url = https://github.com/kaltura/moodle-local_kalturamediagallery.git
+[submodule "enrol/ues"]
+	path = enrol/ues
+	url = https://github.com/lsuits/lsu-enrol_ues.git
+[submodule "local/azure"]
+	path = local/azure
+	url = https://github.com/lsuits/lsu-enrol_ues.git
+[submodule "local/lsu"]
+	path = local/lsu
+	url = https://github.com/lsuits/lsu-enrol_ues.git
+[submodule "local/online"]
+	path = local/online
+	url = https://github.com/lsuits/lsu-enrol_ues.git
+[submodule "auth/oidc"]
+	path = auth/oidc
+	url = https://github.com/Microsoft/o365-moodle.git
+[submodule "blocks/microsoft"]
+	path = blocks/microsoft
+	url = https://github.com/Microsoft/o365-moodle.git
+[submodule "local/o365"]
+	path = local/o365
+	url = https://github.com/Microsoft/o365-moodle.git
+[submodule "local/onenote"]
+	path = local/onenote
+	url = https://github.com/Microsoft/o365-moodle.git
+[submodule "mod/assign/feedback/onenote"]
+	path = mod/assign/feedback/onenote
+	url = https://github.com/Microsoft/o365-moodle.git
+[submodule "mod/assign/submission/onenote"]
+	path = mod/assign/submission/onenote
+	url = https://github.com/Microsoft/o365-moodle.git
+[submodule "repository/office365"]
+	path = repository/office365
+	url = https://github.com/Microsoft/o365-moodle.git
+[submodule "blocks/cps"]
+	path = blocks/cps
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "blocks/csv_profile"]
+	path = blocks/csv_profile
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "blocks/evaluation_kit_sso"]
+	path = blocks/evaluation_kit_sso
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "blocks/iseek"]
+	path = blocks/iseek
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "blocks/lsu_libraries_research_link"]
+	path = blocks/lsu_libraries_research_link
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "blocks/my_picture"]
+	path = blocks/my_picture
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "blocks/mylabmastering"]
+	path = blocks/mylabmastering
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "blocks/post_grades"]
+	path = blocks/post_grades
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "blocks/rollsheet"]
+	path = blocks/rollsheet
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "filter/tidy"]
+	path = filter/tidy
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "grade/import/kioskpearsonjson"]
+	path = grade/import/kioskpearsonjson
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "grade/import/pearson"]
+	path = grade/import/pearson
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "local/aws_sdk"]
+	path = local/aws_sdk
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "local/mylabmastering"]
+	path = local/mylabmastering
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "local/mymedia"]
+	path = local/mymedia
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "local/natsane"]
+	path = local/natsane
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "mod/library"]
+	path = mod/library
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "mod/mylabmastering"]
+	path = mod/mylabmastering
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "mod/respondusws"]
+	path = mod/respondusws
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
+[submodule "mod/turningptintegration"]
+	path = mod/turningptintegration
+	url = https://github.com/smatts3/lsuce-legacy-plugins.git
+	branch = master
