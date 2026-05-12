@@ -386,7 +386,8 @@ class catalogue_table extends base_backadel_table {
         }
 
         [$insql, $params] = $DB->get_in_or_equal($ordered, SQL_PARAMS_NAMED, 'inu');
-        $sql = 'SELECT id, username, firstname, lastname FROM {user} WHERE deleted = 0 AND username ' . $insql;
+        $namefields = implode(', ', \core_user\fields::get_name_fields());
+        $sql = "SELECT id, username, $namefields FROM {user} WHERE deleted = 0 AND username $insql";
         $records = $DB->get_records_sql($sql, $params);
 
         $bylcname = [];
