@@ -177,11 +177,12 @@ if ($ADMIN->fulltree) {
     );
 }
 
-// External page: Restore Courses (admin-context view of list.php).
+// External page: Restore Courses — Backadel catalogue admin view (MD-2189 wave G).
 $ADMIN->add('block_simple_restore_category', new admin_externalpage(
     'block_simple_restore_list',
     new lang_string('nav_list', $pluginname),
-    new moodle_url('/blocks/simple_restore/list.php', ['id' => SITEID])
+    new moodle_url('/blocks/backadel/catalogue.php'),
+    'block/backadel:viewresults'
 ));
 
 // Cross-page tab strip — must run outside fulltree so it fires on
@@ -189,7 +190,7 @@ $ADMIN->add('block_simple_restore_category', new admin_externalpage(
 if (!CLI_SCRIPT) {
     $links = [
         (new moodle_url('/admin/settings.php', ['section' => 'blocksettingsimple_restore']))->out(false),
-        (new moodle_url('/blocks/simple_restore/list.php', ['id' => SITEID]))->out(false),
+        (new moodle_url('/blocks/backadel/catalogue.php'))->out(false),
     ];
 
     $strings = [
@@ -199,7 +200,7 @@ if (!CLI_SCRIPT) {
 
     $validplaces = [
         '#page-admin-setting-blocksettingsimple_restore',
-        '#page-admin-blocks-simple_restore-list',
+        '#page-admin-blocks-backadel-catalogue, #page-admin-blocks-simple_restore-list',
     ];
 
     $PAGE->requires->js_call_amd("{$pluginname}/admin-tabs-lazy", 'init', [

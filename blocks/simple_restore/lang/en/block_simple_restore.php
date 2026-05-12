@@ -48,6 +48,18 @@ $string['adminfilter'] = 'Filter Courses';
 
 $string['semester_backups'] = 'Semester Backups';
 
+$string['filter_search'] = 'Search';
+$string['filter_apply'] = 'Filter';
+$string['filter_year'] = 'Year';
+$string['filter_semester'] = 'Semester';
+$string['filter_coursetype'] = 'Course type';
+$string['filter_status'] = 'Status';
+$string['filter_all_years'] = 'All years';
+$string['filter_all_semesters'] = 'All semesters';
+$string['filter_status_available'] = 'Available only';
+$string['filter_status_all'] = 'All (including unavailable)';
+$string['filter_clear'] = 'Clear filters';
+
 $string['table_col_filename'] = 'Filename';
 $string['table_col_filesize'] = 'Size';
 $string['table_col_modified'] = 'Modified';

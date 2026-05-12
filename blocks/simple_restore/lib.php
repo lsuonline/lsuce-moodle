@@ -143,20 +143,110 @@ abstract class simple_restore_utils {
     }
 
     /**
-     * Query the block_backadel_catalogue table for available backups matching a course shortname.
+     * Lookup distinct catalogue years / semesters matching a Moodle course shortname.
+     *
+     * @param string $shortname Course shortname
+     * @return array{years: int[], semesters: string[]}
+     */
+    private static function get_catalogue_filter_options(string $shortname): array {
+        global $DB;
+        if ($shortname === '' || !$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+            return ['years' => [], 'semesters' => []];
+        }
+        $likesql = $DB->sql_like('shortname', ':sn', false, true, false);
+        $params = ['sn' => $DB->sql_like_escape($shortname)];
+
+        $years = $DB->get_fieldset_sql(
+            "SELECT DISTINCT year
+               FROM {block_backadel_catalogue}
+              WHERE {$likesql}
+                AND year IS NOT NULL
+           ORDER BY year DESC",
+            $params
+        );
+        if (!$years) {
+            $years = [];
+        }
+        $semesters = $DB->get_fieldset_sql(
+            "SELECT DISTINCT semester
+               FROM {block_backadel_catalogue}
+              WHERE {$likesql}
+                AND semester IS NOT NULL
+                AND semester <> ''
+           ORDER BY semester ASC",
+            $params
+        );
+        if (!$semesters) {
+            $semesters = [];
+        }
+
+        return [
+            'years' => array_map('intval', $years),
+            'semesters' => array_values(array_map(static fn($s): string => (string) $s, $semesters)),
+        ];
+    }
+
+    /**
+     * Query the block_backadel_catalogue table for backups matching a course shortname (optionally filtered).
      *
      * Returns an empty array if the table does not exist or no rows match.
      *
      * @param string $shortname Course shortname to look up.
+     * @param array $filters Optional keys: q, year (int), semester, coursetype, status ('' = any status).
      * @return array Normalised backup objects with id, filename, filesize, timemodified, year, coursetype.
      */
-    private static function backups_from_catalogue(string $shortname): array {
+    private static function backups_from_catalogue(string $shortname, array $filters = []): array {
         global $DB;
-        if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+        if ($shortname === '' || !$DB->get_manager()->table_exists('block_backadel_catalogue')) {
             return [];
         }
         $likesql = $DB->sql_like('cat.shortname', ':sn', false, true, false);
+
+        $where = [$likesql];
+        $params = [
+            'sn' => $DB->sql_like_escape($shortname),
+        ];
+
+        $statusflt = isset($filters['status']) ? (string) $filters['status'] : 'available';
+        if ($statusflt !== '') {
+            $where[] = 'cat.status = :st';
+            $params['st'] = 'available';
+        }
+
+        $yearflt = isset($filters['year']) ? (int) $filters['year'] : 0;
+        if ($yearflt > 0) {
+            $where[] = 'cat.year = :year';
+            $params['year'] = $yearflt;
+        }
+
+        $semflt = isset($filters['semester']) ? trim((string) $filters['semester']) : '';
+        if ($semflt !== '') {
+            $where[] = 'cat.semester = :semester';
+            $params['semester'] = $semflt;
+        }
+
+        $ctype = isset($filters['coursetype']) ? (string) $filters['coursetype'] : '';
+        if ($ctype !== '') {
+            $where[] = "COALESCE(bct.coursetype, 'other') = :coursetype";
+            $params['coursetype'] = $ctype;
+        }
+
+        $needle = isset($filters['q']) ? trim((string) $filters['q']) : '';
+        if ($needle !== '') {
+            $likeescaped = '%' . $DB->sql_like_escape($needle) . '%';
+            $likefn = $DB->sql_like('cat.filename', ':qf', false, true, false);
+            $liked = $DB->sql_like('COALESCE(cat.dept, \'\')', ':qd', false, true, false);
+            $likec = $DB->sql_like('COALESCE(cat.course_num, \'\')', ':qc', false, true, false);
+            $where[] = "({$likefn} OR {$liked} OR {$likec})";
+            $params['qf'] = $likeescaped;
+            $params['qd'] = $likeescaped;
+            $params['qc'] = $likeescaped;
+        }
+
+        $wheresql = implode(' AND ', $where);
+
         $sql = "SELECT cat.id, cat.filename, cat.file_size, cat.backup_ts, cat.year,
+                       cat.semester, cat.dept, cat.course_num, cat.pattern,
                        COALESCE(bct.coursetype, 'other') AS coursetype
                   FROM {block_backadel_catalogue} cat
                   LEFT JOIN (
@@ -165,20 +255,16 @@ abstract class simple_restore_utils {
                         FROM {block_backadel_courses}
                        GROUP BY LOWER(courseshortname)
                   ) bct ON bct.sn_lc = LOWER(cat.shortname)
-                 WHERE {$likesql} AND cat.status = :st
+                 WHERE {$wheresql}
               ORDER BY CASE COALESCE(bct.coursetype, 'other')
                            WHEN 'blueprint' THEN 0
                            WHEN 'teaching' THEN 1
                            ELSE 2
                        END ASC,
                        cat.backup_ts DESC";
-        $rows = $DB->get_records_sql($sql, [
-            'sn' => $DB->sql_like_escape($shortname),
-            'st' => 'available',
-        ]);
-        if (!$rows) {
-            return [];
-        }
+
+        $rows = $DB->get_records_sql($sql, $params);
+
         return array_values(array_map(static function ($row) {
             return (object)[
                 'id'           => (int) $row->id,
@@ -188,7 +274,7 @@ abstract class simple_restore_utils {
                 'year'         => (string) ($row->year ?? date('Y', (int) ($row->backup_ts ?? 0))),
                 'coursetype'   => (string) ($row->coursetype ?? 'other'),
             ];
-        }, $rows));
+        }, $rows ?: []));
     }
 
     public static function backup_list($data) {
@@ -197,13 +283,42 @@ abstract class simple_restore_utils {
             ? (object)['shortname' => $data->shortname]
             : $DB->get_record('course', ['id' => $data->courseid]);
 
+        $filters = [
+            'q' => optional_param('q', '', PARAM_TEXT),
+            'year' => optional_param('year', 0, PARAM_INT),
+            'semester' => optional_param('semester', '', PARAM_ALPHANUMEXT),
+            'coursetype' => optional_param('coursetype', '', PARAM_ALPHA),
+            'status' => optional_param('status', 'available', PARAM_ALPHA),
+        ];
+        $data->catalogue_filters = $filters;
+
+        $catalogueshort = (string) ($course->shortname ?? '');
+        $catopts = self::get_catalogue_filter_options($catalogueshort);
+
+        $yearopts = [
+            0 => get_string('filter_all_years', 'block_simple_restore'),
+        ];
+        foreach ($catopts['years'] as $y) {
+            $iy = (int) $y;
+            $yearopts[$iy] = (string) $iy;
+        }
+        $data->catalogue_years = $yearopts;
+
+        $semopts = [
+            '' => get_string('filter_all_semesters', 'block_simple_restore'),
+        ];
+        foreach ($catopts['semesters'] as $sem) {
+            $semopts[$sem] = $sem;
+        }
+        $data->catalogue_semesters = $semopts;
+
         $list = new stdClass;
         $list->header = get_string('semester_backups', 'block_simple_restore');
         $list->order  = 10;
         $list->html   = '';
 
         // Try catalogue first.
-        $cataloguerows = self::backups_from_catalogue((string)($course->shortname ?? ''));
+        $cataloguerows = self::backups_from_catalogue($catalogueshort, $filters);
 
         if (!empty($cataloguerows)) {
             $list->backups = $cataloguerows;
