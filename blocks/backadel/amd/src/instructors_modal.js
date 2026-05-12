@@ -96,12 +96,16 @@ const showInstructorsModal = async(btn, strings) => {
  * @param {object} strings Lang strings supplied from PHP (keys: modalTitle, colUsername, colFullname, none).
  */
 export const init = (strings) => {
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-action="show-instructors"]');
-        if (!btn) {
-            return;
-        }
-        e.preventDefault();
-        showInstructorsModal(btn, strings);
-    });
+    try {
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action="show-instructors"]');
+            if (!btn) {
+                return;
+            }
+            e.preventDefault();
+            showInstructorsModal(btn, strings);
+        });
+    } catch (err) {
+        window.console.error('block_backadel/instructors_modal init failed:', err);
+    }
 };
