@@ -157,11 +157,16 @@ abstract class simple_restore_utils {
         }
         $likesql = $DB->sql_like('cat.shortname', ':sn', false, true, false);
         $sql = "SELECT cat.id, cat.filename, cat.file_size, cat.backup_ts, cat.year,
-                       COALESCE(bc.coursetype, 'other') AS coursetype
+                       COALESCE(bct.coursetype, 'other') AS coursetype
                   FROM {block_backadel_catalogue} cat
-                  LEFT JOIN {block_backadel_courses} bc ON LOWER(bc.shortname) = LOWER(cat.shortname)
+                  LEFT JOIN (
+                      SELECT LOWER(courseshortname) AS sn_lc,
+                             MIN(coursetype) AS coursetype
+                        FROM {block_backadel_courses}
+                       GROUP BY LOWER(courseshortname)
+                  ) bct ON bct.sn_lc = LOWER(cat.shortname)
                  WHERE {$likesql} AND cat.status = :st
-              ORDER BY CASE COALESCE(bc.coursetype, 'other')
+              ORDER BY CASE COALESCE(bct.coursetype, 'other')
                            WHEN 'blueprint' THEN 0
                            WHEN 'teaching' THEN 1
                            ELSE 2
