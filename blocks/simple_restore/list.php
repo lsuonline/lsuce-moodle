@@ -213,14 +213,40 @@ $displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $d
     if (in_array($source, ['semester_backadel', 'catalogue'], true) && !empty($list->backups)) {
         echo $OUTPUT->heading($list->header);
         $shortname = isset($data->shortname) ? $data->shortname : $course->shortname;
-        $table = new \block_simple_restore\local\table\restore_files_table(
-            'simple_restore_semester_' . $courseid,
-            $courseid,
-            (string) $shortname,
-            $restoreto
-        );
-        $table->populate($list->backups, $source);  // pass source so catalogue rows get catalogue_id.
-        $table->setup_and_out(30);
+        if ($source === 'catalogue') {
+            $buckets = [];
+            foreach ($list->backups as $backup) {
+                $year = (string) ($backup->year ?? '');
+                if ($year === '') {
+                    $year = (string) date('Y', (int) ($backup->timemodified ?? 0));
+                }
+                if (!isset($buckets[$year])) {
+                    $buckets[$year] = [];
+                }
+                $buckets[$year][] = $backup;
+            }
+            krsort($buckets, SORT_STRING);
+            foreach ($buckets as $year => $bucket) {
+                echo $OUTPUT->heading((string) $year, 4);
+                $table = new \block_simple_restore\local\table\restore_files_table(
+                    'simple_restore_semester_' . $courseid . '_y' . $year,
+                    $courseid,
+                    (string) $shortname,
+                    $restoreto
+                );
+                $table->populate($bucket, 'catalogue');
+                $table->setup_and_out(30);
+            }
+        } else {
+            $table = new \block_simple_restore\local\table\restore_files_table(
+                'simple_restore_semester_' . $courseid,
+                $courseid,
+                (string) $shortname,
+                $restoreto
+            );
+            $table->populate($list->backups, $source);  // pass source so catalogue rows get catalogue_id.
+            $table->setup_and_out(30);
+        }
         return true;
     }
     echo $list->html;

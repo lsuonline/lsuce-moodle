@@ -148,18 +148,25 @@ abstract class simple_restore_utils {
      * Returns an empty array if the table does not exist or no rows match.
      *
      * @param string $shortname Course shortname to look up.
-     * @return array Normalised backup objects with id, filename, filesize, timemodified.
+     * @return array Normalised backup objects with id, filename, filesize, timemodified, year, coursetype.
      */
     private static function backups_from_catalogue(string $shortname): array {
         global $DB;
         if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
             return [];
         }
-        $likesql = $DB->sql_like('shortname', ':sn', false, true, false);
-        $sql = "SELECT id, filename, file_size, backup_ts
-                  FROM {block_backadel_catalogue}
-                 WHERE {$likesql} AND status = :st
-              ORDER BY backup_ts DESC";
+        $likesql = $DB->sql_like('cat.shortname', ':sn', false, true, false);
+        $sql = "SELECT cat.id, cat.filename, cat.file_size, cat.backup_ts, cat.year,
+                       COALESCE(bc.coursetype, 'other') AS coursetype
+                  FROM {block_backadel_catalogue} cat
+                  LEFT JOIN {block_backadel_courses} bc ON LOWER(bc.shortname) = LOWER(cat.shortname)
+                 WHERE {$likesql} AND cat.status = :st
+              ORDER BY CASE COALESCE(bc.coursetype, 'other')
+                           WHEN 'blueprint' THEN 0
+                           WHEN 'teaching' THEN 1
+                           ELSE 2
+                       END ASC,
+                       cat.backup_ts DESC";
         $rows = $DB->get_records_sql($sql, [
             'sn' => $DB->sql_like_escape($shortname),
             'st' => 'available',
@@ -173,6 +180,8 @@ abstract class simple_restore_utils {
                 'filename'     => (string) ($row->filename ?? ''),
                 'filesize'     => (int) ($row->file_size ?? 0),
                 'timemodified' => (int) ($row->backup_ts ?? 0),
+                'year'         => (string) ($row->year ?? date('Y', (int) ($row->backup_ts ?? 0))),
+                'coursetype'   => (string) ($row->coursetype ?? 'other'),
             ];
         }, $rows));
     }
