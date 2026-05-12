@@ -210,7 +210,7 @@ abstract class simple_restore_utils {
         $statusflt = isset($filters['status']) ? (string) $filters['status'] : 'available';
         if ($statusflt !== '') {
             $where[] = 'cat.status = :st';
-            $params['st'] = 'available';
+            $params['st'] = $statusflt;
         }
 
         $yearflt = isset($filters['year']) ? (int) $filters['year'] : 0;
@@ -225,9 +225,13 @@ abstract class simple_restore_utils {
             $params['semester'] = $semflt;
         }
 
+        // Same correlated subquery as catalogue_table::setup_sql() — latest row per filename.
+        $ctsub = '(SELECT bc_ct.coursetype FROM {block_backadel_courses} bc_ct'
+            . ' WHERE bc_ct.filename = cat.filename ORDER BY bc_ct.id DESC LIMIT 1)';
+
         $ctype = isset($filters['coursetype']) ? (string) $filters['coursetype'] : '';
-        if ($ctype !== '') {
-            $where[] = "COALESCE(bct.coursetype, 'other') = :coursetype";
+        if (in_array($ctype, ['teaching', 'blueprint', 'other'], true)) {
+            $where[] = "{$ctsub} = :coursetype";
             $params['coursetype'] = $ctype;
         }
 
@@ -247,16 +251,10 @@ abstract class simple_restore_utils {
 
         $sql = "SELECT cat.id, cat.filename, cat.file_size, cat.backup_ts, cat.year,
                        cat.semester, cat.dept, cat.course_num, cat.pattern,
-                       COALESCE(bct.coursetype, 'other') AS coursetype
+                       COALESCE({$ctsub}, 'other') AS coursetype
                   FROM {block_backadel_catalogue} cat
-                  LEFT JOIN (
-                      SELECT LOWER(courseshortname) AS sn_lc,
-                             MIN(coursetype) AS coursetype
-                        FROM {block_backadel_courses}
-                       GROUP BY LOWER(courseshortname)
-                  ) bct ON bct.sn_lc = LOWER(cat.shortname)
                  WHERE {$wheresql}
-              ORDER BY CASE COALESCE(bct.coursetype, 'other')
+              ORDER BY CASE COALESCE({$ctsub}, 'other')
                            WHEN 'blueprint' THEN 0
                            WHEN 'teaching' THEN 1
                            ELSE 2
@@ -286,7 +284,7 @@ abstract class simple_restore_utils {
         $filters = [
             'q' => optional_param('q', '', PARAM_TEXT),
             'year' => optional_param('year', 0, PARAM_INT),
-            'semester' => optional_param('semester', '', PARAM_ALPHANUMEXT),
+            'semester' => optional_param('semester', '', PARAM_TEXT),
             'coursetype' => optional_param('coursetype', '', PARAM_ALPHA),
             'status' => optional_param('status', 'available', PARAM_ALPHA),
         ];

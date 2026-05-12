@@ -61,14 +61,13 @@ class list_filter_form extends moodleform {
 
         $semesters = $this->_customdata['semesters'] ?? ['' => get_string('filter_all_semesters', 'block_simple_restore')];
         $mform->addElement('select', 'semester', get_string('filter_semester', 'block_simple_restore'), $semesters);
-        $mform->setType('semester', PARAM_ALPHANUMEXT);
+        $mform->setType('semester', PARAM_TEXT);
 
-        // Options per MD-2189 (English labels embedded in specification).
         $mform->addElement('select', 'coursetype', get_string('filter_coursetype', 'block_simple_restore'), [
-            '' => 'Any type',
-            'teaching' => 'Teaching',
-            'blueprint' => 'Blueprint',
-            'other' => 'Other',
+            '' => get_string('any'),
+            'teaching' => get_string('coursetype_teaching', 'block_backadel'),
+            'blueprint' => get_string('coursetype_blueprint', 'block_backadel'),
+            'other' => get_string('coursetype_other', 'block_backadel'),
         ]);
         $mform->setType('coursetype', PARAM_ALPHA);
 

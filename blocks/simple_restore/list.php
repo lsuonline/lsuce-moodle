@@ -50,7 +50,7 @@ $listfltyear = optional_param('year', 0, PARAM_INT);
 if ($listfltyear > 0) {
     $listurlparams['year'] = $listfltyear;
 }
-$listfltsem = optional_param('semester', '', PARAM_ALPHANUMEXT);
+$listfltsem = optional_param('semester', '', PARAM_TEXT);
 if ($listfltsem !== '') {
     $listurlparams['semester'] = $listfltsem;
 }
@@ -274,7 +274,7 @@ if ($hascatalogue) {
     $filterform->set_data([
         'q' => optional_param('q', '', PARAM_TEXT),
         'year' => optional_param('year', 0, PARAM_INT),
-        'semester' => optional_param('semester', '', PARAM_ALPHANUMEXT),
+        'semester' => optional_param('semester', '', PARAM_TEXT),
         'coursetype' => optional_param('coursetype', '', PARAM_ALPHA),
         'status' => optional_param('status', 'available', PARAM_ALPHA),
         'id' => $courseid,
