@@ -30,39 +30,98 @@ require_once(__DIR__ . '/lib.php');
 $q = optional_param('q', '', PARAM_TEXT);
 $category = optional_param('category', 0, PARAM_INT);
 $status = optional_param('status', '', PARAM_ALPHA);
+$coursetype = optional_param('coursetype', '', PARAM_ALPHA);
+$semester = optional_param('semester', '', PARAM_TEXT);
 $download = optional_param('download', '', PARAM_ALPHA);
+
+$coursetypevalid = ['', 'teaching', 'blueprint', 'other', 'undetermined'];
+if (!in_array($coursetype, $coursetypevalid, true)) {
+    $coursetype = '';
+}
 
 admin_externalpage_setup('block_backadel_search');
 $context = context_system::instance();
 require_capability('block/backadel:managebackups', $context);
 
-$PAGE->set_url(new moodle_url('/blocks/backadel/search.php', [
-    'q' => $q,
-    'category' => $category,
-    'status' => $status,
-]));
+$semrows = $DB->get_fieldset_sql(
+    "SELECT DISTINCT semester FROM {block_backadel_courses}
+      WHERE semester IS NOT NULL AND semester <> :empty
+   ORDER BY semester DESC",
+    ['empty' => '']
+);
+$semopts = ['' => get_string('any')];
+foreach ($semrows as $sem) {
+    if ($sem === null || $sem === '') {
+        continue;
+    }
+    $slug = (string) $sem;
+    $semopts[$slug] = $slug;
+}
+
+if ($semester !== '' && !array_key_exists($semester, $semopts)) {
+    $semester = '';
+}
+
+$hasfilters = ($q !== '' || $category > 0 || $status !== '' || $coursetype !== '' || $semester !== '');
+
+$urlargs = [];
+if ($q !== '') {
+    $urlargs['q'] = $q;
+}
+if ($category > 0) {
+    $urlargs['category'] = $category;
+}
+if ($status !== '') {
+    $urlargs['status'] = $status;
+}
+if ($coursetype !== '') {
+    $urlargs['coursetype'] = $coursetype;
+}
+if ($semester !== '') {
+    $urlargs['semester'] = $semester;
+}
+
+$PAGE->set_url(new moodle_url('/blocks/backadel/search.php', $urlargs));
 
 $filters = [
     'q' => $q,
     'category' => $category,
     'status' => $status,
+    'coursetype' => $coursetype,
+    'semester' => $semester,
 ];
 
-$form = new \block_backadel\form\search_filter_form(new moodle_url('/blocks/backadel/search.php'));
+$form = new \block_backadel\form\search_filter_form(new moodle_url('/blocks/backadel/search.php'), [
+    'semesters' => $semopts,
+    'filtersactive' => $hasfilters,
+]);
 $form->set_data($filters);
 
-$hasfilters = ($q !== '' || $category > 0 || $status !== '');
+$activefiltercount = 0;
+if ($q !== '') {
+    $activefiltercount++;
+}
+if ($category > 0) {
+    $activefiltercount++;
+}
+if ($status !== '') {
+    $activefiltercount++;
+}
+if ($coursetype !== '') {
+    $activefiltercount++;
+}
+if ($semester !== '') {
+    $activefiltercount++;
+}
 
 $table = new \block_backadel\local\table\results_table('backadel-search', $filters);
-$table->define_baseurl(new moodle_url('/blocks/backadel/search.php', [
-    'q' => $q,
-    'category' => $category,
-    'status' => $status,
-]));
+$table->define_baseurl(new moodle_url('/blocks/backadel/search.php', $urlargs));
 $table->is_downloading($download, 'backadel-search');
 
 $PAGE->requires->js_call_amd('block_backadel/help', 'init');
 $PAGE->requires->js_call_amd('block_backadel/crud_actions', 'init');
+
+$renderer = $PAGE->get_renderer('block_backadel');
 
 echo $OUTPUT->header();
 echo html_writer::div(
@@ -76,7 +135,15 @@ echo html_writer::div(
     ]),
     'position-relative'
 );
+ob_start();
 $form->display();
+$formhtml = ob_get_clean();
+echo $renderer->render_filter_panel(new \block_backadel\output\filter_panel(
+    'backadel-search-filters',
+    get_string('filter_panel_toggle', 'block_backadel'),
+    $activefiltercount,
+    $formhtml,
+));
 echo $OUTPUT->heading(get_string('search_results', 'block_backadel'));
 if (!$hasfilters) {
     echo $OUTPUT->notification(get_string('search_instructions', 'block_backadel'), 'info');

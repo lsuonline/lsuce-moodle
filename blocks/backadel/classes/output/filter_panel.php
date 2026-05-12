@@ -20,28 +20,38 @@ namespace block_backadel\output;
 
 defined('MOODLE_INTERNAL') || die();
 
-use plugin_renderer_base;
+use renderer_base;
+use renderable;
+use templatable;
 
 /**
- * Renderer for Backadel block template output.
+ * Collapsible filter panel wrapping arbitrary form HTML.
  *
  * @package    block_backadel
  * @copyright  2026 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class renderer extends plugin_renderer_base {
+class filter_panel implements renderable, templatable {
 
     /**
-     * Render the catalogue list using the block_backadel/catalogue template.
+     * @param string $collapseid HTML id for the collapse region (no leading #).
      */
-    public function render_catalogue(catalogue_renderable $renderable): string {
-        return $this->render_from_template('block_backadel/catalogue', $renderable->export_for_template($this));
+    public function __construct(
+        private string $collapseid,
+        private string $title,
+        private int $activecount,
+        private string $formhtml,
+        private bool $expanded = false,
+    ) {
     }
 
-    /**
-     * Render a collapsible filter panel around form HTML.
-     */
-    public function render_filter_panel(\block_backadel\output\filter_panel $panel): string {
-        return $this->render_from_template('block_backadel/local/filter_panel', $panel->export_for_template($this));
+    public function export_for_template(renderer_base $output): array {
+        return [
+            'collapseid' => $this->collapseid,
+            'title' => $this->title,
+            'activecount' => $this->activecount,
+            'formhtml' => $this->formhtml,
+            'expanded' => $this->expanded || $this->activecount > 0,
+        ];
     }
 }

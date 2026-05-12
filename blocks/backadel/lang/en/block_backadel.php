@@ -76,6 +76,9 @@ $string['backup_button'] = 'Backup Selected Courses';
 $string['search_results'] = 'Search Results';
 $string['search_status_none'] = 'Not yet backed up';
 $string['search_instructions'] = 'Use the filters above to search for courses by short / full name, ID number, category, or backup status.';
+$string['filter_panel_toggle'] = 'Filters';
+$string['filter_panel_active'] = '{$a} active';
+$string['filter_semester'] = 'Semester';
 $string['save_query'] = 'Save Query';
 $string['create_new_query'] = 'Create New Query';
 

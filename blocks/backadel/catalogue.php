@@ -169,6 +169,26 @@ $filtersactive = (
     || $yearraw !== null
 );
 
+$activefiltercount = 0;
+if ($coursetype !== '') {
+    $activefiltercount++;
+}
+if ($semester !== '') {
+    $activefiltercount++;
+}
+if ($yearraw !== null) {
+    $activefiltercount++;
+}
+if ($q !== '') {
+    $activefiltercount++;
+}
+if ($pattern !== '') {
+    $activefiltercount++;
+}
+if ($status !== '') {
+    $activefiltercount++;
+}
+
 $form = new \block_backadel\form\catalogue_filter_form(new moodle_url('/blocks/backadel/catalogue.php'), [
     'years' => $yearoptions,
     'semesters' => $semesteroptions,
@@ -203,7 +223,16 @@ if (!$table->is_downloading()) {
         'position-relative'
     );
 
+    $renderer = $PAGE->get_renderer('block_backadel');
+    ob_start();
     $form->display();
+    $formhtml = ob_get_clean();
+    echo $renderer->render_filter_panel(new \block_backadel\output\filter_panel(
+        'backadel-catalogue-filters',
+        get_string('filter_panel_toggle', 'block_backadel'),
+        $activefiltercount,
+        $formhtml,
+    ));
 }
 
 $table->setup();

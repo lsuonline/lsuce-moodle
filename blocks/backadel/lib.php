@@ -137,8 +137,11 @@ function build_sql_from_search($query, $constraints): array {
 /**
  * Build a safe WHERE fragment and parameters for the Backadel course search page filters.
  *
- * @param array $filters Keys: optional string q, optional int category, optional string status
- *     ('' any, 'none' for no status row, or a block_backadel_statuses status code).
+ * @param array $filters Keys: optional string q; optional int category; optional string status
+ *     ('' any, 'none' for no status row, or a block_backadel_statuses status code); optional string
+ *     coursetype ('' any; teaching|blueprint|other|undetermined — undetermined means no
+ *     block_backadel_courses row for the course); optional string semester (exact match on latest
+ *     block_backadel_courses.semester for the course).
  * @return array{0: string, 1: array} SQL WHERE body (no WHERE keyword) and bound parameters.
  */
 function backadel_search_to_where(array $filters): array {
@@ -147,8 +150,10 @@ function backadel_search_to_where(array $filters): array {
     $q = isset($filters['q']) ? trim((string) $filters['q']) : '';
     $category = isset($filters['category']) ? (int) $filters['category'] : 0;
     $status = isset($filters['status']) ? (string) $filters['status'] : '';
+    $coursetype = isset($filters['coursetype']) ? (string) $filters['coursetype'] : '';
+    $semester = isset($filters['semester']) ? trim((string) $filters['semester']) : '';
 
-    if ($q === '' && $category <= 0 && $status === '') {
+    if ($q === '' && $category <= 0 && $status === '' && $coursetype === '' && $semester === '') {
         return ['1=0', []];
     }
 
@@ -187,6 +192,24 @@ function backadel_search_to_where(array $filters): array {
             $clauses[] = $lateststatus . ' = :' . $pk;
             $params[$pk] = $status;
         }
+    }
+
+    $bccoursetypesub = '(SELECT bc_ct.coursetype FROM {block_backadel_courses} bc_ct '
+        . 'WHERE bc_ct.courseid = co.id ORDER BY bc_ct.id DESC LIMIT 1)';
+    if ($coursetype === 'undetermined') {
+        $clauses[] = $bccoursetypesub . ' IS NULL';
+    } else if (in_array($coursetype, ['teaching', 'blueprint', 'other'], true)) {
+        $pk = 'bkct' . $pidx++;
+        $clauses[] = $bccoursetypesub . ' = :' . $pk;
+        $params[$pk] = $coursetype;
+    }
+
+    if ($semester !== '') {
+        $latestsemester = '(SELECT bc2.semester FROM {block_backadel_courses} bc2 '
+            . 'WHERE bc2.courseid = co.id ORDER BY bc2.id DESC LIMIT 1)';
+        $pk = 'bksm' . $pidx++;
+        $clauses[] = $latestsemester . ' = :' . $pk;
+        $params[$pk] = $semester;
     }
 
     if ($clauses === []) {
