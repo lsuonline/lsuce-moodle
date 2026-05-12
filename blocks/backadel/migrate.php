@@ -120,14 +120,6 @@ $form .= html_writer::empty_tag('input', [
 $form .= html_writer::end_tag('form');
 echo $form;
 
-// Spinner — shown by JS while task is queued; hidden otherwise.
-echo html_writer::div(
-    html_writer::div('', 'spinner-border spinner-border-sm text-primary me-2', ['role' => 'status']) .
-    get_string('migrate_running', 'block_backadel'),
-    'd-none d-flex align-items-center mb-3',
-    ['data-region' => 'migrate-spinner']
-);
-
 // Success badge — shown by JS after task completes.
 echo html_writer::div(
     get_string('migrate_completed', 'block_backadel'),

@@ -2,7 +2,7 @@
  * Live status polling for the Backadel filesystem migration adhoc task.
  *
  * On page load: immediately polls to check if a migration task is already queued.
- * While queued: shows a spinner, disables the run button, and polls every 5 s.
+ * While queued: disables the run button and polls every 5 s.
  * When task disappears: shows a success banner with updated counts.
  *
  * @module     block_backadel/migrate_status
@@ -25,7 +25,6 @@ let wasQueued = false;
  * @param {object} data    Full response from get_migrate_status
  */
 const applyState = (status, data) => {
-    const spinner     = document.querySelector('[data-region="migrate-spinner"]');
     const btn         = document.querySelector('[data-action="run-migrate"]');
     const cntCat      = document.querySelector('[data-region="migrate-count-catalogue"]');
     const cntCourses  = document.querySelector('[data-region="migrate-count-courses"]');
@@ -36,7 +35,6 @@ const applyState = (status, data) => {
 
     if (status === 'queued') {
         wasQueued = true;
-        if (spinner)      { spinner.classList.remove('d-none'); }
         if (btn)          { btn.disabled = true; }
         if (successBadge) { successBadge.classList.add('d-none'); }
 
@@ -45,7 +43,6 @@ const applyState = (status, data) => {
         }
     } else {
         // Idle — task finished or was never queued.
-        if (spinner) { spinner.classList.add('d-none'); }
         if (btn)     { btn.disabled = false; }
 
         if (pollTimer) {

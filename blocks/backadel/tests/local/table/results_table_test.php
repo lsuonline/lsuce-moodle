@@ -62,10 +62,11 @@ final class results_table_test extends \advanced_testcase {
         global $PAGE;
 
         $PAGE->set_url(new moodle_url('/blocks/backadel/search.php'));
-        $table = new results_table('unittest_results_sql', ['q' => 't', 'category' => 0, 'status' => '']);
+        $table = new results_table('unittest_results_sql', ['q' => 't', 'category' => 0, 'status' => 'SUCCESS']);
 
         $this->assertNotNull($table->sql);
         $this->assertStringContainsString('co.id', $table->sql->fields);
-        $this->assertStringContainsString('LEFT JOIN', $table->sql->from);
+        $this->assertStringContainsString('{block_backadel_statuses}', $table->sql->fields);
+        $this->assertStringContainsString('bkst_sub.status', $table->sql->where);
     }
 }

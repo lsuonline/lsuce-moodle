@@ -177,11 +177,14 @@ function backadel_search_to_where(array $filters): array {
     }
 
     if ($status !== '') {
+        // Latest status per course — must match {@see \block_backadel\local\table\results_table::setup_sql()}.
+        $lateststatus = '(SELECT bkst_sub.status FROM {block_backadel_statuses} bkst_sub '
+            . 'WHERE bkst_sub.coursesid = co.id ORDER BY bkst_sub.id DESC LIMIT 1)';
         if ($status === 'none') {
-            $clauses[] = 'ba.status IS NULL';
+            $clauses[] = $lateststatus . ' IS NULL';
         } else if (in_array($status, ['BACKUP', 'SUCCESS', 'FAIL', 'DELETED'], true)) {
             $pk = 'bkst' . $pidx++;
-            $clauses[] = 'ba.status = :' . $pk;
+            $clauses[] = $lateststatus . ' = :' . $pk;
             $params[$pk] = $status;
         }
     }
