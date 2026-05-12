@@ -53,3 +53,17 @@
 .restore_template_progress_hider div.backup_progress.clearfix {
   visibility: hidden;
 }
+
+/* ---- Restore confirm modal: dialog wrapper ---- */
+/* Snap applies rogue rules to .modal-content (max-width: 500px, text-align: center).
+   Scope overrides to .modal-content inside our dialog class. */
+.modal.moodle-has-zindex .modal-dialog.block_simple_restore-modal-dialog,
+.modal-dialog.block_simple_restore-modal-dialog {
+    max-width: 640px;
+}
+
+/* ---- Undo Snap's .modal-content overrides ---- */
+.modal-dialog.block_simple_restore-modal-dialog .modal-content {
+    max-width: none;
+    text-align: start;
+}

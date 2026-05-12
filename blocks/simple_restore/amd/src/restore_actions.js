@@ -21,7 +21,7 @@
 
 import ModalForm from 'core_form/modalform';
 import * as Toast from 'core/toast';
-import {getString} from 'core/str';
+import {get_strings as getStrings} from 'core/str';
 
 /**
  * @param {HTMLElement} trigger
@@ -43,7 +43,10 @@ const openRestoreModal = async(trigger) => {
     const catalogueId = parseInt(catalogueIdRaw, 10);
     const catalogueIdSafe = (Number.isNaN(catalogueId) || catalogueId < 1) ? 0 : catalogueId;
 
-    const title = await getString('restore_confirm_title', 'block_simple_restore');
+    const [title, saveLabel] = await getStrings([
+        {key: 'restore_confirm_title', component: 'block_simple_restore'},
+        {key: 'restore_confirm_save', component: 'block_simple_restore'},
+    ]);
     const form = new ModalForm({
         formClass: 'block_simple_restore\\form\\restore_confirm_form',
         args: {
@@ -56,6 +59,11 @@ const openRestoreModal = async(trigger) => {
         },
         modalConfig: {title},
         returnFocus: trigger,
+    });
+
+    form.addEventListener(form.events.LOADED, () => {
+        form.modal.getModal().addClass('block_simple_restore-modal-dialog');
+        form.modal.setSaveButtonText(saveLabel);
     });
 
     form.addEventListener(form.events.FORM_SUBMITTED, async(ev) => {

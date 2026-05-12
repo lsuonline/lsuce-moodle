@@ -58,6 +58,9 @@ $string['download_action'] = 'Download';
 $string['restore_success'] = 'The course was successfully restored.';
 $string['restore_confirm_title'] = 'Confirm Restore';
 $string['restore_confirm_body'] = 'You are about to overwrite this course with the selected backup. Proceed?';
+$string['restore_confirm_save'] = 'Restore';
+$string['restore_confirm_course_label'] = 'Course';
+$string['restore_confirm_file_label'] = 'File';
 
 $string['confirm_message'] = 'You are about to {$a}. Proceed?';
 $string['general'] = 'General Restore Settings';

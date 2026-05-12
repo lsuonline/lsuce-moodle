@@ -35,13 +35,39 @@ use moodle_url;
 class restore_confirm_form extends dynamic_form {
 
     /**
-     * Form definition: hidden fields only.
+     * Form definition: rich confirm content plus hidden submission fields.
      *
      * @return void
      */
     #[\Override]
     protected function definition(): void {
+        global $DB;
         $mform = $this->_form;
+
+        $courseid = $this->optional_param('courseid', 0, PARAM_INT);
+        $filename = clean_param($this->optional_param('filename', '', PARAM_FILE), PARAM_FILE);
+        $course = $courseid > 0 ? $DB->get_record('course', ['id' => $courseid]) : null;
+
+        $html = \html_writer::start_div('mb-3');
+        if ($course) {
+            $html .= \html_writer::tag('p',
+                \html_writer::tag('strong', get_string('restore_confirm_course_label', 'block_simple_restore') . ': ') .
+                s($course->fullname) . ' (' . s($course->shortname) . ')'
+            );
+        }
+        if ($filename !== '') {
+            $html .= \html_writer::tag('p',
+                \html_writer::tag('strong', get_string('restore_confirm_file_label', 'block_simple_restore') . ': ') .
+                s($filename)
+            );
+        }
+        $html .= \html_writer::div(
+            get_string('restore_confirm_body', 'block_simple_restore'),
+            'alert alert-info mb-0'
+        );
+        $html .= \html_writer::end_div();
+        $mform->addElement('html', $html);
+
         $mform->addElement('hidden', 'courseid');
         $mform->setType('courseid', PARAM_INT);
         $mform->addElement('hidden', 'filename');
