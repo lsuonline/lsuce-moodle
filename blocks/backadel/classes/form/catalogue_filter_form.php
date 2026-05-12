@@ -82,6 +82,7 @@ class catalogue_filter_form extends moodleform {
             'storagecourse_dept' => 'storagecourse_dept',
             'storage_legacy' => 'storage_legacy',
             'backadel_modern' => 'backadel_modern',
+            'backadel_instructor' => 'backadel_instructor',
             'moodle_native' => 'moodle_native',
             'unknown' => 'unknown',
         ]);

@@ -106,6 +106,7 @@ $patternsvalid = [
     'storagecourse_dept',
     'storage_legacy',
     'backadel_modern',
+    'backadel_instructor',
     'moodle_native',
     'unknown',
 ];

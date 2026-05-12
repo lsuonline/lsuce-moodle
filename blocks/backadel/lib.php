@@ -22,7 +22,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Whitelisted course / category columns for Backadel search (matches {@see \block_backadel\local\table\query_support::ALLOWED_CRITERIA}).
+ * Whitelisted course / category columns for Backadel search
+ * (matches {@see \block_backadel\local\table\query_support::ALLOWED_CRITERIA}).
  *
  * @param string $field One of shortname, fullname, idnumber, category.
  * @return string SQL fragment (qualified column expression).
@@ -266,6 +267,7 @@ function backadel_catalogue_to_where(array $filters): array {
         'storagecourse_dept',
         'storage_legacy',
         'backadel_modern',
+        'backadel_instructor',
         'moodle_native',
         'unknown',
     ];
@@ -389,6 +391,8 @@ function generate_suffix($courseid) {
 function backadel_backup_course($course) {
     global $CFG;
 
+    $buresult = false;
+
     // Required files for the backups.
     require_once($CFG->dirroot . '/backup/util/includes/backup_includes.php');
     require_once($CFG->dirroot . '/backup/controller/backup_controller.class.php');
@@ -491,7 +495,9 @@ function backadel_backup_course($course) {
             if (!file_exists($mfname)) {
 
                 // Reset the filename yet again.
-                $filename = backup_plan_dbops::get_default_backup_filename($format, $type, $course->id, $users, $anonymised, !$config->backup_shortname);
+                $filename = backup_plan_dbops::get_default_backup_filename(
+                    $format, $type, $course->id, $users, $anonymised, !$config->backup_shortname
+                );
 
                 // Rebuild the full path based on the new filename... again.
                 $mfname = $dir . '/' . $filename;
@@ -546,7 +552,7 @@ function backadel_backup_course($course) {
                 }
             }
 
-        // We're now working with a specified directory for backup storage.
+            // We're now working with a specified directory for backup storage.
         } else if ($storage !== 0 && (empty($backadelpath) || !is_dir($backadelpath) || !is_writable($backadelpath))) {
 
             // The backadel path is either not specified or not a directory or not writeable. Log it accordingly.
@@ -560,8 +566,9 @@ function backadel_backup_course($course) {
             // Unlink the Moodle backup.
             @unlink($mfname);
 
-        // Looks like we the backadel path is specified and a writeable directory. Let's double check to see if the Moodle backup is missing.
-        } else if ($storage !== 0 && !empty($backadelpath) && is_dir($backadelpath) && is_writeable($backadelpath) && !file_exists($mfname)) {
+            // Backadel path is set and writable but the Moodle backup is missing.
+        } else if ($storage !== 0 && !empty($backadelpath) && is_dir($backadelpath)
+                && is_writeable($backadelpath) && !file_exists($mfname)) {
 
             // The file does not exist, log accordingly.
             $bc->log('Source backup file does not exist - ', backup::LOG_ERROR, $mfname);
@@ -574,8 +581,9 @@ function backadel_backup_course($course) {
             // Unlink the Moodle backup.
             @unlink($mfname);
 
-        // Now we're cooking with gas and everything looks good. Let's triple check everything is good to go.
-        } else if ($storage !== 0 && !empty($backadelpath) && is_dir($backadelpath) && is_writeable($backadelpath) && file_exists($mfname)) {
+            // Backadel path is set, writable, and Moodle backup exists — proceed with move.
+        } else if ($storage !== 0 && !empty($backadelpath) && is_dir($backadelpath)
+                && is_writeable($backadelpath) && file_exists($mfname)) {
 
             // Try to rename the file from the Moodle file location to the backadel file location.
             if (rename($mfname, $bdfname)) {
@@ -618,7 +626,7 @@ function backadel_backup_course($course) {
             $buresult = false;
         }
 
-    // Catch and log stuff.
+        // Catch and log stuff.
     } catch (moodle_exception $e) {
         $bc->log('backup_auto_failed_on_course', backup::LOG_ERROR, $course->shortname); // Log error header.
         $bc->log('Exception: ' . $e->errorcode, backup::LOG_ERROR, $e->a, 1); // Log original exception problem.
@@ -626,7 +634,7 @@ function backadel_backup_course($course) {
         $outcome = 0;
     }
 
-    // destroy and unset the backup controller.
+    // Destroy and unset the backup controller.
     $bc->destroy();
     unset($bc);
 
@@ -653,23 +661,23 @@ function backadel_backup_course($course) {
      * @param array $results returned by a backup
      * @return int {@link self::BACKUP_STATUS_OK} and other constants
      */
-    function outcome_from_results($results) {
-        $outcome = 1;
-        foreach ($results as $code => $value) {
-            // Each possible error and warning code has to be specified in this switch
-            // which basically analyses the results to return the correct backup status.
-            switch ($code) {
-                case 'missing_files_in_pool':
-                    $outcome = 4;
-                    break;
-            }
-            // If we found the highest error level, we exit the loop.
-            if ($outcome == 0) {
+function outcome_from_results($results) {
+    $outcome = 1;
+    foreach ($results as $code => $value) {
+        // Each possible error and warning code has to be specified in this switch
+        // which basically analyses the results to return the correct backup status.
+        switch ($code) {
+            case 'missing_files_in_pool':
+                $outcome = 4;
                 break;
-            }
         }
-        return $outcome;
+        // If we found the highest error level, we exit the loop.
+        if ($outcome == 0) {
+            break;
+        }
     }
+    return $outcome;
+}
 
 
 /**

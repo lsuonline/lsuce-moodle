@@ -208,7 +208,7 @@ class migrator {
      */
     private function maybe_sync_courses_and_teachers(string $filepathfull, array $parsed): int {
         $pattern = (string) ($parsed['pattern'] ?? '');
-        if (!in_array($pattern, ['semester_legacy', 'semester_legacy_lc', 'backadel_modern'], true)) {
+        if (!in_array($pattern, ['semester_legacy', 'semester_legacy_lc', 'backadel_modern', 'backadel_instructor'], true)) {
             return 0;
         }
 
