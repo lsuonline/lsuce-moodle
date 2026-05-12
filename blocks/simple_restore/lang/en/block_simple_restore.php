@@ -94,3 +94,11 @@ $string['simple_restore:addinstance'] = 'Add Simple restore block to Site page';
 $string['async_title'] = 'Async Restore Settings';
 $string['async_toggle_title'] = 'Async Restore';
 $string['async_toggle_desc'] = 'Make course restores asyncronous.';
+
+// Admin navigation labels (used by the admin sidebar / externalpage display names).
+$string['nav_settings'] = 'Global settings';
+$string['nav_list']     = 'Restore Courses';
+
+// Tab strip labels (rendered by amd/src/admin-tabs-lazy.js across admin pages).
+$string['tab_settings'] = 'Global settings';
+$string['tab_list']     = 'Restore Courses';

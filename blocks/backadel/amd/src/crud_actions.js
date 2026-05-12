@@ -22,6 +22,7 @@
 import ModalForm from 'core_form/modalform';
 import * as Toast from 'core/toast';
 import {get_strings as getStrings} from 'core/str';
+import Notification from 'core/notification';
 
 const FORM_MAP = {
     queue: 'block_backadel\\form\\queue_backup_form',
@@ -59,41 +60,49 @@ const handleClick = async(e) => {
         return;
     }
 
-    const cfg = ACTION_STRINGS[action];
-    const keys = [{key: cfg.title, component: 'block_backadel'}];
-    if (cfg.btn) {
-        keys.push({key: cfg.btn, component: 'block_backadel'});
+    try {
+        const cfg = ACTION_STRINGS[action];
+        const keys = [{key: cfg.title, component: 'block_backadel'}];
+        if (cfg.btn) {
+            keys.push({key: cfg.btn, component: 'block_backadel'});
+        }
+        const strings = await getStrings(keys);
+        const title = strings[0];
+        const btnLabel = cfg.btn ? strings[1] : null;
+
+        const form = new ModalForm({
+            formClass: FORM_MAP[action],
+            args: {courseid},
+            modalConfig: {title},
+            returnFocus: trigger,
+        });
+
+        form.addEventListener(form.events.LOADED, () => {
+            form.modal.getModal().addClass('block_backadel-modal-dialog');
+            if (btnLabel) {
+                form.modal.setSaveButtonText(btnLabel);
+            }
+            if (action === 'delete') {
+                form.modal.getModal().addClass('border-danger');
+            }
+        });
+
+        form.addEventListener(form.events.FORM_SUBMITTED, async(ev) => {
+            const msg = ev.detail?.message ?? '';
+            if (msg !== '') {
+                await Toast.add(msg, {type: 'success'});
+            }
+            window.location.reload();
+        });
+
+        form.addEventListener(form.events.ERROR, (ev) => {
+            Notification.exception(ev.detail ?? new Error('Unknown modal form error'));
+        });
+
+        form.show();
+    } catch (err) {
+        Notification.exception(err);
     }
-    const strings = await getStrings(keys);
-    const title = strings[0];
-    const btnLabel = cfg.btn ? strings[1] : null;
-
-    const form = new ModalForm({
-        formClass: FORM_MAP[action],
-        args: {courseid},
-        modalConfig: {title},
-        returnFocus: trigger,
-    });
-
-    form.addEventListener(form.events.LOADED, () => {
-        form.modal.getModal().addClass('block_backadel-modal-dialog');
-        if (btnLabel) {
-            form.modal.setSaveButtonText(btnLabel);
-        }
-        if (action === 'delete') {
-            form.modal.getModal().addClass('border-danger');
-        }
-    });
-
-    form.addEventListener(form.events.FORM_SUBMITTED, async(ev) => {
-        const msg = ev.detail?.message ?? '';
-        if (msg !== '') {
-            await Toast.add(msg, {type: 'success'});
-        }
-        window.location.reload();
-    });
-
-    form.show();
 };
 
 /**

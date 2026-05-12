@@ -32,11 +32,6 @@ use stdClass;
  */
 class failed_table extends base_backadel_table {
 
-    /**
-     * Adds status, last modified, and row actions.
-     *
-     * @return void
-     */
     #[\Override]
     protected function define_base_columns(): void {
         parent::define_base_columns();
@@ -49,11 +44,6 @@ class failed_table extends base_backadel_table {
         $this->no_sorting('actions');
     }
 
-    /**
-     * Builds the query for failed backup rows.
-     *
-     * @return void
-     */
     #[\Override]
     protected function setup_sql(): void {
         global $PAGE;
@@ -72,12 +62,6 @@ class failed_table extends base_backadel_table {
         $this->set_sql($fields, $from, $where, $params);
     }
 
-    /**
-     * Placeholder control for Phase 2 re-queue modal wiring.
-     *
-     * @param stdClass $row
-     * @return string
-     */
     #[\Override]
     public function col_actions(stdClass $row): string {
         if ($this->is_downloading()) {

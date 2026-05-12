@@ -32,11 +32,6 @@ use stdClass;
  */
 class delete_table extends base_backadel_table {
 
-    /**
-     * Adds status, last modified, and row actions.
-     *
-     * @return void
-     */
     #[\Override]
     protected function define_base_columns(): void {
         parent::define_base_columns();
@@ -49,11 +44,6 @@ class delete_table extends base_backadel_table {
         $this->no_sorting('actions');
     }
 
-    /**
-     * Builds the query for successful backup rows awaiting deletion.
-     *
-     * @return void
-     */
     #[\Override]
     protected function setup_sql(): void {
         global $PAGE;
@@ -71,12 +61,6 @@ class delete_table extends base_backadel_table {
         $this->set_sql($fields, $from, $where, $params);
     }
 
-    /**
-     * Placeholder control for Phase 2 delete-archive modal wiring.
-     *
-     * @param stdClass $row
-     * @return string
-     */
     #[\Override]
     public function col_actions(stdClass $row): string {
         if ($this->is_downloading()) {

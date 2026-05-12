@@ -22,6 +22,7 @@ defined('MOODLE_INTERNAL') || die();
 
 use context_system;
 use core_form\dynamic_form;
+use html_writer;
 use moodle_url;
 
 /**

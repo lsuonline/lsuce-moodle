@@ -15,81 +15,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Definition of block_backadel tasks.
+ * Legacy bulk-queue POST handler — superseded by queue_backup_form.php (MD-2189). Use {@see search.php}.
  *
  * @package    block_backadel
- * @category   task
- * @copyright  2016 Louisiana State University - David Elliott, Robert Russo, Chad Mazilly
+ * @copyright  2016 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
-require_once('lib.php');
+require_once(__DIR__ . '/../../config.php');
 
 require_login();
 
-// Ensure only site admins can use the Backup and Delete system.
-if (!is_siteadmin($USER->id)) {
-    moodle_exception('need_permission', 'block_backadel');
-}
-
-// Page Setup.
-$blockname = get_string('pluginname', 'block_backadel');
-$header = get_string('job_sent', 'block_backadel');
-$context = context_system::instance();
-$PAGE->set_context($context);
-$PAGE->navbar->add($header);
-$PAGE->set_title($blockname);
-$PAGE->set_heading($SITE->shortname . ': ' . $blockname);
-$PAGE->set_url('/blocks/backadel/backup.php');
-
-// Begin outputting the page.
-echo $OUTPUT->header();
-echo html_writer::div(
-    html_writer::link(new moodle_url('/blocks/backadel/search.php'), get_string('course_search', 'block_backadel')),
-    'mb-3'
-);
-echo $OUTPUT->heading($header);
-
-// Set up the courses to back up.
-$backupids = required_param_array('backup', PARAM_INT);
-
-// Check for duplicates.
-$currentids = $DB->get_fieldset_select('block_backadel_statuses', 'coursesid', '');
-$dupes = array_intersect($currentids, $backupids);
-$dupes = !$dupes ? array() : $dupes;
-
-// Remove the duplicates.
-$newbackupids = array_diff($backupids, $dupes);
-
-// Insert the records into the DB for courses to back up.
-foreach ($newbackupids as $id) {
-    $status = new StdClass;
-    $status->coursesid = $id;
-    $status->status = 'BACKUP';
-    $DB->insert_record('block_backadel_statuses', $status);
-}
-
-// Let the admin know that the job has been sent and will be run.
-echo '<br />' . get_string('job_sent_body', 'block_backadel');
-
-// If the user is trying to backup duplicate courses....
-if ($dupes) {
-    echo '<div style = "text-align:center" class = "error">';
-    $select = 'coursesid IN(' . implode(', ', $dupes) . ')';
-    $statuses = $DB->get_records_select('block_backadel_statuses', $select);
-    $statusmap = array(
-        'SUCCESS' => get_string('already_successful', 'block_backadel'),
-        'BACKUP' => get_string('already_scheduled', 'block_backadel'),
-        'FAIL' => get_string('already_failed', 'block_backadel')
-    );
-
-    foreach ($statuses as $s) {
-        $params = array('id' => $s->coursesid);
-        $shortname = $DB->get_field('course', 'shortname', $params);
-        echo $shortname . ' ' . $statusmap[$s->status] . '<br />';
-    }
-    echo '</div>';
-}
-
-echo $OUTPUT->footer();
+redirect(new moodle_url('/blocks/backadel/search.php'));

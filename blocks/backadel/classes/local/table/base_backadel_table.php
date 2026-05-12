@@ -137,7 +137,7 @@ abstract class base_backadel_table extends table_sql {
         };
         if ($stringkey !== null) {
             $label = get_string($stringkey, 'block_backadel');
-        } elseif ($status !== '') {
+        } else if ($status !== '') {
             $label = format_string($status);
         } else {
             $label = get_string('none');
