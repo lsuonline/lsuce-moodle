@@ -53,6 +53,7 @@ $string['table_col_filesize'] = 'Size';
 $string['table_col_modified'] = 'Modified';
 $string['table_col_action'] = 'Action';
 $string['restore_action'] = 'Restore';
+$string['download_action'] = 'Download';
 
 $string['restore_success'] = 'The course was successfully restored.';
 $string['restore_confirm_title'] = 'Confirm Restore';

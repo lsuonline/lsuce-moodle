@@ -23,15 +23,13 @@
  */
 
 require(__DIR__ . '/../../config.php');
-require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->dirroot . '/blocks/backadel/lib.php');
 
 require_login();
 
-$context = context_system::instance();
-require_capability('block/backadel:managebackups', $context);
-
 $fileid = optional_param('fileid', 0, PARAM_INT);
+$courseid = optional_param('courseid', 0, PARAM_INT);
+
 if ($fileid <= 0) {
     throw new moodle_exception('invalidparameter', 'error');
 }
@@ -41,6 +39,29 @@ require_sesskey();
 $record = $DB->get_record('block_backadel_catalogue', ['id' => $fileid], '*', IGNORE_MISSING);
 if (!$record) {
     throw new moodle_exception('filenotfound');
+}
+
+// Authorization: site managers via managebackups (system context), OR
+// teachers with canrestore in the target course context when the catalogue
+// shortname matches the requested course shortname.
+$syscontext = context_system::instance();
+$ismanager = has_capability('block/backadel:managebackups', $syscontext);
+
+if (!$ismanager) {
+    // Teacher path: courseid param required; catalogue shortname must match course.
+    if ($courseid <= 0) {
+        require_capability('block/backadel:managebackups', $syscontext); // throws.
+    }
+    $coursecontext = context_course::instance($courseid, IGNORE_MISSING);
+    if (!$coursecontext) {
+        throw new moodle_exception('invalidcourseid', 'error');
+    }
+    require_capability('block/simple_restore:canrestore', $coursecontext);
+    // Verify the catalogue row actually belongs to this course (shortname match).
+    $course = $DB->get_record('course', ['id' => $courseid], 'shortname', MUST_EXIST);
+    if (strtolower((string) $record->shortname) !== strtolower((string) $course->shortname)) {
+        throw new moodle_exception('filenotfound');
+    }
 }
 
 if (strtolower((string) $record->status) !== 'available') {

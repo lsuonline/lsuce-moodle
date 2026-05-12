@@ -22,6 +22,7 @@ defined('MOODLE_INTERNAL') || die();
 
 use flexible_table;
 use html_writer;
+use moodle_url;
 use stdClass;
 
 /**
@@ -187,7 +188,23 @@ class restore_files_table extends flexible_table {
         if ($catalogueid > 0) {
             $attrs['data-catalogue-id'] = (string) $catalogueid;
         }
-        return html_writer::link('#', get_string('restore_action', 'block_simple_restore'), $attrs);
+        $restorelink = html_writer::link('#', get_string('restore_action', 'block_simple_restore'), $attrs);
+
+        if ($catalogueid > 0) {
+            $downloadurl = new moodle_url('/blocks/backadel/download.php', [
+                'fileid'   => $catalogueid,
+                'courseid' => $this->courseid,
+                'sesskey'  => sesskey(),
+            ]);
+            $downloadlink = html_writer::link(
+                $downloadurl,
+                get_string('download_action', 'block_simple_restore'),
+                ['class' => 'btn btn-sm btn-secondary ms-1']
+            );
+            return $restorelink . $downloadlink;
+        }
+
+        return $restorelink;
     }
 
     /**
