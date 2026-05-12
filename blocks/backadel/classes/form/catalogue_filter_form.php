@@ -88,6 +88,15 @@ class catalogue_filter_form extends moodleform {
         ]);
         $mform->setType('pattern', PARAM_ALPHAEXT);
 
+        $mform->addElement('select', 'coursetype', get_string('catalogue_filter_coursetype', 'block_backadel'), [
+            '' => get_string('any'),
+            'teaching' => get_string('coursetype_teaching', 'block_backadel'),
+            'blueprint' => get_string('coursetype_blueprint', 'block_backadel'),
+            'other' => get_string('coursetype_other', 'block_backadel'),
+            'undetermined' => get_string('catalogue_coursetype_undetermined', 'block_backadel'),
+        ]);
+        $mform->setType('coursetype', PARAM_ALPHA);
+
         $this->add_action_buttons(false, get_string('catalogue_filter_apply', 'block_backadel'));
 
         if (!empty($this->_customdata['filtersactive'])) {

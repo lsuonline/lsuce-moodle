@@ -40,13 +40,14 @@ class catalogue_table extends base_backadel_table {
 
     /**
      * @param string $uniqueid Stable id for this table (session URL params).
-     * @param array|null $filters Optional filter array with keys q, year, semester, status, source, pattern.
+     * @param array|null $filters Optional filter array with keys q, year, semester, status, source, pattern, coursetype.
      */
     public function __construct(string $uniqueid, ?array $filters = null) {
         $this->filters = $filters;
         parent::__construct($uniqueid);
         $this->sortable(true, 'backup_ts', SORT_DESC);
         $this->no_sorting('pattern');
+        $this->no_sorting('coursetype');
         $this->no_sorting('actions');
     }
 
@@ -55,6 +56,7 @@ class catalogue_table extends base_backadel_table {
         $this->define_columns([
             'filename',
             'shortname',
+            'coursetype',
             'semester',
             'dept',
             'course_num',
@@ -68,6 +70,7 @@ class catalogue_table extends base_backadel_table {
         $this->define_headers([
             get_string('table_col_filename', 'block_backadel'),
             get_string('table_col_fullname', 'block_backadel'),
+            get_string('catalogue_col_coursetype', 'block_backadel'),
             get_string('catalogue_col_semester', 'block_backadel'),
             get_string('catalogue_col_dept', 'block_backadel'),
             get_string('catalogue_col_course_num', 'block_backadel'),
@@ -87,6 +90,8 @@ class catalogue_table extends base_backadel_table {
         $fields = 'c.id, c.filename, c.shortname, c.semester, c.dept, c.course_num, '
             . 'c.source, c.backup_ts, c.file_size, c.status, c.pattern, c.year, '
             . 'c.instructors, c.filepath_full, '
+            . '(SELECT bc_ct.coursetype FROM {block_backadel_courses} bc_ct '
+            . 'WHERE bc_ct.filename = c.filename ORDER BY bc_ct.id DESC LIMIT 1) AS coursetype, '
             . '(SELECT bc.courseid FROM {block_backadel_courses} bc '
             . 'WHERE bc.filename = c.filename AND bc.courseid IS NOT NULL '
             . 'ORDER BY bc.id DESC LIMIT 1) AS catalogued_courseid, '
@@ -144,6 +149,38 @@ class catalogue_table extends base_backadel_table {
         $name = (string) ($row->shortname ?? '');
         $display = $name !== '' ? $name : '—';
         return format_string($display);
+    }
+
+    /**
+     * Latest warm-path course type for this catalogue filename (from {@see block_backadel_courses}).
+     *
+     * @param stdClass $row
+     * @return string
+     */
+    public function col_coursetype(stdClass $row): string {
+        $type = strtolower((string) ($row->coursetype ?? ''));
+        if ($type === '') {
+            if ($this->is_downloading()) {
+                return get_string('catalogue_coursetype_undetermined', 'block_backadel');
+            }
+            return html_writer::tag('span', '—', ['class' => 'text-muted']);
+        }
+        $label = match ($type) {
+            'teaching' => get_string('coursetype_teaching', 'block_backadel'),
+            'blueprint' => get_string('coursetype_blueprint', 'block_backadel'),
+            'other' => get_string('coursetype_other', 'block_backadel'),
+            default => format_string($type),
+        };
+        if ($this->is_downloading()) {
+            return $label;
+        }
+        $badgeclass = match ($type) {
+            'blueprint' => 'badge bg-info text-white',
+            'teaching' => 'badge bg-secondary text-white',
+            'other' => 'badge bg-light text-dark border',
+            default => 'badge bg-secondary text-white',
+        };
+        return html_writer::tag('span', $label, ['class' => $badgeclass]);
     }
 
     /**

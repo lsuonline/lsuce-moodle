@@ -197,7 +197,8 @@ function backadel_search_to_where(array $filters): array {
  * Build a safe WHERE fragment and parameters for the Backadel catalogue page filters.
  *
  * @param array $filters Keys: optional string q; optional int year (0 = all years); optional strings semester,
- *     status ('' any, 'none' => IS NULL, or available|missing|archived), source, pattern.
+ *     status ('' any, 'none' => IS NULL, or available|missing|archived), source, pattern,
+ *     coursetype ('' any; else teaching|blueprint|other|undetermined — undetermined means no matching courses row).
  * @return array{0: string, 1: array} SQL WHERE body (no WHERE keyword) and bound parameters.
  */
 function backadel_catalogue_to_where(array $filters): array {
@@ -209,6 +210,7 @@ function backadel_catalogue_to_where(array $filters): array {
     $status = isset($filters['status']) ? (string) $filters['status'] : '';
     $source = isset($filters['source']) ? (string) $filters['source'] : '';
     $pattern = isset($filters['pattern']) ? (string) $filters['pattern'] : '';
+    $coursetype = isset($filters['coursetype']) ? (string) $filters['coursetype'] : '';
 
     $clauses = [];
     $params = [];
@@ -275,6 +277,16 @@ function backadel_catalogue_to_where(array $filters): array {
         $pk = 'bcp' . $pidx++;
         $clauses[] = 'c.pattern = :' . $pk;
         $params[$pk] = $pattern;
+    }
+
+    $bccoursetypesub = '(SELECT bc_ct.coursetype FROM {block_backadel_courses} bc_ct '
+        . 'WHERE bc_ct.filename = c.filename ORDER BY bc_ct.id DESC LIMIT 1)';
+    if ($coursetype === 'undetermined') {
+        $clauses[] = $bccoursetypesub . ' IS NULL';
+    } else if (in_array($coursetype, ['teaching', 'blueprint', 'other'], true)) {
+        $pk = 'bcct' . $pidx++;
+        $clauses[] = $bccoursetypesub . ' = :' . $pk;
+        $params[$pk] = $coursetype;
     }
 
     if ($clauses === []) {
