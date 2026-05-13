@@ -3,14 +3,75 @@
  *
  * Moodle 4.5 / Snap does not expose Bootstrap 5's Offcanvas class globally,
  * so data-bs-toggle="offcanvas" does nothing out of the box.  This module
- * wires up the open/close behaviour manually by toggling the `.show` class
- * and the `aria-modal` / body-scroll-lock attributes that Bootstrap 5 would
- * normally manage.
+ * wires up the open/close behaviour manually AND injects the positioning CSS
+ * that Bootstrap 5 would normally provide via its stylesheet (which Snap
+ * does not include on standalone admin pages).
  *
  * @module     block_backadel/filter_panel
  * @copyright  2026 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+/** Inject Bootstrap-5-compatible offcanvas CSS that Snap omits on admin pages. */
+const injectStyles = () => {
+    if (document.getElementById('block-backadel-offcanvas-css')) {
+        return; // Already injected.
+    }
+    const style = document.createElement('style');
+    style.id = 'block-backadel-offcanvas-css';
+    style.textContent = `
+/* block_backadel: offcanvas positioning — Snap does not ship Bootstrap 5 offcanvas CSS */
+.offcanvas {
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(400px, 90vw);
+    z-index: 1055;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+    border-left: 1px solid rgba(0,0,0,.175);
+    transform: translateX(100%);
+    transition: transform .3s ease-in-out;
+    visibility: hidden;
+    overflow-y: auto;
+    pointer-events: none;
+}
+.offcanvas.show {
+    transform: none !important;
+    visibility: visible !important;
+    pointer-events: auto;
+}
+.offcanvas-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    flex-shrink: 0;
+}
+.offcanvas-title {
+    margin-bottom: 0;
+    line-height: 1.5;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+.offcanvas-body {
+    flex-grow: 1;
+    padding: 1rem;
+    overflow-y: auto;
+}
+/* Dim backdrop when an offcanvas is open */
+body.offcanvas-open::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 1054;
+}
+`;
+    document.head.appendChild(style);
+};
 
 /**
  * Open an offcanvas panel.
@@ -24,7 +85,7 @@ const openOffcanvas = (offcanvasEl) => {
     offcanvasEl.removeAttribute('aria-hidden');
     document.body.classList.add('offcanvas-open');
 
-    // Trap focus in offcanvas — focus first focusable child.
+    // Focus first focusable child.
     const focusable = offcanvasEl.querySelector(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
@@ -50,6 +111,8 @@ const closeOffcanvas = (offcanvasEl) => {
  * Initialise all offcanvas trigger buttons on the page.
  */
 export const init = () => {
+    injectStyles();
+
     // Handle trigger buttons (data-bs-toggle="offcanvas").
     document.addEventListener('click', (e) => {
         const trigger = e.target.closest('[data-bs-toggle="offcanvas"]');
@@ -92,7 +155,7 @@ export const init = () => {
         document.querySelectorAll('.offcanvas.show').forEach(closeOffcanvas);
     });
 
-    // Close when clicking the backdrop (outside the offcanvas).
+    // Close when clicking the backdrop (body::before pseudo-element area).
     document.addEventListener('click', (e) => {
         if (e.target.closest('.offcanvas')) {
             return;
