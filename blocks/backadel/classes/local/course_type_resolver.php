@@ -64,6 +64,14 @@ class course_type_resolver {
             return 'teaching';
         }
 
+        if ($pattern === 'backadel_instructor') {
+            // backadel_instructor archives are produced by the named-instructor backup task and
+            // always encode dept + year + semester + course_num for a real teaching course.
+            // No additional signal (instructor count, blueprint scan) is required — by construction
+            // these are teaching files. See bug-027-backadel-instructor-coursetype-missing.md.
+            return 'teaching';
+        }
+
         if ($pattern === 'backadel_modern') {
             $instructors = $parsed['instructors'] ?? [];
             if (is_array($instructors) && count($instructors) > 0) {

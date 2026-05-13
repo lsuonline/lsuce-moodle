@@ -210,6 +210,11 @@ function block_backadel_sim_resolve(array $parsed): string {
         return 'teaching';
     }
 
+    if ($pattern === 'backadel_instructor') {
+        // backadel_instructor archives always encode a real teaching course; see bug-027.
+        return 'teaching';
+    }
+
     if ($pattern === 'backadel_modern') {
         $instructors = $parsed['instructors'] ?? [];
         if (is_array($instructors) && count($instructors) > 0) {

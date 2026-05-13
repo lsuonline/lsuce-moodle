@@ -59,11 +59,11 @@ final class filename_pattern_library {
      * Captures year, semester, dept, course_num, and email-style instructor tokens.
      */
     public const PATTERN_BACKADEL_INSTRUCTOR =
-        '/^backadel-(?P<year>\d{4})-(?P<semester>Spring|Summer|Fall|Winter|SecondFall|SecondSummer)' .
-        '-(?P<dept>[A-Z]{2,8})-(?P<course_num>\d{3,5})' .
+        '/^backadel-+(?P<year>\d{4})-(?P<semester>Spring|Summer|Fall|Winter|SecondFall|SecondSummer)' .
+        '-(?P<dept>[A-Z]{2,8})(?:-\((?P<section>[A-Za-z])\))?-(?P<course_num>\d{3,5})' .
         '(?:-Course-\d+)?' .
         '-for-[A-Za-z]+(?:-[A-Za-z]+)+' .
-        '(?P<instructors>(?:_[a-z][a-z0-9._-]*@[a-z0-9._-]+)+)' .
+        '(?P<instructors>(?:_[a-z][a-z0-9._-]*(?:@[a-z0-9._-]+)?)*)' .
         '\.(?P<ext>zip|mbz)$/i';
 
     /** @var string Current or historical Backadel-generated archives. */
@@ -336,14 +336,27 @@ final class filename_pattern_library {
         $coursenum = $m['course_num'];
         $shortnamehint = $dept !== '' && $coursenum !== '' ? $dept . '-' . $coursenum : null;
 
-        // Extract email-style instructor tokens: "_user@domain" repeated group.
+        // Extract instructor tokens from the trailing "_user[@domain][_user2[@domain2]]" group.
+        // Accepts both email-style ("_user@domain") and bare-username ("_gb") tokens; the relaxed
+        // PATTERN_BACKADEL_INSTRUCTOR (see bug-028) may emit either form.
         $instructors = [];
         $tail = ltrim($m['instructors'] ?? '', '_');
-        foreach (explode('_', $tail) as $token) {
-            $token = trim($token);
-            if ($token !== '' && strpos($token, '@') !== false) {
-                // Store just the local part (username) for consistency with other patterns.
-                $instructors[] = explode('@', $token)[0];
+        if ($tail !== '') {
+            foreach (explode('_', $tail) as $token) {
+                $token = trim($token);
+                if ($token === '') {
+                    continue;
+                }
+                if (strpos($token, '@') !== false) {
+                    // Email form: keep only the local part for consistency with other patterns.
+                    $local = explode('@', $token)[0];
+                    if ($local !== '') {
+                        $instructors[] = $local;
+                    }
+                    continue;
+                }
+                // Bare-username form: store as-is (lowercased).
+                $instructors[] = strtolower($token);
             }
         }
 
