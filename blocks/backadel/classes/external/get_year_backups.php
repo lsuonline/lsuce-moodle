@@ -28,6 +28,7 @@ namespace block_backadel\external;
 
 defined('MOODLE_INTERNAL') || die();
 
+use block_backadel\local\catalogue_allowlists;
 use context_system;
 use core_external\external_api;
 use core_external\external_function_parameters;
@@ -96,6 +97,10 @@ class get_year_backups extends external_api {
         $context = context_system::instance();
         self::validate_context($context);
         require_capability('block/backadel:viewresults', $context);
+
+        if ($params['source'] !== '' && !in_array($params['source'], catalogue_allowlists::VALID_SOURCES, true)) {
+            throw new \invalid_parameter_exception('Invalid source value');
+        }
 
         $sql = 'SELECT id, filename, shortname, semester, dept, course_num, source, backup_ts, file_size, status, pattern
                   FROM {block_backadel_catalogue}

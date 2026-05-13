@@ -75,6 +75,7 @@ class get_help_content extends external_api {
         $params = self::validate_parameters(self::execute_parameters(), ['topic' => $topic]);
         $context = context_system::instance();
         self::validate_context($context);
+        require_capability('block/backadel:viewresults', $context);
         require_login();
 
         if (!in_array($params['topic'], self::VALID_TOPICS, true)) {
