@@ -354,7 +354,9 @@ $displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $d
                     $restoreto
                 );
                 $table->populate($bucket, 'catalogue');
+                echo html_writer::start_div('table-responsive');
                 $table->setup_and_out(30);
+                echo html_writer::end_div();
             }
         } else {
             $table = new \block_simple_restore\local\table\restore_files_table(
@@ -364,7 +366,9 @@ $displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $d
                 $restoreto
             );
             $table->populate($list->backups, $source);  // pass source so catalogue rows get catalogue_id.
+            echo html_writer::start_div('table-responsive');
             $table->setup_and_out(30);
+            echo html_writer::end_div();
         }
         return true;
     }

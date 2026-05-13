@@ -58,16 +58,30 @@ class restore_files_table extends flexible_table {
         $this->shortname = $shortname;
         $this->restoreto = $restoreto;
 
-        $this->define_columns(['filename', 'filesize', 'modified', 'action']);
+        $this->define_columns([
+            'year', 'semester', 'dept', 'filename',
+            'coursetype', 'status',
+            'filesize', 'modified', 'action',
+        ]);
         $this->define_headers([
-            get_string('table_col_filename', 'block_simple_restore'),
-            get_string('table_col_filesize', 'block_simple_restore'),
-            get_string('table_col_modified', 'block_simple_restore'),
-            get_string('table_col_action', 'block_simple_restore'),
+            get_string('table_col_year',       'block_simple_restore'),
+            get_string('table_col_semester',   'block_simple_restore'),
+            get_string('table_col_dept',       'block_simple_restore'),
+            get_string('table_col_filename',   'block_simple_restore'),
+            get_string('table_col_coursetype', 'block_simple_restore'),
+            get_string('table_col_status',     'block_simple_restore'),
+            get_string('table_col_filesize',   'block_simple_restore'),
+            get_string('table_col_modified',   'block_simple_restore'),
+            get_string('table_col_action',     'block_simple_restore'),
         ]);
         $this->sortable(false);
         $this->collapsible(false);
-        $this->set_attribute('class', 'generaltable');
+        $this->set_attribute('class', 'generaltable table-sm w-100');
+        // Hide lower-priority columns on small screens.
+        $this->column_class('year',     'd-none d-sm-table-cell');
+        $this->column_class('dept',     'd-none d-md-table-cell');
+        $this->column_class('filesize', 'd-none d-lg-table-cell');
+        $this->column_class('modified', 'd-none d-lg-table-cell');
     }
 
     /**
@@ -84,11 +98,18 @@ class restore_files_table extends flexible_table {
         foreach ($files as $file) {
             $row = is_array($file) ? (object) $file : $file;
             $normalized = new stdClass();
-            $normalized->filename = (string) ($row->filename ?? '');
-            $normalized->filepath = (string) ($row->filepath ?? $normalized->filename);
-            $normalized->size = $row->size ?? null;
-            $normalized->filesize = $row->filesize ?? null;
-            $normalized->modified = (int) ($row->modified ?? $row->timemodified ?? 0);
+            $normalized->filename   = (string) ($row->filename ?? '');
+            $normalized->filepath   = (string) ($row->filepath ?? $normalized->filename);
+            $normalized->size       = $row->size ?? null;
+            $normalized->filesize   = $row->filesize ?? null;
+            $normalized->modified   = (int) ($row->modified ?? $row->timemodified ?? 0);
+            // Catalogue metadata (empty string for semester_backadel rows — renders as em-dash).
+            $normalized->year       = (string) ($row->year ?? '');
+            $normalized->semester   = (string) ($row->semester ?? '');
+            $normalized->dept       = (string) ($row->dept ?? '');
+            $normalized->coursetype = (string) ($row->coursetype ?? '');
+            $normalized->status     = (string) ($row->status ?? '');
+            $normalized->pattern    = (string) ($row->pattern ?? '');
             // For catalogue rows the integer row ID is passed as $row->id.
             $rawid = $row->id ?? 0;
             $normalized->catalogue_id = ($source === 'catalogue' && is_int($rawid) && $rawid > 0)
@@ -151,6 +172,78 @@ class restore_files_table extends flexible_table {
      */
     public function col_filename(stdClass $row): string {
         return s($row->filename ?? '');
+    }
+
+    /**
+     * @param stdClass $row
+     * @return string Academic year (e.g. 2022) or em-dash for non-catalogue rows.
+     */
+    public function col_year(stdClass $row): string {
+        $v = (string) ($row->year ?? '');
+        return $v !== '' ? s($v) : html_writer::tag('span', '—', ['class' => 'text-muted']);
+    }
+
+    /**
+     * @param stdClass $row
+     * @return string Semester name or em-dash for non-catalogue rows.
+     */
+    public function col_semester(stdClass $row): string {
+        $v = (string) ($row->semester ?? '');
+        return $v !== '' ? format_string($v) : html_writer::tag('span', '—', ['class' => 'text-muted']);
+    }
+
+    /**
+     * @param stdClass $row
+     * @return string Department code or em-dash for non-catalogue rows.
+     */
+    public function col_dept(stdClass $row): string {
+        $v = (string) ($row->dept ?? '');
+        return $v !== '' ? format_string($v) : html_writer::tag('span', '—', ['class' => 'text-muted']);
+    }
+
+    /**
+     * @param stdClass $row
+     * @return string Bootstrap badge for course type, or em-dash if unknown.
+     */
+    public function col_coursetype(stdClass $row): string {
+        $type = strtolower((string) ($row->coursetype ?? ''));
+        if ($type === '') {
+            return html_writer::tag('span', '—', ['class' => 'text-muted']);
+        }
+        $label = match ($type) {
+            'teaching'  => get_string('coursetype_teaching',  'block_backadel'),
+            'blueprint' => get_string('coursetype_blueprint', 'block_backadel'),
+            'other'     => get_string('coursetype_other',     'block_backadel'),
+            default     => format_string($type),
+        };
+        $badge = match ($type) {
+            'blueprint' => 'badge bg-info text-white',
+            'teaching'  => 'badge bg-secondary text-white',
+            'other'     => 'badge bg-light text-dark border',
+            default     => 'badge bg-secondary text-white',
+        };
+        return html_writer::tag('span', $label, ['class' => $badge]);
+    }
+
+    /**
+     * @param stdClass $row
+     * @return string Bootstrap badge for backup status, or em-dash if absent.
+     */
+    public function col_status(stdClass $row): string {
+        $status = strtolower((string) ($row->status ?? ''));
+        if ($status === '') {
+            return html_writer::tag('span', '—', ['class' => 'text-muted']);
+        }
+        [$badge, $key] = match ($status) {
+            'available' => ['badge bg-success text-white',   'status_available'],
+            'missing'   => ['badge bg-warning text-dark',    'status_missing'],
+            'archived'  => ['badge bg-secondary text-white', 'status_archived'],
+            default     => ['badge bg-secondary text-white', null],
+        };
+        $label = $key !== null
+            ? get_string($key, 'block_simple_restore')
+            : format_string($status);
+        return html_writer::tag('span', $label, ['class' => $badge]);
     }
 
     /**

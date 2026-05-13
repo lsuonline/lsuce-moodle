@@ -60,12 +60,20 @@ $string['filter_status_available'] = 'Available only';
 $string['filter_status_all'] = 'All (including unavailable)';
 $string['filter_clear'] = 'Clear filters';
 
-$string['table_col_filename'] = 'Filename';
-$string['table_col_filesize'] = 'Size';
-$string['table_col_modified'] = 'Modified';
-$string['table_col_action'] = 'Action';
-$string['restore_action'] = 'Restore';
-$string['download_action'] = 'Download';
+$string['table_col_year']      = 'Year';
+$string['table_col_semester']  = 'Semester';
+$string['table_col_dept']      = 'Dept';
+$string['table_col_coursetype'] = 'Course type';
+$string['table_col_status']    = 'Status';
+$string['table_col_filename']  = 'Filename';
+$string['table_col_filesize']  = 'Size';
+$string['table_col_modified']  = 'Modified';
+$string['table_col_action']    = 'Action';
+$string['restore_action']      = 'Restore';
+$string['download_action']     = 'Download';
+$string['status_available']    = 'Available';
+$string['status_missing']      = 'Missing';
+$string['status_archived']     = 'Archived';
 
 $string['restore_success'] = 'The course was successfully restored.';
 $string['restore_confirm_title'] = 'Confirm Restore';

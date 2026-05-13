@@ -250,7 +250,7 @@ abstract class simple_restore_utils {
         $wheresql = implode(' AND ', $where);
 
         $sql = "SELECT cat.id, cat.filename, cat.file_size, cat.backup_ts, cat.year,
-                       cat.semester, cat.dept, cat.course_num, cat.pattern,
+                       cat.semester, cat.dept, cat.course_num, cat.pattern, cat.status,
                        COALESCE({$ctsub}, 'other') AS coursetype
                   FROM {block_backadel_catalogue} cat
                  WHERE {$wheresql}
@@ -270,6 +270,11 @@ abstract class simple_restore_utils {
                 'filesize'     => (int) ($row->file_size ?? 0),
                 'timemodified' => (int) ($row->backup_ts ?? 0),
                 'year'         => (string) ($row->year ?? date('Y', (int) ($row->backup_ts ?? 0))),
+                'semester'     => (string) ($row->semester ?? ''),
+                'dept'         => (string) ($row->dept ?? ''),
+                'course_num'   => (string) ($row->course_num ?? ''),
+                'pattern'      => (string) ($row->pattern ?? ''),
+                'status'       => (string) ($row->status ?? 'available'),
                 'coursetype'   => (string) ($row->coursetype ?? 'other'),
             ];
         }, $rows ?: []));
