@@ -17,29 +17,39 @@
 {{!
     @template block_backadel/local/filter_panel
 
-    Bootstrap 5 collapsible card containing injected filter form markup.
+    Right-side offcanvas filter drawer triggered by a pill button aligned to the
+    top-right of the content area. The button is solid (btn-primary) when one or
+    more filters are active, and outlined (btn-outline-primary) otherwise.
 
     Context variables:
-    * collapseid - string, HTML id for the collapse element
-    * title - toggle label
-    * activecount - int (optional badge when > 0)
-    * formhtml - raw form markup
-    * expanded - bool, initial open state
+    * collapseid  - string, HTML id for the offcanvas element (no leading #)
+    * title       - string, label shown on the trigger button and drawer header
+    * activecount - int, number of active filters (0 = outlined button, no badge)
+    * formhtml    - raw trusted server-rendered moodleform HTML
 }}
-<div class="card mb-3 block_backadel_filter_panel">
-    <div class="card-header p-0 bg-body">
-        <button class="btn btn-outline-secondary w-100 text-start rounded-0"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#{{collapseid}}"
-                aria-expanded="{{#expanded}}true{{/expanded}}{{^expanded}}false{{/expanded}}"
-                aria-controls="{{collapseid}}">
-            <span class="fw-semibold">{{title}}{{#activecount}}<span class="badge bg-primary ms-2">{{activecount}}</span>{{/activecount}}</span>
-        </button>
+<div class="d-flex justify-content-end mb-3 block_backadel_filter_panel">
+    <button class="btn {{#activecount}}btn-primary{{/activecount}}{{^activecount}}btn-outline-primary{{/activecount}} d-flex align-items-center gap-2"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#{{collapseid}}"
+            aria-controls="{{collapseid}}">
+        {{#pix}}i/filter, core, {{title}}{{/pix}}
+        <span>{{title}}{{#activecount}} ({{activecount}}){{/activecount}}</span>
+    </button>
+</div>
+
+<div class="offcanvas offcanvas-end"
+     tabindex="-1"
+     id="{{collapseid}}"
+     aria-labelledby="{{collapseid}}-label">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title" id="{{collapseid}}-label">{{title}}</h5>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="offcanvas"
+                aria-label="{{#str}}closebuttontitle, core{{/str}}"></button>
     </div>
-    <div id="{{collapseid}}" class="collapse{{#expanded}} show{{/expanded}}">
-        <div class="card-body">
-            {{{formhtml}}}
-        </div>
+    <div class="offcanvas-body">
+        {{{formhtml}}}
     </div>
 </div>

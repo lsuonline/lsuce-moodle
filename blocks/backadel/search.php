@@ -119,6 +119,7 @@ $table->define_baseurl(new moodle_url('/blocks/backadel/search.php', $urlargs));
 $table->is_downloading($download, 'backadel-search');
 
 $PAGE->requires->js_call_amd('block_backadel/help', 'init');
+$PAGE->requires->js_call_amd('block_backadel/filter_panel', 'init');
 $PAGE->requires->js_call_amd('block_backadel/crud_actions', 'init');
 
 $renderer = $PAGE->get_renderer('block_backadel');

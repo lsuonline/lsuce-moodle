@@ -25,7 +25,7 @@ use renderable;
 use templatable;
 
 /**
- * Collapsible filter panel wrapping arbitrary form HTML.
+ * Right-side offcanvas filter drawer wrapping arbitrary form HTML.
  *
  * @package    block_backadel
  * @copyright  2026 Louisiana State University
@@ -34,24 +34,25 @@ use templatable;
 class filter_panel implements renderable, templatable {
 
     /**
-     * @param string $collapseid HTML id for the collapse region (no leading #).
+     * @param string $collapseid HTML id for the offcanvas element (no leading #).
+     * @param string $title      Label shown on the trigger button and drawer header.
+     * @param int    $activecount Number of active filters (0 = outlined button).
+     * @param string $formhtml   Trusted server-rendered moodleform HTML.
      */
     public function __construct(
         private string $collapseid,
         private string $title,
         private int $activecount,
         private string $formhtml,
-        private bool $expanded = false,
     ) {
     }
 
     public function export_for_template(renderer_base $output): array {
         return [
-            'collapseid' => $this->collapseid,
-            'title' => $this->title,
+            'collapseid'  => $this->collapseid,
+            'title'       => $this->title,
             'activecount' => $this->activecount,
-            'formhtml' => $this->formhtml,
-            'expanded' => $this->expanded || $this->activecount > 0,
+            'formhtml'    => $this->formhtml,
         ];
     }
 }

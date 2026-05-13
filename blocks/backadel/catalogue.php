@@ -203,6 +203,7 @@ $table->is_downloading($download, 'backadel-catalogue');
 
 if (!$table->is_downloading()) {
     $PAGE->requires->js_call_amd('block_backadel/help', 'init');
+    $PAGE->requires->js_call_amd('block_backadel/filter_panel', 'init');
     $PAGE->requires->js_call_amd('block_backadel/instructors_modal', 'init', [[
         'modalTitle'  => get_string('catalogue_instructors_modal_title', 'block_backadel'),
         'colUsername' => get_string('catalogue_instructors_col_username', 'block_backadel'),

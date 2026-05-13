@@ -37,7 +37,7 @@ class results_table extends base_backadel_table {
 
     /**
      * @param string $uniqueid Stable id for this table (session URL params).
-     * @param array|null $filters Optional filter array with keys q, category, status.
+     * @param array|null $filters Optional filter array with keys q, category, status, coursetype, semester.
      */
     public function __construct(string $uniqueid, ?array $filters = null) {
         $this->filters = $filters;
