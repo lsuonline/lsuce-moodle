@@ -185,30 +185,5 @@ $ADMIN->add('block_simple_restore_category', new admin_externalpage(
     'block/backadel:viewresults'
 ));
 
-// Cross-page tab strip — must run outside fulltree so it fires on
-// admin_externalpage requests (list.php in admin mode) too.
-if (!CLI_SCRIPT) {
-    $links = [
-        (new moodle_url('/admin/settings.php', ['section' => 'blocksettingsimple_restore']))->out(false),
-        (new moodle_url('/blocks/backadel/catalogue.php'))->out(false),
-    ];
-
-    $strings = [
-        get_string('tab_settings', $pluginname),
-        get_string('tab_list', $pluginname),
-    ];
-
-    $validplaces = [
-        '#page-admin-setting-blocksettingsimple_restore',
-        '#page-admin-blocks-backadel-catalogue, #page-admin-blocks-simple_restore-list',
-    ];
-
-    $PAGE->requires->js_call_amd("{$pluginname}/admin-tabs-lazy", 'init', [
-        $links,
-        $strings,
-        $validplaces,
-    ]);
-}
-
 // Prevent the block manager from double-registering $settings under 'blocksettings'.
 $settings = null;
