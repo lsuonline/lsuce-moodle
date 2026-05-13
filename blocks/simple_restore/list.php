@@ -273,7 +273,7 @@ foreach ($data->lists as $lst) {
         break;
     }
 }
-if ($hascatalogue) {
+if ($hascatalogue || $srActiveFilterCount > 0) {
     $cf = $data->catalogue_filters ?? [];
     $filtersactive =
         (($cf['q'] ?? '') !== '') ||
