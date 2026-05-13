@@ -73,6 +73,11 @@ class results_table extends base_backadel_table {
             . 'JOIN {course_categories} cat ON cat.id = co.category';
 
         $this->set_sql($fields, $from, $where, $params);
+        $this->set_count_sql(
+            'SELECT COUNT(1) FROM {course} co '
+                . 'JOIN {course_categories} cat ON cat.id = co.category WHERE ' . $where,
+            $params
+        );
     }
 
     #[\Override]
