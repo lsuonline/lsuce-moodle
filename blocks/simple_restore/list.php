@@ -220,6 +220,27 @@ if (empty($shortname) and $isadmin) {
     die;
 }
 
+// Count active catalogue filters for the pill-button badge.
+$srActiveFilterCount = 0;
+if ($listfltq !== '') {
+    $srActiveFilterCount++;
+}
+if ($listfltyear > 0) {
+    $srActiveFilterCount++;
+}
+if ($listfltsem !== '') {
+    $srActiveFilterCount++;
+}
+if ($listfltcourse !== '') {
+    $srActiveFilterCount++;
+}
+if ($listfltstatus !== '' && $listfltstatus !== 'available') {
+    $srActiveFilterCount++;
+}
+
+$PAGE->requires->js_call_amd('block_backadel/filter_panel', 'init');
+$PAGE->requires->js_call_amd('block_backadel/help', 'init');
+
 echo $OUTPUT->header();
 
 $data = new stdClass;
@@ -280,7 +301,30 @@ if ($hascatalogue) {
         'id' => $courseid,
         'restore_to' => $restoreto,
     ]);
+
+    // Help button.
+    echo html_writer::div(
+        html_writer::tag('button', '?', [
+            'type' => 'button',
+            'class' => 'btn btn-sm btn-outline-secondary float-end mb-2',
+            'data-action' => 'show-help',
+            'data-help-topic' => 'simple_restore_list',
+            'data-help-title' => get_string('pluginname', 'block_simple_restore'),
+            'aria-label' => get_string('help_button_label', 'block_backadel'),
+        ]),
+        'position-relative'
+    );
+
+    // Offcanvas filter panel (reuses block_backadel components).
+    ob_start();
     $filterform->display();
+    $srFormHtml = ob_get_clean();
+    echo $OUTPUT->render_from_template('block_backadel/local/filter_panel', [
+        'collapseid'  => 'sr-list-filters',
+        'title'       => get_string('filter_panel_toggle', 'block_backadel'),
+        'activecount' => $srActiveFilterCount,
+        'formhtml'    => $srFormHtml,
+    ]);
 }
 
 $displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $data, $restoreto) {

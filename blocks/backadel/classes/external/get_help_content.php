@@ -48,6 +48,7 @@ class get_help_content extends external_api {
         'delete',
         'migrate',
         'restore',
+        'simple_restore_list',
     ];
 
     /**
