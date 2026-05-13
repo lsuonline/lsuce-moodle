@@ -93,34 +93,22 @@ if ($semester !== '' && !array_key_exists($semester, $semesteroptions)) {
     $semester = '';
 }
 
-$sourcesvalid = ['', 'backadel_current', 'legacy_moodleus', 'legacy_openlms'];
+$sourcesvalid = array_merge([''], \block_backadel\local\catalogue_allowlists::VALID_SOURCES);
 if (!in_array($source, $sourcesvalid, true)) {
     $source = '';
 }
 
-$patternsvalid = [
-    '',
-    'semester_legacy',
-    'semester_legacy_lc',
-    'semester_legacy_clone',
-    'storage_course',
-    'storagecourse_dept',
-    'storage_legacy',
-    'backadel_modern',
-    'backadel_instructor',
-    'moodle_native',
-    'unknown',
-];
+$patternsvalid = array_merge([''], \block_backadel\local\catalogue_allowlists::VALID_PATTERNS);
 if (!in_array($pattern, $patternsvalid, true)) {
     $pattern = '';
 }
 
-$coursetypevalid = ['', 'teaching', 'blueprint', 'other', 'undetermined'];
+$coursetypevalid = array_merge([''], \block_backadel\local\catalogue_allowlists::VALID_COURSETYPES);
 if (!in_array($coursetype, $coursetypevalid, true)) {
     $coursetype = '';
 }
 
-$statusvalid = ['', 'none', 'available', 'missing', 'archived'];
+$statusvalid = array_merge([''], \block_backadel\local\catalogue_allowlists::VALID_STATUSES);
 if (!in_array($status, $statusvalid, true)) {
     $status = '';
 }

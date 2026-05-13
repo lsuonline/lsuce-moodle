@@ -92,8 +92,7 @@ class catalogue_table extends base_backadel_table {
             . 'c.instructors, c.filepath_full, '
             . 'c.coursetype_override, c.coursetype_override_note, '
             . 'c.coursetype_override_by, c.coursetype_override_ts, '
-            . 'COALESCE(c.coursetype_override, (SELECT bc_ct.coursetype FROM {block_backadel_courses} bc_ct '
-            . 'WHERE bc_ct.filename = c.filename ORDER BY bc_ct.id DESC LIMIT 1)) AS coursetype, '
+            . \block_backadel\local\sql_helpers::effective_coursetype_sql('c') . ' AS coursetype, '
             . '(SELECT bc.courseid FROM {block_backadel_courses} bc '
             . 'WHERE bc.filename = c.filename AND bc.courseid IS NOT NULL '
             . 'ORDER BY bc.id DESC LIMIT 1) AS catalogued_courseid, '
@@ -140,9 +139,9 @@ class catalogue_table extends base_backadel_table {
         }
         $display = core_text::substr($filename, 0, 22) . '…' . core_text::substr($filename, -20);
         return html_writer::tag('span', format_string($display), [
-            'title'          => $filename,
-            'data-toggle'    => 'tooltip',
-            'data-placement' => 'top',
+            'title'             => $filename,
+            'data-bs-toggle'    => 'tooltip',
+            'data-bs-placement' => 'top',
         ]);
     }
 

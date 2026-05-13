@@ -281,36 +281,23 @@ function backadel_catalogue_to_where(array $filters): array {
         }
     }
 
-    if ($source !== '' && in_array($source, ['backadel_current', 'legacy_moodleus', 'legacy_openlms'], true)) {
+    if ($source !== '' && in_array($source, \block_backadel\local\catalogue_allowlists::VALID_SOURCES, true)) {
         $pk = 'bcsrc' . $pidx++;
         $clauses[] = 'c.source = :' . $pk;
         $params[$pk] = $source;
     }
 
-    $validpatterns = [
-        'semester_legacy',
-        'semester_legacy_lc',
-        'semester_legacy_clone',
-        'storage_course',
-        'storagecourse_dept',
-        'storage_legacy',
-        'backadel_modern',
-        'backadel_instructor',
-        'moodle_native',
-        'unknown',
-    ];
-    if ($pattern !== '' && in_array($pattern, $validpatterns, true)) {
+    if ($pattern !== '' && in_array($pattern, \block_backadel\local\catalogue_allowlists::VALID_PATTERNS, true)) {
         $pk = 'bcp' . $pidx++;
         $clauses[] = 'c.pattern = :' . $pk;
         $params[$pk] = $pattern;
     }
 
-    $bccoursetypesub = '(SELECT bc_ct.coursetype FROM {block_backadel_courses} bc_ct '
-        . 'WHERE bc_ct.filename = c.filename ORDER BY bc_ct.id DESC LIMIT 1)';
-    $effectivecoursetype = 'COALESCE(c.coursetype_override, ' . $bccoursetypesub . ')';
+    $effectivecoursetype = \block_backadel\local\sql_helpers::effective_coursetype_sql('c');
     if ($coursetype === 'undetermined') {
         $clauses[] = $effectivecoursetype . ' IS NULL';
-    } else if (in_array($coursetype, ['teaching', 'blueprint', 'other'], true)) {
+    } else if ($coursetype !== '' && in_array($coursetype, \block_backadel\local\catalogue_allowlists::VALID_COURSETYPES, true)
+            && $coursetype !== 'undetermined') {
         $pk = 'bcct' . $pidx++;
         $clauses[] = $effectivecoursetype . ' = :' . $pk;
         $params[$pk] = $coursetype;
