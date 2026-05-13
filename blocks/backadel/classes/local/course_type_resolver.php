@@ -106,6 +106,7 @@ class course_type_resolver {
             'materials',
             'blank course',
             'blank',
+            'flagship',
         ];
     }
 

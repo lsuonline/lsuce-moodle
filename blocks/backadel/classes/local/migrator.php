@@ -208,7 +208,15 @@ class migrator {
      */
     private function maybe_sync_courses_and_teachers(string $filepathfull, array $parsed): int {
         $pattern = (string) ($parsed['pattern'] ?? '');
-        if (!in_array($pattern, ['semester_legacy', 'semester_legacy_lc', 'backadel_modern', 'backadel_instructor'], true)) {
+        if (!in_array($pattern, [
+            'semester_legacy',
+            'semester_legacy_lc',
+            'backadel_modern',
+            'backadel_instructor',
+            'storage_course',      // Storage_Course_* / storage_course_* (~211 files; all blueprint)
+            'storage_legacy',      // Blank_Course_*, Master_Course_*, Flagship_*, etc. (~9,735 files)
+            'storagecourse_dept',  // storagecourse_DEPT_NUM_* (~5 files; may classify as teaching)
+        ], true)) {
             return 0;
         }
 
