@@ -41,13 +41,6 @@
   width: 15em;
 }
 
-#page-blocks-simple_restore-list #region-main table.generaltable tr:hover .c0 {
-  overflow: visible !important;
-}
-
-#page-blocks-simple_restore-list #region-main table.generaltable tr:hover .c1, #page-blocks-simple_restore-list #region-main table.generaltable tr:hover .c2 {
-  color: transparent !important;
-}
 
 
 .restore_template_progress_hider div.backup_progress.clearfix {
