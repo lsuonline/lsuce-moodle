@@ -61,24 +61,22 @@ class migrator {
     }
 
     /**
-     * Scan a directory for archives and upsert catalogue (+ warm path) rows.
+     * Return sorted .mbz/.zip basenames found directly inside $dirpath. Non-recursive.
+     * Returns an empty array if the directory is missing or unreadable.
      *
-     * @param string $dirpath Absolute or relative directory root (non-recursive).
-     * @param string $source Catalogue source key e.g. backadel_current.
-     * @return int Count of rows inserted (catalogue + courses + teachers); updates excluded.
+     * @param string $dirpath Absolute path to the directory to scan.
+     * @return string[] Sorted list of archive basenames (no path prefix).
      */
-    public function migrate_directory(string $dirpath, string $source): int {
+    public static function list_archives(string $dirpath): array {
         $dirpath = rtrim($dirpath, "/\\");
         if ($dirpath === '' || !is_dir($dirpath)) {
-            return 0;
+            return [];
         }
-
-        $entries = @scandir($dirpath);
+        $entries = @scandir($dirpath, SCANDIR_SORT_ASCENDING);
         if ($entries === false) {
-            return 0;
+            return [];
         }
-
-        $basenames = [];
+        $out = [];
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') {
                 continue;
@@ -88,33 +86,68 @@ class migrator {
                 continue;
             }
             $ext = strtolower(pathinfo($entry, PATHINFO_EXTENSION));
-            if (!in_array($ext, ['zip', 'mbz'], true)) {
-                continue;
+            if (in_array($ext, ['zip', 'mbz'], true)) {
+                $out[] = $entry;
             }
-            $basenames[] = $entry;
         }
+        return $out;
+    }
+
+    /**
+     * Process a single backup file: parse name, upsert catalogue, optionally upsert
+     * warm-path course + teacher rows. Stateless w.r.t. the directory iteration.
+     *
+     * Errors (parse failures, DB exceptions) are caught and logged via mtrace —
+     * matches the existing per-file error behaviour in migrate_directory().
+     *
+     * @param string $filepathfull Absolute path to a .mbz/.zip file.
+     * @param string $source       Catalogue source key (e.g. 'backadel_current').
+     * @return int Number of rows inserted (catalogue + courses + teachers). 0 on
+     *             unparseable / errored / non-archive files.
+     */
+    public function migrate_file(string $filepathfull, string $source): int {
+        if (!is_file($filepathfull)) {
+            return 0;
+        }
+        $ext = strtolower(pathinfo($filepathfull, PATHINFO_EXTENSION));
+        if (!in_array($ext, ['zip', 'mbz'], true)) {
+            return 0;
+        }
+
+        try {
+            $parsed = filename_parser::parse($filepathfull);
+            if ($parsed === null) {
+                return 0;
+            }
+            $catalogueinserted = $this->upsert_catalogue($source, $filepathfull, $parsed);
+            $inserted  = $catalogueinserted ? 1 : 0;
+            $inserted += $this->maybe_sync_courses_and_teachers($filepathfull, $parsed);
+            return $inserted;
+        } catch (\Throwable $e) {
+            mtrace('block_backadel migrator: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Scan a directory for archives and upsert catalogue (+ warm path) rows.
+     *
+     * Delegates per-file work to {@see self::migrate_file()} so the adhoc task
+     * can drive the same logic with its own time budget and cursor.
+     *
+     * @param string $dirpath Absolute or relative directory root (non-recursive).
+     * @param string $source Catalogue source key e.g. backadel_current.
+     * @return int Count of rows inserted (catalogue + courses + teachers); updates excluded.
+     */
+    public function migrate_directory(string $dirpath, string $source): int {
+        $basenames = self::list_archives($dirpath);
 
         $total = count($basenames);
         $done = 0;
         $insertedtotal = 0;
 
         foreach ($basenames as $basename) {
-            $filepathfull = $dirpath . '/' . $basename;
-            try {
-                $parsed = filename_parser::parse($filepathfull);
-                if ($parsed === null) {
-                    $done++;
-                    $this->maybe_track_progress($done, $total);
-                    continue;
-                }
-
-                $catalogueinserted = $this->upsert_catalogue($source, $filepathfull, $parsed);
-                $insertedtotal += $catalogueinserted ? 1 : 0;
-                $insertedtotal += $this->maybe_sync_courses_and_teachers($filepathfull, $parsed);
-            } catch (\Throwable $e) {
-                mtrace('block_backadel migrator: ' . $e->getMessage());
-            }
-
+            $insertedtotal += $this->migrate_file($dirpath . '/' . $basename, $source);
             $done++;
             $this->maybe_track_progress($done, $total);
         }

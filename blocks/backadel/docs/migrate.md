@@ -53,6 +53,6 @@ Use **Catalogue** filters (year/pattern/source) to verify the scan’s view matc
 ## Related
 
 - **Catalogue** — Human-friendly view of the same index.
-- **Scheduled task** `migrate_filesystem` — Long-term automation equivalent to this manual trigger.
+- **Adhoc task** `migrate_filesystem_adhoc` — Queued by this page; runs in chunks (configurable timeout, default 15 min) and chains successor tasks until all files are processed.
 
 Treat migration as **reconciliation**: disk is the source of truth, catalogue is the index.

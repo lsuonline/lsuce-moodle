@@ -36,7 +36,6 @@ $string['cron_backup_error'] = 'Error backing up {$a}';
 $string['status_not_running'] = 'Not Running';
 $string['cron_already_running'] = 'Backadel claims it has been running for {$a} minute(s), but the task manager disagrees.';
 $string['backuptask'] = 'Backup job';
-$string['task_migrate_filesystem'] = 'Backadel: Migrate filesystem backups to catalogue';
 $string['task_reresolve_teachers'] = 'Backadel: Re-resolve unresolved teachers';
 
 // Stings shared by pages.
@@ -237,6 +236,8 @@ $string['migration_extra_paths_desc'] = 'Additional absolute directory paths (on
 $string['catalogue_path_prefix'] = 'Catalogue path prefix rewrite';
 $string['catalogue_path_prefix_desc'] = 'Format: old_prefix=new_prefix. Applied when resolving catalogue file paths (e.g. /old/moodledata=/new/moodledata).';
 $string['task_migrate_filesystem_adhoc'] = 'Backadel: Migrate filesystem backups to catalogue (on-demand)';
+$string['migrate_chunk_timeout_minutes'] = 'Migration chunk timeout (minutes)';
+$string['migrate_chunk_timeout_minutes_desc'] = 'Maximum wall-clock minutes a single migration adhoc task instance will run before pausing and queueing a successor task to continue the scan. Default 15. Lower this if cron runs are short; raise it if the queue backlog is a concern.';
 $string['migrate_pagetitle'] = 'Backadel — Run Migration';
 $string['migrate_heading'] = 'Backadel Migration';
 $string['migrate_run_button'] = 'Run migration scan now';

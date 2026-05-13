@@ -101,6 +101,13 @@ if ($ADMIN->fulltree) {
         '',
         PARAM_TEXT
     ));
+    $settings->add(new admin_setting_configtext(
+        'block_backadel/migrate_chunk_timeout_minutes',
+        get_string('migrate_chunk_timeout_minutes', $pluginname),
+        get_string('migrate_chunk_timeout_minutes_desc', $pluginname),
+        '15',
+        PARAM_INT
+    ));
 
     $settings->add(new admin_setting_heading('block_backadel/sched_options', '', $schedulelink));
 }
