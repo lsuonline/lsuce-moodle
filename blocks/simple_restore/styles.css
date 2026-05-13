@@ -56,10 +56,11 @@
     border: none;
 }
 
-/* Moodle sets tabindex=-1 on .modal-dialog; Snap's global :focus rule gives it a purple outline. */
+/* core_form/modalform sets tabindex="0" on .modal-dialog; Snap's .theme-snap div[tabindex]:focus
+   (specificity 0,3,1) overrides our 0,3,0 rule. Use !important to win. */
 .modal.moodle-has-zindex:focus,
 .modal-dialog.block_simple_restore-modal-dialog:focus {
-    outline: none;
+    outline: none !important;
 }
 
 /* ---- Undo Snap's .modal-content overrides ---- */
