@@ -56,8 +56,9 @@
     border: none;
 }
 
-/* Snap styles the focus ring on the modal overlay (tabindex=-1) as a purple outline. */
-.modal.moodle-has-zindex:focus {
+/* Moodle sets tabindex=-1 on .modal-dialog; Snap's global :focus rule gives it a purple outline. */
+.modal.moodle-has-zindex:focus,
+.modal-dialog.block_simple_restore-modal-dialog:focus {
     outline: none;
 }
 
