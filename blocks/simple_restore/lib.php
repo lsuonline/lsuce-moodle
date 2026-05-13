@@ -225,13 +225,11 @@ abstract class simple_restore_utils {
             $params['semester'] = $semflt;
         }
 
-        // Same correlated subquery as catalogue_table::setup_sql() — latest row per filename.
-        $ctsub = '(SELECT bc_ct.coursetype FROM {block_backadel_courses} bc_ct'
-            . ' WHERE bc_ct.filename = cat.filename ORDER BY bc_ct.id DESC LIMIT 1)';
+        $effectivecoursetype = \block_backadel\local\sql_helpers::effective_coursetype_sql('cat');
 
         $ctype = isset($filters['coursetype']) ? (string) $filters['coursetype'] : '';
         if (in_array($ctype, ['teaching', 'blueprint', 'other'], true)) {
-            $where[] = "{$ctsub} = :coursetype";
+            $where[] = "{$effectivecoursetype} = :coursetype";
             $params['coursetype'] = $ctype;
         }
 
@@ -251,10 +249,10 @@ abstract class simple_restore_utils {
 
         $sql = "SELECT cat.id, cat.filename, cat.file_size, cat.backup_ts, cat.year,
                        cat.semester, cat.dept, cat.course_num, cat.pattern, cat.status,
-                       COALESCE({$ctsub}, 'other') AS coursetype
+                       COALESCE({$effectivecoursetype}, 'other') AS coursetype
                   FROM {block_backadel_catalogue} cat
                  WHERE {$wheresql}
-              ORDER BY CASE COALESCE({$ctsub}, 'other')
+              ORDER BY CASE COALESCE({$effectivecoursetype}, 'other')
                            WHEN 'blueprint' THEN 0
                            WHEN 'teaching' THEN 1
                            ELSE 2
@@ -472,9 +470,9 @@ abstract class simple_restore_utils {
 
     public static function filter_courses($shortname) {
         global $DB;
-        $safeshortname = addslashes($shortname);
-        $select = "shortname LIKE '%{$safeshortname}%'";
-        return $DB->get_records_select('course', $select);
+        $likesql = $DB->sql_like('shortname', ':sn', false, true, false);
+        $params = ['sn' => '%' . $DB->sql_like_escape($shortname) . '%'];
+        return $DB->get_records_select('course', $likesql, $params);
     }
 
     public static function heading($restoreto) {
@@ -808,7 +806,7 @@ class simple_restore {
     }
 
     public function execute() {
-        global $PAGE;
+        global $OUTPUT, $PAGE;
 
         simple_restore_utils::includes();
 
@@ -878,7 +876,7 @@ class simple_restore {
                         $rc->execute_precheck(true);
                     }
                     $precheckresults = $rc->get_precheck_results();
-                    if (!empty($results)) {
+                    if (!empty($precheckresults['errors'] ?? []) || !empty($precheckresults['warnings'] ?? [])) {
                         echo $renderer->precheck_notices($precheckresults);
                         echo $OUTPUT->continue_button(new moodle_url('/course/view.php', array('id' => $this->course->id)));
                         echo $OUTPUT->footer();
