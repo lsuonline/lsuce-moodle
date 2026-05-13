@@ -24,7 +24,7 @@
 namespace block_backadel\task;
 
 defined('MOODLE_INTERNAL') || die();
-require_once($CFG->dirroot . '/blocks/backadel/block_backadel.php');
+require_once($CFG->dirroot . '/blocks/backadel/lib.php');
 
 /**
  * A scheduled task class for Backing up courses using the LSU Backadel Block.
@@ -65,7 +65,7 @@ function begin_backup_task() {
     if ($running) {
         $minutesrun = round((time() - $running) / 60);
         echo "\n" . get_string('cron_already_running', 'block_backadel', $minutesrun) . "\n";
-	// We no longer need ot do this now that scheduled tasks take care of this for us.
+        // Scheduled tasks now handle this; the early return below is intentionally disabled.
         // return;
     }
 
@@ -93,13 +93,27 @@ function begin_backup_task() {
         if ($error) {
             $errorlog .= get_string('cron_backup_error', 'block_backadel', $course->shortname) . "\n";
         } else {
-           $errorlog .= $course->shortname . " backed up successfully.\n";
+            $errorlog .= $course->shortname . " backed up successfully.\n";
         }
 
         // Convert the status to the acceptable FAIL / SUCCESS keyword.
         $b->status = $error ? 'FAIL' : 'SUCCESS';
         // Update the DB with the appropriate status.
         $DB->update_record('block_backadel_statuses', $b);
+
+        if (!$error) {
+            try {
+                $suffix = generate_suffix($course->id);
+                $matchers = array('/\s/', '/\//');
+                $safeshort = preg_replace($matchers, '-', $course->shortname);
+                $backadelfile = "backadel-{$safeshort}{$suffix}.zip";
+                $backadelpath = $CFG->dataroot . get_config('block_backadel', 'path');
+                $filepath = $backadelpath . $backadelfile;
+                (new \block_backadel\local\migrator())->migrate_directory(dirname($filepath), 'backadel_current');
+            } catch (\Throwable $e) {
+                mtrace('Backadel catalogue update failed: ' . $e->getMessage());
+            }
+        }
     }
 
     // Clear the running flag.

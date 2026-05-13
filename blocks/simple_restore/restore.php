@@ -24,6 +24,29 @@
 require_once('../../config.php');
 require_once($CFG->dirroot . '/blocks/simple_restore/lib.php');
 
+// Semester backup shortcut: copy Backadel file into restore temp, then continue as usual.
+$precourseid = optional_param('id', 0, PARAM_INT);
+$prefile = optional_param('file', '', PARAM_RAW);
+if ($precourseid > 0 && $prefile !== '') {
+    $precourse = get_course($precourseid);
+    require_login($precourse);
+    $precontext = context_course::instance($precourseid);
+    $prerestoreto = optional_param('restore_to', 0, PARAM_INT);
+    $archiveprecheck = get_config('simple_restore', 'is_archive_server') && $prerestoreto == 2 && $precourseid == SITEID;
+    if ($archiveprecheck) {
+        require_capability('block/simple_restore:canrestorearchive', context_system::instance());
+    } else {
+        require_capability('block/simple_restore:canrestore', $precontext);
+    }
+    $prefile = basename(str_replace('\\', '/', $prefile));
+    $tempfilename = simple_restore_utils::prep_restore($prefile, 'backadel', $precourseid);
+    redirect(new moodle_url('/blocks/simple_restore/restore.php', [
+        'contextid' => $precontext->id,
+        'filename' => $tempfilename,
+        'restore_to' => $prerestoreto,
+    ]));
+}
+
 $contextid = required_param('contextid', PARAM_INT);
 $filename = required_param('filename', PARAM_FILE);
 $restoreto = optional_param('restore_to', 0, PARAM_INT);

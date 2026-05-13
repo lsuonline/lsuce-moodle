@@ -24,6 +24,46 @@
 // Be sure no one accesses the page directly.
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * Resolve a block_backadel_catalogue row to an absolute backup file path (MD-2189 §3.3).
+ *
+ * If filepath is absolute (starts with /) it is returned directly. Otherwise it is
+ * resolved relative to $CFG->dataroot. A catalogue_path_prefix setting (format old=new)
+ * is applied when configured.
+ *
+ * @param int $catalogue_id Primary key in block_backadel_catalogue.
+ * @return string Absolute path on disk.
+ */
+function backadel_resolve_path(int $catalogue_id): string {
+    global $DB, $CFG;
+
+    $rec = $DB->get_record(
+        'block_backadel_catalogue',
+        ['id' => $catalogue_id],
+        'filepath, filepath_full, filename',
+        IGNORE_MISSING
+    );
+    if (!$rec) {
+        return '';
+    }
+    // filepath_full (TEXT) is preferred; filepath (char 255) may be truncated for index compat.
+    $path = (!empty($rec->filepath_full)) ? (string) $rec->filepath_full : (string) $rec->filepath;
+
+    $resolved = (strncmp($path, '/', 1) === 0)
+        ? $path
+        : $CFG->dataroot . '/' . ltrim($path, '/');
+
+    $prefix = (string) get_config('block_backadel', 'catalogue_path_prefix');
+    if ($prefix !== '' && strpos($prefix, '=') !== false) {
+        [$old, $new] = explode('=', $prefix, 2);
+        if ($old !== '') {
+            $resolved = str_replace($old, $new, $resolved);
+        }
+    }
+
+    return $resolved;
+}
+
 abstract class simple_restore_utils {
     // We don't need the includes on every request.
     public static function includes() {
@@ -42,8 +82,23 @@ abstract class simple_restore_utils {
     public static function selected_backadel($data) {
         global $CFG;
 
-        $backadelpath = get_config('block_backadel', 'path');
+        // Catalogue path: keyed on explicit name='catalogue' marker (MD-2189 §3.3).
+        // Numeric-fileid fallback kept for safety but explicit name is preferred to avoid
+        // mis-routing legacy files with numeric basenames (e.g. 12345.zip).
+        $iscatalogue = (isset($data->name) && $data->name === 'catalogue')
+                    || (!isset($data->name) && is_numeric($data->fileid));
+        if ($iscatalogue) {
+            $realpath = backadel_resolve_path((int) $data->fileid);
+            if (!file_exists($realpath)) {
+                return true;
+            }
+            copy($realpath, $data->to_path);
+            $data->filename = basename($realpath);
+            return true;
+        }
 
+        // Legacy: fileid is a relative filename appended to the configured backadel path.
+        $backadelpath = get_config('block_backadel', 'path');
         $realpath = $CFG->dataroot . $backadelpath . $data->fileid;
 
         if (!file_exists($realpath)) {
@@ -87,28 +142,67 @@ abstract class simple_restore_utils {
         return "{$search}[_\.]";
     }
 
-    public static function backup_list($data) {
-        global $DB, $OUTPUT;
-        if (isset($data->shortname)) {
-            $search = self::backadel_shortname($data->shortname);
-        } else {
-            $course = $DB->get_record('course', array('id' => $data->courseid));
-            $search = self::backadel_criterion($course);
+    /**
+     * Query the block_backadel_catalogue table for available backups matching a course shortname.
+     *
+     * Returns an empty array if the table does not exist or no rows match.
+     *
+     * @param string $shortname Course shortname to look up.
+     * @return array Normalised backup objects with id, filename, filesize, timemodified.
+     */
+    private static function backups_from_catalogue(string $shortname): array {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+            return [];
         }
+        $likesql = $DB->sql_like('shortname', ':sn', false, true, false);
+        $sql = "SELECT id, filename, file_size, backup_ts
+                  FROM {block_backadel_catalogue}
+                 WHERE {$likesql} AND status = :st
+              ORDER BY backup_ts DESC";
+        $rows = $DB->get_records_sql($sql, [
+            'sn' => $DB->sql_like_escape($shortname),
+            'st' => 'available',
+        ]);
+        if (!$rows) {
+            return [];
+        }
+        return array_values(array_map(static function ($row) {
+            return (object)[
+                'id'           => (int) $row->id,
+                'filename'     => (string) ($row->filename ?? ''),
+                'filesize'     => (int) ($row->file_size ?? 0),
+                'timemodified' => (int) ($row->backup_ts ?? 0),
+            ];
+        }, $rows));
+    }
+
+    public static function backup_list($data) {
+        global $DB;
+        $course = isset($data->shortname)
+            ? (object)['shortname' => $data->shortname]
+            : $DB->get_record('course', ['id' => $data->courseid]);
+
         $list = new stdClass;
         $list->header = get_string('semester_backups', 'block_simple_restore');
-        $list->backups = self::backadel_backups($search);
-        $list->order = 10;
-        $list->html = '';
-        if (!empty($list->backups)) {
-            $list->html = $OUTPUT->heading($list->header);
-            $list->html .= self::build_table(
-                $list->backups,
-                'backadel',
-                $data->courseid,
-                $data->restore_to
-            );
+        $list->order  = 10;
+        $list->html   = '';
+
+        // Try catalogue first.
+        $cataloguerows = self::backups_from_catalogue((string)($course->shortname ?? ''));
+
+        if (!empty($cataloguerows)) {
+            $list->backups = $cataloguerows;
+            $list->source  = 'catalogue';
+        } else {
+            // Fallback to filesystem scandir (legacy path, or if catalogue is empty/not yet migrated).
+            $search = isset($data->shortname)
+                ? self::backadel_shortname($data->shortname)
+                : self::backadel_criterion($course);
+            $list->backups = self::backadel_backups($search);
+            $list->source  = 'semester_backadel';
         }
+
         $data->lists[] = $list;
 
         return (
@@ -281,6 +375,7 @@ abstract class simple_restore_utils {
         $data->userid = $USER->id;
         $data->courseid = $courseid;
         $data->fileid = $fileid;
+        $data->name = $name;
         $data->to_path = $pathname;
         $data->filename = $filename;
 
@@ -401,29 +496,59 @@ abstract class simple_restore_utils {
 
 class archive_restore_utils extends simple_restore_utils {
     /**
-     * Get course name and category from filename.
+     * Get course display name and category name from a backup archive filename.
      *
-     * NB: this function expects files from backadel whose names
-     * begin as 'backadel-', for example:
-     * backup-moodle2-course-2-2014_spring_tst2_2011_for_instructor_four-20140407-1539.mbz
+     * Legacy names prefixed with backadel- use the original underscore/hyphen heuristic.
+     * Other names are resolved via {@see \block_backadel\local\filename_parser::parse()}.
+     * Unknown or unparseable names return [null, null]; callers should substitute defaults.
      *
-     * @param string $filename
+     * @param string $filename Archive basename or path
+     * @return array{0: ?string, 1: ?string} Fullname and Moodle course category name
      */
     public static function coursedata_from_filename($filename) {
         $prefix = 'backadel';
         if (substr($filename, 0, strlen($prefix)) == $prefix) {
-            $filename = substr($filename, strlen($prefix) + 1);
-        } else {
-            // TODO - do something better than throw an error if it isn't a backadel file.
-            // Consider restricting the choice of files in the first place!
-            throw new exception("Archive Restore does not support filenames other than 'backadel-*'");
+            $stripped = substr($filename, strlen($prefix) + 1);
+            $chunks     = explode('_', $stripped);
+            $meta       = $chunks[0];
+            $metachunks = explode('-', $meta);
+            $fullname   = implode(' ', $metachunks);
+            $category   = $metachunks[2];
+
+            return array($fullname, $category);
         }
 
-        $chunks     = explode('_', $filename);
-        $meta       = $chunks[0];
-        $metachunks = explode('-', $meta);
-        $fullname   = implode(' ', $metachunks);
-        $category   = $metachunks[2];
+        $parsed = \block_backadel\local\filename_parser::parse($filename);
+        if ($parsed === null || ($parsed['pattern'] ?? '') === 'unknown') {
+            return array(null, null);
+        }
+
+        $shortnamehint = $parsed['shortname_hint'] ?? null;
+        $dept = $parsed['dept'] ?? null;
+        $coursenum = $parsed['course_num'] ?? null;
+        $year = $parsed['year'] ?? null;
+        $semester = $parsed['semester'] ?? null;
+
+        $fullname = null;
+        if (is_string($shortnamehint) && $shortnamehint !== '') {
+            $fullname = $shortnamehint;
+        } else if (is_string($dept) && $dept !== '' && is_string($coursenum) && $coursenum !== '') {
+            $fullname = trim($dept . ' ' . $coursenum);
+        }
+        if ($fullname === null || $fullname === '') {
+            $fullname = pathinfo($filename, PATHINFO_FILENAME);
+        }
+
+        $category = null;
+        if ($year !== null && is_string($semester) && $semester !== '') {
+            $category = $semester . ' ' . $year;
+        } else if (is_string($semester) && $semester !== '') {
+            $category = $semester;
+        }
+
+        if ($category === null || $category === '') {
+            $category = 'Archive';
+        }
 
         return array($fullname, $category);
     }
@@ -432,7 +557,9 @@ class archive_restore_utils extends simple_restore_utils {
 class simple_restore {
     public $userid;
     public $course;
+    public $context;
     public $filename;
+    public $restore_to;
     public $restoreto;
 
     public function __construct($course, $filename, $restoreto = 0) {

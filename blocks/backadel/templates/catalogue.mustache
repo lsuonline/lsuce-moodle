@@ -1,0 +1,75 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_backadel/catalogue
+
+    Catalogue backup list for a calendar year.
+
+    Context variables required for this template:
+    * year - int
+    * semesters - array of { label, url, current }
+    * rows - array of catalogue rows
+
+    Example context (json):
+    {
+        "year": 2026,
+        "semesters": [{"label": "All", "url": "...", "current": true}],
+        "rows": []
+    }
+}}
+<div class="block_backadel_catalogue">
+    <h3>Catalogue — {{year}}</h3>
+    <div class="mb-3 d-flex flex-wrap gap-2">
+        {{#semesters}}
+            <a href="{{url}}" class="{{#current}}fw-bold{{/current}}">{{label}}</a>
+        {{/semesters}}
+    </div>
+    <div class="table-responsive">
+        <table class="generaltable table">
+            <thead>
+                <tr>
+                    <th scope="col">{{#str}} table_col_filename, block_backadel {{/str}}</th>
+                    <th scope="col">{{#str}} table_col_fullname, block_backadel {{/str}}</th>
+                    <th scope="col">Semester</th>
+                    <th scope="col">Dept</th>
+                    <th scope="col">Course No.</th>
+                    <th scope="col">Source</th>
+                    <th scope="col">Backup date</th>
+                    <th scope="col">Size</th>
+                    <th scope="col">{{#str}} table_col_status, block_backadel {{/str}}</th>
+                    <th scope="col">Pattern</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#rows}}
+                    <tr>
+                        <td>{{filename}}</td>
+                        <td>{{#shortname}}{{shortname}}{{/shortname}}{{^shortname}}—{{/shortname}}</td>
+                        <td>{{#semester}}{{semester}}{{/semester}}{{^semester}}—{{/semester}}</td>
+                        <td>{{#dept}}{{dept}}{{/dept}}{{^dept}}—{{/dept}}</td>
+                        <td>{{#course_num}}{{course_num}}{{/course_num}}{{^course_num}}—{{/course_num}}</td>
+                        <td><span class="badge bg-info text-white">{{source}}</span></td>
+                        <td>{{backup_ts_human}}</td>
+                        <td>{{file_size_human}}</td>
+                        <td><span class="{{statusbadgeclasses}}">{{status}}</span></td>
+                        <td><small class="text-muted">{{pattern}}</small></td>
+                    </tr>
+                {{/rows}}
+            </tbody>
+        </table>
+    </div>
+</div>

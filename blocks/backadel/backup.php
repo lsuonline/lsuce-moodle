@@ -45,6 +45,10 @@ $PAGE->set_url('/blocks/backadel/backup.php');
 
 // Begin outputting the page.
 echo $OUTPUT->header();
+echo html_writer::div(
+    html_writer::link(new moodle_url('/blocks/backadel/search.php'), get_string('course_search', 'block_backadel')),
+    'mb-3'
+);
 echo $OUTPUT->heading($header);
 
 // Set up the courses to back up.

@@ -344,3 +344,45 @@ div.backadel_table {
 .path-blocks.path-blocks-backadel form {
   padding-bottom: 1.5em;
 }
+
+/* ---- Help modal: dialog wrapper ---- */
+/* Snap applies rogue rules to .modal-content (max-width: 500px, text-align: center).
+   We must scope overrides to .modal-content inside our dialog class, not just .modal-dialog. */
+.modal.moodle-has-zindex .modal-dialog.block_backadel-modal-dialog,
+.modal-dialog.block_backadel-modal-dialog {
+    max-width: 1140px;
+    width: 92vw;
+}
+
+/* ---- Undo Snap's .modal-content overrides ---- */
+.modal-dialog.block_backadel-modal-dialog .modal-content {
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    text-align: start;
+    border-radius: .3rem;
+}
+
+/* ---- Markdown help content ---- */
+.modal-dialog.block_backadel-modal-dialog .block_backadel-modal-body {
+    padding: 0.5rem 0.25rem;
+    line-height: 1.5;
+    text-align: start;
+}
+
+.modal-dialog.block_backadel-modal-dialog .block_backadel-modal-body h2,
+.modal-dialog.block_backadel-modal-dialog .block_backadel-modal-body h3 {
+    margin-top: 1rem;
+}
+
+.modal-dialog.block_backadel-modal-dialog .block_backadel-modal-body code {
+    background: var(--gray-100, #f1f3f5);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+}
+
+.modal-dialog.block_backadel-modal-dialog .block_backadel-modal-body ol,
+.modal-dialog.block_backadel-modal-dialog .block_backadel-modal-body ul {
+    padding-inline-start: 1.5rem;
+    list-style-position: outside;
+}

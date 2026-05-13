@@ -36,6 +36,8 @@ $string['cron_backup_error'] = 'Error backing up {$a}';
 $string['status_not_running'] = 'Not Running';
 $string['cron_already_running'] = 'Backadel claims it has been running for {$a} minute(s), but the task manager disagrees.';
 $string['backuptask'] = 'Backup job';
+$string['task_migrate_filesystem'] = 'Backadel: Migrate filesystem backups to catalogue';
+$string['task_reresolve_teachers'] = 'Backadel: Re-resolve unresolved teachers';
 
 // Stings shared by pages.
 $string['pluginname'] = 'Backup And Delete';
@@ -72,8 +74,43 @@ $string['backup_button'] = 'Backup Selected Courses';
 
 // Strings for results.php.
 $string['search_results'] = 'Search Results';
+$string['search_status_none'] = 'Not yet backed up';
+$string['search_instructions'] = 'Use the filters above to search for courses by short / full name, ID number, category, or backup status.';
 $string['save_query'] = 'Save Query';
 $string['create_new_query'] = 'Create New Query';
+
+// Strings for CRUD / table UI (MD-2189).
+$string['results_status_backup'] = 'Queued';
+$string['results_status_success'] = 'Complete';
+$string['results_status_failed'] = 'Failed';
+$string['results_status_deleted'] = 'Deleted';
+$string['results_action_queue'] = 'Queue backup';
+$string['results_action_requeue'] = 'Re-queue';
+$string['results_action_delete'] = 'Delete archive';
+$string['action_confirm_title'] = 'Confirm action';
+$string['delete_archive_confirm'] = 'This will permanently delete the course and remove its Backadel status. Continue?';
+$string['delete_archive_title'] = 'Delete Archive';
+$string['delete_archive_btn'] = 'Delete archive';
+$string['delete_archive_course_label'] = 'Course';
+$string['delete_archive_warning'] = 'You are about to permanently delete this Moodle course and remove its Backadel backup record. The backup file on disk is not affected, but the course itself and all its content will be gone. This action cannot be undone.';
+$string['requeue_title'] = 'Re-queue Backup';
+$string['requeue_btn'] = 'Re-queue';
+$string['requeue_course_label'] = 'Course';
+$string['requeue_info'] = 'This will reset the backup status to BACKUP so the next scheduled run picks up this course again. Any previous failure reason will be cleared.';
+$string['restore_action_confirm'] = 'You are about to overwrite this course. Proceed?';
+$string['restore_action_confirm_title'] = 'Confirm restore';
+$string['table_col_filename'] = 'Filename';
+$string['table_col_shortname'] = 'Short name';
+$string['table_col_fullname'] = 'Full name';
+$string['table_col_category'] = 'Category';
+$string['table_col_status'] = 'Status';
+$string['table_col_modified'] = 'Last modified';
+$string['table_col_filesize'] = 'File size';
+$string['table_col_actions'] = 'Actions';
+$string['queued_backup'] = 'Backup queued';
+$string['requeued_backup'] = 'Backup re-queued';
+$string['deleted_archive'] = 'Archive deleted';
+$string['error_no_capability'] = 'You do not have permission to perform this action.';
 
 // Strings for delete.php.
 $string['delete'] = 'Delete?';
@@ -129,6 +166,102 @@ $string['config_path_surround'] = 'Surround the path with slashes.';
 $string['email_subject'] = 'Backup Job Completed';
 $string['email_from'] = 'noreply@lsu.edu';
 $string['email_body']  = "The Backup And Delete tool has completed the jobs in it's queue.";
+
+// Parse / catalogue (MD-2189).
+$string['unknown_period'] = 'Unknown period';
+$string['catalogue_title'] = 'Backadel Catalogue';
+$string['course_search'] = 'Course Search';
+$string['catalogue_filter_apply'] = 'Apply filters';
+$string['catalogue_filter_year'] = 'Year';
+$string['catalogue_filter_year_all'] = 'All years';
+$string['catalogue_filter_semester'] = 'Semester';
+$string['catalogue_filter_source'] = 'Source';
+$string['catalogue_filter_pattern'] = 'Filename pattern';
+$string['catalogue_filter_status_none'] = 'No status row';
+$string['catalogue_no_results'] = 'No catalogue rows match the current filters.';
+$string['catalogue_results_count'] = '{$a} result(s)';
+$string['catalogue_status_available'] = 'Available';
+$string['catalogue_status_missing'] = 'Missing';
+$string['catalogue_status_archived'] = 'Archived';
+$string['catalogue_col_semester'] = 'Semester';
+$string['catalogue_col_dept'] = 'Dept';
+$string['catalogue_col_course_num'] = 'Course no.';
+$string['catalogue_col_source'] = 'Source';
+$string['catalogue_col_backup_date'] = 'Backup date';
+$string['catalogue_col_size'] = 'Size';
+$string['catalogue_col_pattern'] = 'Pattern';
+$string['catalogue_col_actions'] = 'Actions';
+$string['catalogue_clear_filters'] = 'Clear filters';
+$string['catalogue_action_restore'] = 'Restore';
+$string['catalogue_action_restore_disabled'] = 'Restore (unavailable)';
+$string['catalogue_restore_disabled_tooltip'] = 'File is not available on disk';
+$string['catalogue_action_goto_course'] = 'Go to course';
+$string['catalogue_action_instructors'] = 'Instructors';
+$string['catalogue_action_download'] = 'Download';
+$string['catalogue_instructors_modal_title'] = 'Instructors';
+$string['catalogue_instructors_col_username'] = 'Username';
+$string['catalogue_instructors_col_fullname'] = 'Full name';
+$string['catalogue_instructors_none'] = 'No instructors recorded';
+
+// Restore proxy page (MD-2189 §3.4).
+$string['coursebackups_pagetitle'] = 'Course Backups';
+$string['coursebackups_heading'] = 'Course Backups';
+$string['coursebackups_year'] = 'Year:';
+$string['coursebackups_col_filename'] = 'Filename';
+$string['coursebackups_col_type'] = 'Type';
+$string['coursebackups_col_year'] = 'Year';
+$string['coursebackups_col_actions'] = 'Actions';
+$string['coursebackups_restore'] = 'Restore';
+$string['coursebackups_restore_filemissing'] = 'The selected backup file could not be located on disk. The catalogue row may be stale or the file may have been moved or deleted.';
+$string['coursebackups_restore_stagefailed'] = 'The backup file was found on disk but could not be staged for restore. Check filesystem permissions on the Moodle data directory.';
+$string['coursebackups_empty'] = 'No backups found for this year.';
+$string['catalogue_table_missing'] = 'The backup catalogue table does not exist. Please run the database upgrade first.';
+$string['coursetype_teaching'] = 'Teaching';
+$string['coursetype_blueprint'] = 'Blueprint';
+$string['coursetype_other'] = 'Other';
+
+// Admin settings — Catalogue & Migration (MD-2189 §2.13).
+$string['catalogue_migration_heading'] = 'Catalogue &amp; Migration';
+$string['blueprint_keywords'] = 'Blueprint keywords';
+$string['blueprint_keywords_desc'] = 'One keyword per line. Backups whose name contains any of these keywords are classified as blueprint/master courses.';
+$string['excluded_categories'] = 'Excluded category IDs';
+$string['excluded_categories_desc'] = 'Category IDs (one per line) to exclude from migration scans.';
+$string['migration_extra_paths'] = 'Extra scan paths';
+$string['migration_extra_paths_desc'] = 'Additional absolute directory paths (one per line) to include in the filesystem migration scan.';
+$string['catalogue_path_prefix'] = 'Catalogue path prefix rewrite';
+$string['catalogue_path_prefix_desc'] = 'Format: old_prefix=new_prefix. Applied when resolving catalogue file paths (e.g. /old/moodledata=/new/moodledata).';
+$string['task_migrate_filesystem_adhoc'] = 'Backadel: Migrate filesystem backups to catalogue (on-demand)';
+$string['migrate_pagetitle'] = 'Backadel — Run Migration';
+$string['migrate_heading'] = 'Backadel Migration';
+$string['migrate_run_button'] = 'Run migration scan now';
+$string['migrate_queued'] = 'Migration task queued. You can stay on this page — the counts below will update automatically when it completes.';
+$string['migrate_catalogue_count'] = 'Backup files catalogued: ';
+$string['migrate_courses_count'] = 'Course records indexed: ';
+$string['migrate_what_happens'] = 'Running a migration scan walks the configured backup directories and indexes any new or updated backup files into the catalogue. Existing entries are updated; duplicates are skipped. The counts above will refresh automatically once the task finishes. If the counts do not change after the spinner disappears, check the cron logs for errors.';
+$string['migrate_running'] = 'Migration is running — you can leave this page open. The counts and status will update automatically when the task completes.';
+$string['migrate_completed'] = 'Migration complete. The counts above have been updated.';
+$string['migrate_warn_no_path'] = 'The backup storage path is not configured. Running a migration scan now will index zero files. <a href="{$a}">Go to Global Settings</a> and set the Storage Path before running a migration.';
+$string['migrate_scan_path'] = 'Scan directory:';
+
+// Admin navigation labels (settings.php admin_externalpage entries).
+$string['tab_settings']      = 'Global settings';
+$string['tab_search']         = 'Course Search';
+$string['tab_migrate']       = 'Run Migration';
+$string['tab_coursebackups'] = 'Course Backups';
+$string['tab_catalogue']     = 'Catalogue';
+$string['tab_failed']        = 'Failed Backups';
+$string['tab_delete']        = 'Delete Archives';
+$string['nav_settings']      = 'Global settings';
+$string['nav_search']         = 'Course Search';
+$string['nav_migrate']       = 'Run Migration';
+$string['nav_coursebackups'] = 'Course Backups';
+$string['nav_catalogue']     = 'Catalogue';
+$string['nav_failed']        = 'Failed Backups';
+$string['nav_delete']        = 'Delete Archives';
+
+// Help button system (Wave 11).
+$string['help_not_found'] = 'Help content not available for this topic.';
+$string['help_button_label'] = 'Help';
 
 // Capabilities.
 $string['backadel:addinstance'] = 'Add '.$string['pluginname'].' block.';

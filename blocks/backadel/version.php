@@ -21,7 +21,7 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2016031713;
+$plugin->version = 2026051203;
 $plugin->requires  = 2016071100;         // Requires this Moodle version.
 $plugin->cron = 60 * 60;
 $plugin->component = 'block_backadel';

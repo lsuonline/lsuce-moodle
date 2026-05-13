@@ -24,26 +24,44 @@
 require_once('../../config.php');
 global $CFG;
 
+require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->dirroot . '/blocks/simple_restore/lib.php');
-
-// Check permissions.
-require_login();
 
 $courseid = required_param('id', PARAM_INT);
 $restoreto = optional_param('restore_to', 0, PARAM_INT);
 
-$name = optional_param('name', null, PARAM_RAW);
-$action = optional_param('action', null, PARAM_TEXT);
-$file = optional_param('fileid', null, PARAM_RAW);
+$name = optional_param('name', null, PARAM_ALPHANUMEXT);
+$action = optional_param('action', null, PARAM_ALPHANUMEXT);
+$file = optional_param('fileid', null, PARAM_FILE);
 
 // Needed for admins, as they need to query the courses.
 $shortname = optional_param('shortname', null, PARAM_TEXT);
+
+// Determine whether archive mode (also recomputed below for capability gating).
+$archivemode = $courseid == SITEID && get_config('simple_restore', 'is_archive_server');
+
+// Admin path = SITEID landing or archive-server mode. Teachers always hit a
+// real course id, so they never trip this gate even if they happen to hold
+// moodle/course:create at the system level.
+$adminmode = $archivemode || $courseid == SITEID;
+
+if ($adminmode) {
+    // Admin layout: registers the page with the admin tree, wires breadcrumbs,
+    // sidebar highlight, page layout, and triggers settings.php's tab strip.
+    admin_externalpage_setup('block_simple_restore_list', '', [
+        'id' => $courseid,
+        'restore_to' => $restoreto,
+    ]);
+} else {
+    // Teacher path: course-context login + permission check.
+    require_login();
+}
 
 // Determine whether archive mode.
 $archivemode = $courseid == SITEID && get_config('simple_restore', 'is_archive_server');
 
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
-    moodle_exception('no_course', 'block_simple_restore', '', $courseid);
+    throw new moodle_exception('no_course', 'block_simple_restore', '', $courseid);
 }
 
 $blockname = get_string('pluginname', 'block_simple_restore');
@@ -65,20 +83,22 @@ if ($archivemode) {
 
 // Return the number of grades.
 $sql = "SELECT COUNT(*) as count
-        FROM mdl_course AS c
-        JOIN mdl_grade_items AS gi ON gi.courseid = c.id
-        JOIN mdl_grade_grades AS gg ON gi.id = gg.itemid 
-        WHERE NOT gg.finalgrade <=> NULL 
+        FROM {course} AS c
+        JOIN {grade_items} AS gi ON gi.courseid = c.id
+        JOIN {grade_grades} AS gg ON gi.id = gg.itemid
+        WHERE NOT gg.finalgrade <=> NULL
         AND gi.courseid = :courseid";
 $count = $DB->count_records_sql($sql, array("courseid" => $courseid));
 
 if ($count > 0) {
-    $PAGE->set_url($baseurl);
     $warn = $OUTPUT->notification(simple_restore_utils::_s('have_grades'));
 
-    $PAGE->set_context($context);
-    $PAGE->navbar->add($course->fullname, new moodle_url('/course/view.php?id='.$course->id));
-    $PAGE->set_title($blockname.': '.$heading);
+    if (!$adminmode) {
+        $PAGE->set_url($baseurl);
+        $PAGE->set_context($context);
+        $PAGE->navbar->add($course->fullname, new moodle_url('/course/view.php?id='.$course->id));
+        $PAGE->set_title($blockname.': '.$heading);
+    }
 
     echo $OUTPUT->header();
     echo $OUTPUT->heading(simple_restore_utils::_s('restore_stopped'));
@@ -99,6 +119,12 @@ if ($file and $action and $name) {
 
         // Parse the filename for course fullname and category.
         list($fullname, $category) = archive_restore_utils::coursedata_from_filename($file);
+        if ($fullname === null || $fullname === '') {
+            $fullname = pathinfo($file, PATHINFO_FILENAME);
+        }
+        if ($category === null || $category === '') {
+            $category = 'Archive';
+        }
 
         // Get a category object.
         if (!$DB->record_exists('course_categories', array('name' => $category))) {
@@ -123,12 +149,17 @@ if ($file and $action and $name) {
     )));
 }
 
-$PAGE->set_context($context);
-$PAGE->set_course($course);
-$PAGE->navbar->add($blockname);
-$PAGE->set_title($blockname.': '.$heading);
-$PAGE->set_heading($blockname.': '.$heading);
-$PAGE->set_url($baseurl);
+if (!$adminmode) {
+    $PAGE->set_context($context);
+    $PAGE->set_course($course);
+    if (!$archivemode && $course->id != SITEID) {
+        $PAGE->navbar->add($course->fullname, new moodle_url('/course/view.php', ['id' => $course->id]));
+    }
+    $PAGE->navbar->add($blockname);
+    $PAGE->set_title($blockname.': '.$heading);
+    $PAGE->set_heading($blockname.': '.$heading);
+    $PAGE->set_url($baseurl);
+}
 
 $system = context_system::instance();
 
@@ -175,7 +206,23 @@ $data->lists = array();
 
 simple_restore_utils::backup_list($data);
 
-$displaylist = function($in, $list) {
+$PAGE->requires->js_call_amd('block_simple_restore/restore_actions', 'init');
+
+$displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $data, $restoreto) {
+    $source = $list->source ?? '';
+    if (in_array($source, ['semester_backadel', 'catalogue'], true) && !empty($list->backups)) {
+        echo $OUTPUT->heading($list->header);
+        $shortname = isset($data->shortname) ? $data->shortname : $course->shortname;
+        $table = new \block_simple_restore\local\table\restore_files_table(
+            'simple_restore_semester_' . $courseid,
+            $courseid,
+            (string) $shortname,
+            $restoreto
+        );
+        $table->populate($list->backups, $source);  // pass source so catalogue rows get catalogue_id.
+        $table->setup_and_out(30);
+        return true;
+    }
     echo $list->html;
     return $in || !empty($list->backups);
 };

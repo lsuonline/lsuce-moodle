@@ -22,37 +22,264 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Build the SQL query from the search params
+ * Whitelisted course / category columns for Backadel search (matches {@see \block_backadel\local\table\query_support::ALLOWED_CRITERIA}).
  *
- * @return SQL
+ * @param string $field One of shortname, fullname, idnumber, category.
+ * @return string SQL fragment (qualified column expression).
  */
-function build_sql_from_search($query, $constraints) {
-    $sql = "SELECT co.id, co.fullname, co.shortname, co.idnumber, cat.name
-        AS category FROM {course} co, {course_categories} cat WHERE
-        co.category = cat.id AND (";
+function backadel_search_field_sql(string $field): string {
+    static $map = [
+        'shortname' => 'co.shortname',
+        'fullname' => 'co.fullname',
+        'idnumber' => 'co.idnumber',
+        'category' => 'cat.name',
+    ];
+    if (!isset($map[$field])) {
+        throw new \coding_exception('Invalid search field');
+    }
+    return $map[$field];
+}
 
-    // Set up the SQL constraints.
-    $constraintsqls = array();
+/**
+ * Build a safe WHERE fragment and bound parameters for Backadel course search.
+ *
+ * Each constraint object must have:
+ * - field: shortname | fullname | idnumber | category
+ * - operator: IN | NOT IN | LIKE | NOT LIKE
+ * - search_terms: pipe-separated values (as produced by the index search form).
+ *
+ * Constraint groups are combined with $query->type ('AND' or 'OR'). Within LIKE / NOT LIKE,
+ * multiple terms are OR-combined (legacy UI behaviour).
+ *
+ * @param stdClass $query Object with string property type: 'AND' or 'OR'.
+ * @param array $constraints Array of stdClass constraint objects.
+ * @return array{0: string, 1: array} Tuple: SQL WHERE body (no WHERE keyword) and bound parameters.
+ */
+function backadel_build_where_from_search(stdClass $query, array $constraints): array {
+    global $DB;
 
-    // Loop through the provided constraints and build the SQL contraints.
+    $combinator = (isset($query->type) && strtoupper($query->type) === 'OR') ? ' OR ' : ' AND ';
+    if ($constraints === []) {
+        return ['1=1', []];
+    }
+
+    $groups = [];
+    $params = [];
+    $pidx = 0;
+
     foreach ($constraints as $c) {
-        if (in_array($c->operator, array('LIKE', 'NOT LIKE'))) {
-            $parts = array();
+        $field = $c->field ?? '';
+        if (!is_string($field) || !in_array($field, ['shortname', 'fullname', 'idnumber', 'category'], true)) {
+            throw new \coding_exception('Invalid search constraint field');
+        }
+        $fieldsql = backadel_search_field_sql($field);
+        $operator = $c->operator ?? '';
+        $rawterms = $c->search_terms ?? '';
+        $terms = array_filter(array_map('trim', explode('|', (string) $rawterms)), static function($t) {
+            return $t !== '';
+        });
 
-            foreach (explode('|', $c->search_terms) as $s) {
-                $parts[] = "$c->criteria $c->operator '%{$s}%'";
+        if ($operator === 'LIKE' || $operator === 'NOT LIKE') {
+            $notlike = ($operator === 'NOT LIKE');
+            $likesub = [];
+            foreach ($terms as $t) {
+                $paramname = 'bkw' . $pidx;
+                $placeholder = ':' . $paramname;
+                $escaped = $DB->sql_like_escape($t);
+                $likesub[] = $DB->sql_like($fieldsql, $placeholder, false, false, $notlike);
+                $params[$paramname] = '%' . $escaped . '%';
+                $pidx++;
             }
+            if ($likesub !== []) {
+                $groups[] = '(' . implode(' OR ', $likesub) . ')';
+            }
+            continue;
+        }
 
-            $constraintsqls[] = '(' . implode(' OR ', $parts) . ')';
-        } else {
-            $instr = str_replace('|', "', '", $c->search_terms);
+        if ($operator === 'IN' || $operator === 'NOT IN') {
+            if ($terms === []) {
+                continue;
+            }
+            list($insql, $inparams) = $DB->get_in_or_equal($terms, SQL_PARAMS_NAMED, 'in' . $pidx, $operator === 'IN');
+            $groups[] = '(' . $fieldsql . ' ' . $insql . ')';
+            $params = array_merge($params, $inparams);
+            $pidx++;
+            continue;
+        }
 
-            $constraintsqls[] = "($c->criteria $c->operator ('$instr'))";
+        throw new \coding_exception('Invalid search constraint operator');
+    }
+
+    if ($groups === []) {
+        return ['1=1', $params];
+    }
+
+    return [implode($combinator, $groups), $params];
+}
+
+/**
+ * Build the full legacy SELECT for course search (safe parameters). Prefer {@see backadel_build_where_from_search()}.
+ *
+ * @param stdClass $query Object with type AND|OR.
+ * @param array $constraints Array of constraint objects (field, operator, search_terms).
+ * @return array{0: string, 1: array} Full SQL and parameters.
+ */
+function build_sql_from_search($query, $constraints): array {
+    [$wherebody, $params] = backadel_build_where_from_search($query, $constraints);
+    $sql = "SELECT co.id, co.fullname, co.shortname, co.idnumber, cat.name AS category
+        FROM {course} co
+        JOIN {course_categories} cat ON cat.id = co.category
+        WHERE (" . $wherebody . ')';
+    return [$sql, $params];
+}
+
+/**
+ * Build a safe WHERE fragment and parameters for the Backadel course search page filters.
+ *
+ * @param array $filters Keys: optional string q, optional int category, optional string status
+ *     ('' any, 'none' for no status row, or a block_backadel_statuses status code).
+ * @return array{0: string, 1: array} SQL WHERE body (no WHERE keyword) and bound parameters.
+ */
+function backadel_search_to_where(array $filters): array {
+    global $DB;
+
+    $q = isset($filters['q']) ? trim((string) $filters['q']) : '';
+    $category = isset($filters['category']) ? (int) $filters['category'] : 0;
+    $status = isset($filters['status']) ? (string) $filters['status'] : '';
+
+    if ($q === '' && $category <= 0 && $status === '') {
+        return ['1=0', []];
+    }
+
+    $clauses = [];
+    $params = [];
+    $pidx = 0;
+
+    if ($q !== '') {
+        $escaped = $DB->sql_like_escape($q);
+        $pattern = '%' . $escaped . '%';
+        $p1 = 'bksq' . $pidx++;
+        $p2 = 'bksq' . $pidx++;
+        $p3 = 'bksq' . $pidx++;
+        $clauses[] = '(' . $DB->sql_like('co.shortname', ':' . $p1, false) . ' OR '
+            . $DB->sql_like('co.fullname', ':' . $p2, false) . ' OR '
+            . $DB->sql_like('co.idnumber', ':' . $p3, false) . ')';
+        $params[$p1] = $pattern;
+        $params[$p2] = $pattern;
+        $params[$p3] = $pattern;
+    }
+
+    if ($category > 0) {
+        $pk = 'bkcat' . $pidx++;
+        $clauses[] = 'co.category = :' . $pk;
+        $params[$pk] = $category;
+    }
+
+    if ($status !== '') {
+        if ($status === 'none') {
+            $clauses[] = 'ba.status IS NULL';
+        } else if (in_array($status, ['BACKUP', 'SUCCESS', 'FAIL', 'DELETED'], true)) {
+            $pk = 'bkst' . $pidx++;
+            $clauses[] = 'ba.status = :' . $pk;
+            $params[$pk] = $status;
         }
     }
 
-    // Return the appropriate SQL.
-    return $sql . implode(" $query->type ", $constraintsqls) . ');';
+    if ($clauses === []) {
+        return ['1=0', []];
+    }
+
+    return [implode(' AND ', $clauses), $params];
+}
+
+/**
+ * Build a safe WHERE fragment and parameters for the Backadel catalogue page filters.
+ *
+ * @param array $filters Keys: optional string q; optional int year (0 = all years); optional strings semester,
+ *     status ('' any, 'none' => IS NULL, or available|missing|archived), source, pattern.
+ * @return array{0: string, 1: array} SQL WHERE body (no WHERE keyword) and bound parameters.
+ */
+function backadel_catalogue_to_where(array $filters): array {
+    global $DB;
+
+    $q = isset($filters['q']) ? trim((string) $filters['q']) : '';
+    $year = isset($filters['year']) ? (int) $filters['year'] : 0;
+    $semester = isset($filters['semester']) ? (string) $filters['semester'] : '';
+    $status = isset($filters['status']) ? (string) $filters['status'] : '';
+    $source = isset($filters['source']) ? (string) $filters['source'] : '';
+    $pattern = isset($filters['pattern']) ? (string) $filters['pattern'] : '';
+
+    $clauses = [];
+    $params = [];
+    $pidx = 0;
+
+    if ($q !== '') {
+        $escaped = $DB->sql_like_escape($q);
+        $likepattern = '%' . $escaped . '%';
+        $p1 = 'bcq' . $pidx++;
+        $p2 = 'bcq' . $pidx++;
+        $p3 = 'bcq' . $pidx++;
+        $p4 = 'bcq' . $pidx++;
+        $clauses[] = '(' . $DB->sql_like('c.filename', ':' . $p1, false) . ' OR '
+            . $DB->sql_like('c.shortname', ':' . $p2, false) . ' OR '
+            . $DB->sql_like('c.dept', ':' . $p3, false) . ' OR '
+            . $DB->sql_like('c.course_num', ':' . $p4, false) . ')';
+        $params[$p1] = $likepattern;
+        $params[$p2] = $likepattern;
+        $params[$p3] = $likepattern;
+        $params[$p4] = $likepattern;
+    }
+
+    if ($year > 0) {
+        $pk = 'bcy' . $pidx++;
+        $clauses[] = 'c.year = :' . $pk;
+        $params[$pk] = $year;
+    }
+
+    if ($semester !== '') {
+        $pk = 'bcs' . $pidx++;
+        $clauses[] = 'c.semester = :' . $pk;
+        $params[$pk] = $semester;
+    }
+
+    if ($status !== '') {
+        if ($status === 'none') {
+            $clauses[] = 'c.status IS NULL';
+        } else if (in_array($status, ['available', 'missing', 'archived'], true)) {
+            $pk = 'bcst' . $pidx++;
+            $clauses[] = 'c.status = :' . $pk;
+            $params[$pk] = $status;
+        }
+    }
+
+    if ($source !== '' && in_array($source, ['backadel_current', 'legacy_moodleus', 'legacy_openlms'], true)) {
+        $pk = 'bcsrc' . $pidx++;
+        $clauses[] = 'c.source = :' . $pk;
+        $params[$pk] = $source;
+    }
+
+    $validpatterns = [
+        'semester_legacy',
+        'semester_legacy_lc',
+        'semester_legacy_clone',
+        'storage_course',
+        'storagecourse_dept',
+        'storage_legacy',
+        'backadel_modern',
+        'moodle_native',
+        'unknown',
+    ];
+    if ($pattern !== '' && in_array($pattern, $validpatterns, true)) {
+        $pk = 'bcp' . $pidx++;
+        $clauses[] = 'c.pattern = :' . $pk;
+        $params[$pk] = $pattern;
+    }
+
+    if ($clauses === []) {
+        return ['1=1', []];
+    }
+
+    return [implode(' AND ', $clauses), $params];
 }
 
 /**
@@ -61,13 +288,47 @@ function build_sql_from_search($query, $constraints) {
  * @return bool
  */
 function backadel_delete_course($courseid) {
-    global $DB;
+    global $DB, $CFG;
     // Get the course object based on the supplied courseid.
     $course = $DB->get_record('course', array('id' => $courseid));
+    if (!$course) {
+        return false;
+    }
+
+    $suffix = generate_suffix($course->id);
+    $matchers = array('/\s/', '/\//');
+    $safeshort = preg_replace($matchers, '-', $course->shortname);
+    $backadelfile = "backadel-{$safeshort}{$suffix}.zip";
+    $backadelpath = $CFG->dataroot . get_config('block_backadel', 'path');
+    $filepath = $backadelpath . $backadelfile;
 
     // Delete the course.
     if (delete_course($course, false)) {
         fix_course_sortorder();
+        if (file_exists($filepath)) {
+            @unlink($filepath);
+        }
+        try {
+            $now = time();
+            // Primary: exact path match (suffix correct).
+            $DB->execute(
+                'UPDATE {block_backadel_catalogue} SET status = ?, timemodified = ? WHERE filepath_hash = ? AND source = ?',
+                ['missing', $now, sha1($filepath), 'backadel_current']
+            );
+            // Fallback: any available backadel_current row for this shortname whose file no longer exists
+            // (handles the case where instructor suffix differed between backup and delete time).
+            $DB->execute(
+                'UPDATE {block_backadel_catalogue} SET status = ?, timemodified = ?
+                  WHERE source = ? AND shortname = ? AND status = ?',
+                ['missing', $now, 'backadel_current', $course->shortname, 'available']
+            );
+        } catch (\Throwable $e) {
+            if (CLI_SCRIPT) {
+                mtrace('Backadel catalogue missing update failed: ' . $e->getMessage());
+            } else {
+                debugging('Backadel catalogue missing update failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
         return true;
     } else {
         return false;
@@ -145,6 +406,20 @@ function backadel_backup_course($course) {
 
     // Build the path.
     $backadelpath = $CFG->dataroot . get_config('block_backadel', 'path');
+
+    // Resolve semester subfolder for new backups.
+    $periodslug = \block_backadel\local\period_resolver::for_course($course);
+    if (!empty($periodslug)) {
+        $subfolder = rtrim($backadelpath, '/\\') . DIRECTORY_SEPARATOR . $periodslug;
+        try {
+            if (!is_dir($subfolder)) {
+                make_writable_directory($subfolder);
+            }
+            $backadelpath = $subfolder . DIRECTORY_SEPARATOR;
+        } catch (\moodle_exception $e) {
+            mtrace('Backadel: could not create period subfolder ' . $subfolder . ' — ' . $e->getMessage());
+        }
+    }
 
     // Set the userid.
     $userid = 2;
@@ -354,6 +629,18 @@ function backadel_backup_course($course) {
     // destroy and unset the backup controller.
     $bc->destroy();
     unset($bc);
+
+    if (!empty($buresult) && isset($bdfname)) {
+        try {
+            (new \block_backadel\local\migrator())->migrate_directory(dirname($bdfname), 'backadel_current');
+        } catch (\Throwable $e) {
+            if (CLI_SCRIPT) {
+                mtrace('Backadel catalogue update failed: ' . $e->getMessage());
+            } else {
+                debugging('Backadel catalogue update failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
+    }
 
     // Return either true or false.
     return $buresult;

@@ -48,6 +48,16 @@ $string['adminfilter'] = 'Filter Courses';
 
 $string['semester_backups'] = 'Semester Backups';
 
+$string['table_col_filename'] = 'Filename';
+$string['table_col_filesize'] = 'Size';
+$string['table_col_modified'] = 'Modified';
+$string['table_col_action'] = 'Action';
+$string['restore_action'] = 'Restore';
+
+$string['restore_success'] = 'The course was successfully restored.';
+$string['restore_confirm_title'] = 'Confirm Restore';
+$string['restore_confirm_body'] = 'You are about to overwrite this course with the selected backup. Proceed?';
+
 $string['confirm_message'] = 'You are about to {$a}. Proceed?';
 $string['general'] = 'General Restore Settings';
 $string['general_desc'] = 'These are general restore settings to be applied to any selected backup.';

@@ -130,6 +130,15 @@ class block_backadel extends block_list {
         $items = array();
         $params = array('class' => 'icon');
 
+        if (has_capability('block/backadel:viewresults', context_system::instance())) {
+            $items[] = html_writer::link(new moodle_url('/blocks/backadel/search.php'),
+                get_string('search_results', 'block_backadel'));
+            $items[] = html_writer::link(new moodle_url('/blocks/backadel/failed.php'),
+                get_string('block_failed', 'block_backadel'));
+            $items[] = html_writer::link(new moodle_url('/blocks/backadel/delete.php'),
+                get_string('block_delete', 'block_backadel'));
+        }
+
 /*
         // Build the icon list.
         $icons[] = $OUTPUT->pix_icon('i/backup', '', 'moodle', $params);
@@ -170,6 +179,10 @@ class block_backadel extends block_list {
      * @return link
      */
     public function build_link($page) {
+        if ($page === 'index') {
+            $url = new moodle_url('/blocks/backadel/search.php');
+            return html_writer::link($url, get_string('block_index', 'block_backadel'));
+        }
         $url = new moodle_url("/blocks/backadel/$page.php");
         return html_writer::link($url, get_string("block_$page", 'block_backadel'));
     }

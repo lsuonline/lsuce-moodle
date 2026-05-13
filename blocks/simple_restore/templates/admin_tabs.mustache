@@ -1,0 +1,26 @@
+{{!
+    @template block_simple_restore/admin_tabs
+
+    Tab strip rendered across block_simple_restore admin pages.
+
+    Context schema:
+    {
+      "nav": [
+        { "link": "https://...", "string": "Global settings", "activeClass": "active" },
+        { "link": "https://...", "string": "Restore Courses", "activeClass": "" }
+      ]
+    }
+
+    @copyright 2008 onwards Louisiana State University
+    @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+<ul class="nav nav-tabs block-simple-restore-admin-tabs mb-3" role="tablist">
+    {{#nav}}
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {{activeClass}}" href="{{link}}" role="tab"
+               {{#activeClass}}aria-current="page"{{/activeClass}}>
+                {{string}}
+            </a>
+        </li>
+    {{/nav}}
+</ul>
