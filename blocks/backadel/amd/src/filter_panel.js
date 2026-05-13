@@ -20,13 +20,15 @@ const injectStyles = () => {
     const style = document.createElement('style');
     style.id = 'block-backadel-offcanvas-css';
     style.textContent = `
-/* block_backadel: offcanvas positioning — Snap does not ship Bootstrap 5 offcanvas CSS */
+/* block_backadel: offcanvas positioning — Snap does not ship Bootstrap 5 offcanvas CSS.
+   right: 50px — keeps the panel clear of Snap's 50px-wide fixed sidebar strip (#snap-sidebar-menu,
+   z-index 1050) so it remains clickable while the filter panel is open. */
 .offcanvas {
     position: fixed !important;
     top: 0;
-    right: 0;
+    right: 50px;
     bottom: 0;
-    width: min(400px, 90vw);
+    width: min(400px, calc(90vw - 50px));
     z-index: 1055;
     display: flex;
     flex-direction: column;
@@ -61,10 +63,8 @@ const injectStyles = () => {
     padding: 1rem;
     overflow-y: auto;
 }
-/* Dim backdrop when an offcanvas is open.
-   pointer-events: none lets clicks pass through to elements below (e.g. Snap sidebar trigger
-   at z-index 1050/1051) so Snap's drawer remains usable while the filter panel is open.
-   The document-level dismiss listener (below) still closes the panel on any outside click. */
+/* Dim backdrop when an offcanvas is open. pointer-events: none prevents the pseudo-element
+   from intercepting clicks outside the offcanvas (the JS dismiss listener handles those). */
 body.offcanvas-open::before {
     content: '';
     position: fixed;
