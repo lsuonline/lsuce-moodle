@@ -48,11 +48,12 @@
 }
 
 /* ---- Restore confirm modal: dialog wrapper ---- */
-/* Snap applies rogue rules to .modal-content (max-width: 500px, text-align: center).
-   Scope overrides to .modal-content inside our dialog class. */
+/* Snap applies rogue rules to .modal-content (max-width: 500px, text-align: center)
+   and a purple border to .modal-dialog. Scope overrides to our dialog class. */
 .modal.moodle-has-zindex .modal-dialog.block_simple_restore-modal-dialog,
 .modal-dialog.block_simple_restore-modal-dialog {
     max-width: min(640px, 92vw);
+    border: none;
 }
 
 /* ---- Undo Snap's .modal-content overrides ---- */
