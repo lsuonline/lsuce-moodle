@@ -210,6 +210,20 @@ if (!$table->is_downloading()) {
         'colFullname' => get_string('catalogue_instructors_col_fullname', 'block_backadel'),
         'none'        => get_string('catalogue_instructors_none', 'block_backadel'),
     ]]);
+    if (has_capability('block/backadel:managebackups', $context)) {
+        $PAGE->requires->js_call_amd('block_backadel/catalogue_coursetype_override', 'init', [[
+            'modalTitle' => get_string('catalogue_override_modal_title', 'block_backadel'),
+            'labelType' => get_string('catalogue_override_label_type', 'block_backadel'),
+            'labelNote' => get_string('catalogue_override_label_note', 'block_backadel'),
+            'save' => get_string('catalogue_override_save', 'block_backadel'),
+            'clearLabel' => get_string('catalogue_override_clear', 'block_backadel'),
+            'saved' => get_string('catalogue_override_saved', 'block_backadel'),
+            'cleared' => get_string('catalogue_override_cleared', 'block_backadel'),
+            'typeTeaching' => get_string('coursetype_teaching', 'block_backadel'),
+            'typeBlueprint' => get_string('coursetype_blueprint', 'block_backadel'),
+            'typeOther' => get_string('coursetype_other', 'block_backadel'),
+        ]]);
+    }
     echo $OUTPUT->header();
 
     echo html_writer::div(

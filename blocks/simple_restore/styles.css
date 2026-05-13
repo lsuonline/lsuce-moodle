@@ -52,11 +52,20 @@
    Scope overrides to .modal-content inside our dialog class. */
 .modal.moodle-has-zindex .modal-dialog.block_simple_restore-modal-dialog,
 .modal-dialog.block_simple_restore-modal-dialog {
-    max-width: 640px;
+    max-width: min(640px, 92vw);
 }
 
 /* ---- Undo Snap's .modal-content overrides ---- */
 .modal-dialog.block_simple_restore-modal-dialog .modal-content {
     max-width: none;
     text-align: start;
+}
+
+#page-blocks-simple_restore-list table.generaltable th.lastcol,
+#page-blocks-simple_restore-list table.generaltable td.lastcol {
+    position: sticky;
+    right: 0;
+    background: var(--bs-table-bg, #fff);
+    z-index: 1;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.08);
 }

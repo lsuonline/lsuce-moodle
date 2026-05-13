@@ -90,8 +90,10 @@ class catalogue_table extends base_backadel_table {
         $fields = 'c.id, c.filename, c.shortname, c.semester, c.dept, c.course_num, '
             . 'c.source, c.backup_ts, c.file_size, c.status, c.pattern, c.year, '
             . 'c.instructors, c.filepath_full, '
-            . '(SELECT bc_ct.coursetype FROM {block_backadel_courses} bc_ct '
-            . 'WHERE bc_ct.filename = c.filename ORDER BY bc_ct.id DESC LIMIT 1) AS coursetype, '
+            . 'c.coursetype_override, c.coursetype_override_note, '
+            . 'c.coursetype_override_by, c.coursetype_override_ts, '
+            . 'COALESCE(c.coursetype_override, (SELECT bc_ct.coursetype FROM {block_backadel_courses} bc_ct '
+            . 'WHERE bc_ct.filename = c.filename ORDER BY bc_ct.id DESC LIMIT 1)) AS coursetype, '
             . '(SELECT bc.courseid FROM {block_backadel_courses} bc '
             . 'WHERE bc.filename = c.filename AND bc.courseid IS NOT NULL '
             . 'ORDER BY bc.id DESC LIMIT 1) AS catalogued_courseid, '
@@ -163,7 +165,9 @@ class catalogue_table extends base_backadel_table {
             if ($this->is_downloading()) {
                 return get_string('catalogue_coursetype_undetermined', 'block_backadel');
             }
-            return html_writer::tag('span', '—', ['class' => 'text-muted']);
+            $idattr = (string) ((int) $row->id);
+            $inner = html_writer::tag('span', '—', ['class' => 'text-muted coursetype-badge']);
+            return '<span class="coursetype-badge-wrapper" data-catalogue-id="' . s($idattr) . '">' . $inner . '</span>';
         }
         $label = match ($type) {
             'teaching' => get_string('coursetype_teaching', 'block_backadel'),
@@ -180,7 +184,9 @@ class catalogue_table extends base_backadel_table {
             'other' => 'badge bg-light text-dark border',
             default => 'badge bg-secondary text-white',
         };
-        return html_writer::tag('span', $label, ['class' => $badgeclass]);
+        $idattr = (string) ((int) $row->id);
+        $badge = html_writer::tag('span', $label, ['class' => $badgeclass . ' coursetype-badge']);
+        return '<span class="coursetype-badge-wrapper" data-catalogue-id="' . s($idattr) . '">' . $badge . '</span>';
     }
 
     /**
@@ -364,6 +370,20 @@ class catalogue_table extends base_backadel_table {
                     ]
                 );
             }
+
+            $fragments[] = html_writer::tag(
+                'button',
+                get_string('catalogue_override_btn', 'block_backadel'),
+                [
+                    'type'               => 'button',
+                    'class'              => 'btn btn-sm btn-outline-warning',
+                    'data-action'        => 'coursetype-override',
+                    'data-catalogue-id'  => (string) ((int) $row->id),
+                    'data-current-type'  => (string) ($row->coursetype ?? ''),
+                    'data-is-overridden' => ($row->coursetype_override !== null) ? '1' : '0',
+                    'data-current-note'  => (string) ($row->coursetype_override_note ?? ''),
+                ]
+            );
 
             if ($status === 'available') {
                 $downloadurl = new moodle_url('/blocks/backadel/download.php', [

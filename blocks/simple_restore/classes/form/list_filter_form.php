@@ -52,7 +52,9 @@ class list_filter_form extends moodleform {
         $mform->addElement('hidden', 'restore_to');
         $mform->setType('restore_to', PARAM_INT);
 
-        $mform->addElement('text', 'q', get_string('filter_search', 'block_simple_restore'));
+        $mform->addElement('text', 'q', get_string('filter_search', 'block_simple_restore'), [
+            'placeholder' => get_string('filter_search_placeholder', 'block_simple_restore'),
+        ]);
         $mform->setType('q', PARAM_TEXT);
 
         $years = $this->_customdata['years'] ?? [];
@@ -63,11 +65,11 @@ class list_filter_form extends moodleform {
         $mform->addElement('select', 'semester', get_string('filter_semester', 'block_simple_restore'), $semesters);
         $mform->setType('semester', PARAM_TEXT);
 
-        $mform->addElement('select', 'coursetype', get_string('filter_coursetype', 'block_simple_restore'), [
+        $mform->addElement('select', 'coursetype', get_string('filter_backuptype', 'block_simple_restore'), [
             '' => get_string('any'),
-            'teaching' => get_string('coursetype_teaching', 'block_backadel'),
-            'blueprint' => get_string('coursetype_blueprint', 'block_backadel'),
-            'other' => get_string('coursetype_other', 'block_backadel'),
+            'teaching' => get_string('filter_type_teaching', 'block_simple_restore'),
+            'blueprint' => get_string('filter_type_blueprint', 'block_simple_restore'),
+            'other' => get_string('filter_type_other', 'block_simple_restore'),
         ]);
         $mform->setType('coursetype', PARAM_ALPHA);
 

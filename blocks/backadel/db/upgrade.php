@@ -210,5 +210,47 @@ function xmldb_block_backadel_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026051200, 'block', 'backadel');
     }
 
+    if ($oldversion < 2026051300) {
+        $table = new xmldb_table('block_backadel_catalogue');
+
+        $field = new xmldb_field(
+            'coursetype_override',
+            XMLDB_TYPE_CHAR, '16', null, null, null, null,
+            'pattern'   // Insert after 'pattern'.
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field(
+            'coursetype_override_note',
+            XMLDB_TYPE_TEXT, null, null, null, null, null,
+            'coursetype_override'
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field(
+            'coursetype_override_by',
+            XMLDB_TYPE_INTEGER, '10', null, null, null, null,
+            'coursetype_override_note'
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field(
+            'coursetype_override_ts',
+            XMLDB_TYPE_INTEGER, '10', null, null, null, null,
+            'coursetype_override_by'
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026051300, 'block', 'backadel');
+    }
+
     return true;
 }

@@ -207,7 +207,16 @@ $string['catalogue_instructors_modal_title'] = 'Instructors';
 $string['catalogue_instructors_col_username'] = 'Username';
 $string['catalogue_instructors_col_fullname'] = 'Full name';
 $string['catalogue_instructors_none'] = 'No instructors recorded';
-
+$string['catalogue_override_btn'] = 'Set type';
+$string['catalogue_override_modal_title'] = 'Override course type';
+$string['catalogue_override_label_type'] = 'Course type';
+$string['catalogue_override_label_note'] = 'Note (optional)';
+$string['catalogue_override_save'] = 'Save';
+$string['catalogue_override_clear'] = 'Clear override / revert to auto-detected type';
+$string['catalogue_override_saved'] = 'Course type override saved.';
+$string['catalogue_override_cleared'] = 'Override cleared; reverted to auto-detected type.';
+$string['catalogue_override_invalid_type'] = 'Invalid course type value.';
+$string['catalogue_override_note_too_long'] = 'The note cannot exceed 1024 characters.';
 // Restore proxy page (MD-2189 §3.4).
 $string['coursebackups_pagetitle'] = 'Course Backups';
 $string['coursebackups_heading'] = 'Course Backups';

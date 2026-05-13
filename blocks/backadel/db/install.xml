@@ -32,6 +32,10 @@
         <FIELD NAME="shortname" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Resolved via mdl_course after parse"/>
         <FIELD NAME="instructors" TYPE="text" NOTNULL="false" COMMENT="JSON array of Moodle usernames"/>
         <FIELD NAME="pattern" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="unknown" COMMENT="Which §1.7 regex matched: semester_legacy | semester_legacy_lc | storage_course | storagecourse_dept | backadel_modern | moodle_native | unknown"/>
+        <FIELD NAME="coursetype_override" TYPE="char" LENGTH="16" NOTNULL="false" COMMENT="Manual override: teaching | blueprint | other; NULL = use auto-detected"/>
+        <FIELD NAME="coursetype_override_note" TYPE="text" NOTNULL="false" COMMENT="Admin free-text reason for the override; plain text, max 1 024 chars enforced in PHP"/>
+        <FIELD NAME="coursetype_override_by" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="mdl_user.id of the user who last set the override"/>
+        <FIELD NAME="coursetype_override_ts" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Unix timestamp of the most recent override write"/>
         <FIELD NAME="backup_ts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Unix timestamp from filename"/>
         <FIELD NAME="file_size" TYPE="int" LENGTH="18" NOTNULL="false" COMMENT="Bytes if known (Moodle XMLDB int max LENGTH is 18; fits ~10^17 i.e. 100 PB)"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="available" COMMENT="available | missing | archived"/>

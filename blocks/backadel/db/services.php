@@ -55,4 +55,14 @@ $functions = [
         'ajax' => true,
         'loginrequired' => true,
     ],
+    'block_backadel_set_coursetype_override' => [
+        'classname' => 'block_backadel\\external\\set_coursetype_override',
+        'methodname' => 'execute',
+        'classpath' => '',
+        'description' => 'Manually override the course type for a catalogue row',
+        'type' => 'write',
+        'capabilities' => 'block/backadel:managebackups',
+        'ajax' => true,
+        'loginrequired' => true,
+    ],
 ];

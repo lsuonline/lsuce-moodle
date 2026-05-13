@@ -307,11 +307,12 @@ function backadel_catalogue_to_where(array $filters): array {
 
     $bccoursetypesub = '(SELECT bc_ct.coursetype FROM {block_backadel_courses} bc_ct '
         . 'WHERE bc_ct.filename = c.filename ORDER BY bc_ct.id DESC LIMIT 1)';
+    $effectivecoursetype = 'COALESCE(c.coursetype_override, ' . $bccoursetypesub . ')';
     if ($coursetype === 'undetermined') {
-        $clauses[] = $bccoursetypesub . ' IS NULL';
+        $clauses[] = $effectivecoursetype . ' IS NULL';
     } else if (in_array($coursetype, ['teaching', 'blueprint', 'other'], true)) {
         $pk = 'bcct' . $pidx++;
-        $clauses[] = $bccoursetypesub . ' = :' . $pk;
+        $clauses[] = $effectivecoursetype . ' = :' . $pk;
         $params[$pk] = $coursetype;
     }
 

@@ -61,13 +61,17 @@ const injectStyles = () => {
     padding: 1rem;
     overflow-y: auto;
 }
-/* Dim backdrop when an offcanvas is open */
+/* Dim backdrop when an offcanvas is open.
+   pointer-events: none lets clicks pass through to elements below (e.g. Snap sidebar trigger
+   at z-index 1050/1051) so Snap's drawer remains usable while the filter panel is open.
+   The document-level dismiss listener (below) still closes the panel on any outside click. */
 body.offcanvas-open::before {
     content: '';
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,.45);
     z-index: 1054;
+    pointer-events: none;
 }
 `;
     document.head.appendChild(style);

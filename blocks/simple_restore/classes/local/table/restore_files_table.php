@@ -80,6 +80,7 @@ class restore_files_table extends flexible_table {
         // Hide lower-priority columns on small screens.
         $this->column_class('year',     'd-none d-sm-table-cell');
         $this->column_class('dept',     'd-none d-md-table-cell');
+        $this->column_class('status',   'd-none d-xl-table-cell');
         $this->column_class('filesize', 'd-none d-lg-table-cell');
         $this->column_class('modified', 'd-none d-lg-table-cell');
     }
@@ -272,7 +273,7 @@ class restore_files_table extends flexible_table {
         $filename = (string) ($row->filename ?? '');
         $catalogueid = (int) ($row->catalogue_id ?? 0);
         $attrs = [
-            'class'           => 'btn btn-sm btn-primary',
+            'class'           => 'btn btn-primary',
             'data-action'     => 'restore-confirm',
             'data-courseid'   => (string) $this->courseid,
             'data-filename'   => $filename,
@@ -292,7 +293,7 @@ class restore_files_table extends flexible_table {
             $downloadlink = html_writer::link(
                 $downloadurl,
                 get_string('download_action', 'block_simple_restore'),
-                ['class' => 'btn btn-sm btn-secondary ms-1']
+                ['class' => 'btn btn-sm btn-secondary ms-3']
             );
             return $restorelink . $downloadlink;
         }

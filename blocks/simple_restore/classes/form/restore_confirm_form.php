@@ -46,6 +46,10 @@ class restore_confirm_form extends dynamic_form {
 
         $courseid = $this->optional_param('courseid', 0, PARAM_INT);
         $filename = clean_param($this->optional_param('filename', '', PARAM_FILE), PARAM_FILE);
+        $restoreto = (int) $this->optional_param('restore_to', 0, PARAM_INT);
+        $confirmbodykey = ($restoreto === 1)
+            ? 'restore_confirm_body_import'
+            : 'restore_confirm_body_overwrite';
         $course = $courseid > 0 ? $DB->get_record('course', ['id' => $courseid]) : null;
 
         $html = \html_writer::start_div('mb-3');
@@ -62,7 +66,7 @@ class restore_confirm_form extends dynamic_form {
             );
         }
         $html .= \html_writer::div(
-            get_string('restore_confirm_body', 'block_simple_restore'),
+            get_string($confirmbodykey, 'block_simple_restore'),
             'alert alert-info mb-0'
         );
         $html .= \html_writer::end_div();
