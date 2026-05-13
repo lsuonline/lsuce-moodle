@@ -55,11 +55,12 @@ final class filename_pattern_library {
 
     /**
      * @var string Named-instructor Backadel archive produced by the backup task.
-     * Format: backadel-{year}-{Season}-{DEPT}-{num}-for-{First}-{Last}_{user}@{domain}[_{user2}@{domain}].zip
+     * Format: [full-]backadel-{year}-{Season}-{DEPT}-{num}-for-{First}-{Last}_{user}@{domain}[_{user2}@{domain}].zip
+     * The optional `full-` prefix was used by older full-backup jobs (bug-030).
      * Captures year, semester, dept, course_num, and email-style instructor tokens.
      */
     public const PATTERN_BACKADEL_INSTRUCTOR =
-        '/^backadel-+(?P<year>\d{4})-(?P<semester>Spring|Summer|Fall|Winter|SecondFall|SecondSummer)' .
+        '/^(?:full-)?backadel-+(?P<year>\d{4})-(?P<semester>Spring|Summer|Fall|Winter|SecondFall|SecondSummer)' .
         '-(?P<dept>[A-Z]{2,8})(?:-\((?P<section>[A-Za-z])\))?-(?P<course_num>\d{3,5})' .
         '(?:-Course-\d+)?' .
         '-for-[A-Za-z]+(?:-[A-Za-z]+)+' .
