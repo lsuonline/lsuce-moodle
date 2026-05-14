@@ -134,6 +134,15 @@ abstract class simple_restore_utils {
             return array();
         }
         $backadelpath = $CFG->dataroot . $backadelpath;
+
+        // Load the parser library once; the class is stateless so we can call its
+        // static parse() per-file without re-loading the file each iteration. This is
+        // important when rrusso's catalogue is only partially ingested (MD-2189) so
+        // almost every Simple Restore lookup hits this filesystem fallback — we want
+        // year / semester / dept / course_num / pattern populated on-the-fly from the
+        // filename so the table doesn't render every column as an em-dash.
+        require_once($CFG->dirroot . '/blocks/backadel/classes/local/filename_pattern_library.php');
+
         $bysearch = function ($file) use ($search) {
             return preg_match("/{$search}/i", $file);
         };
@@ -141,8 +150,27 @@ abstract class simple_restore_utils {
             $backadel = new stdClass;
             $backadel->id = $file;
             $backadel->filename = $file;
+            $backadel->filepath = $backadelpath . $file;
             $backadel->filesize = filesize($backadelpath . $file);
             $backadel->timemodified = filemtime($backadelpath . $file);
+
+            // Parse the filename so the restore_files_table can display catalogue-style
+            // metadata (year, semester, dept) even when the row is not yet ingested.
+            $parsed = \block_backadel\local\filename_pattern_library::parse($file);
+            if ($parsed !== null) {
+                $backadel->year       = isset($parsed['year'])       ? (string) $parsed['year']       : '';
+                $backadel->semester   = isset($parsed['semester'])   ? (string) $parsed['semester']   : '';
+                $backadel->dept       = isset($parsed['dept'])       ? (string) $parsed['dept']       : '';
+                $backadel->course_num = isset($parsed['course_num']) ? (string) $parsed['course_num'] : '';
+                $backadel->pattern    = (string) ($parsed['pattern'] ?? 'unknown');
+            } else {
+                $backadel->year = '';
+                $backadel->semester = '';
+                $backadel->dept = '';
+                $backadel->course_num = '';
+                $backadel->pattern = 'unknown';
+            }
+
             return $backadel;
         };
         $potentials = array_filter(scandir($backadelpath), $bysearch);
