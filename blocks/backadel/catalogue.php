@@ -216,7 +216,7 @@ if (!$table->is_downloading()) {
 
     $helpbtn = html_writer::tag('button', '?', [
         'type' => 'button',
-        'class' => 'btn btn-sm btn-outline-secondary px-2',
+        'class' => 'btn btn-outline-secondary px-2',
         'data-action' => 'show-help',
         'data-help-topic' => 'catalogue',
         'data-help-title' => get_string('catalogue_title', 'block_backadel'),

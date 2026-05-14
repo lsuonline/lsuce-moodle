@@ -306,7 +306,7 @@ if ($hascatalogue || $sractivefiltercount > 0) {
     // The ? help button is rendered inside the filter panel's flex row via extrabuttonshtml.
     $srhelpbtn = html_writer::tag('button', '?', [
         'type' => 'button',
-        'class' => 'btn btn-sm btn-outline-secondary px-2',
+        'class' => 'btn btn-outline-secondary px-2',
         'data-action' => 'show-help',
         'data-help-topic' => 'simple_restore_list',
         'data-help-title' => get_string('pluginname', 'block_simple_restore'),
