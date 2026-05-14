@@ -129,6 +129,40 @@ final class catalogue_flow_test extends \advanced_testcase {
         $this->assertStringStartsWith('LSU_AM_', $slug);
     }
 
+    /**
+     * bug-043: the international-session semester variants must produce the dedicated
+     * `LSU_AM_springint_<year>` slug instead of falling back to `null` (or, worse,
+     * being silently dropped). Asserting the canonical `Int` short form input.
+     *
+     * @covers \block_backadel\local\period_resolver::for_course
+     */
+    public function test_period_resolver_returns_intl_slug_for_int_idnumber(): void {
+        $course = new \stdClass();
+        $course->idnumber = '2012SpringIntAAAS2410';
+        $course->shortname = 'AAAS 2410';
+        $course->fullname = 'Intro to African American Studies — International';
+        $course->startdate = 0;
+
+        $slug = period_resolver::for_course($course);
+        $this->assertSame('LSU_AM_springint_2012', $slug);
+    }
+
+    /**
+     * bug-043: the long `INTL` variant must collapse to the same canonical slug.
+     *
+     * @covers \block_backadel\local\period_resolver::for_course
+     */
+    public function test_period_resolver_returns_intl_slug_for_intl_idnumber(): void {
+        $course = new \stdClass();
+        $course->idnumber = '2012SpringINTL2000';
+        $course->shortname = 'INTL 2000';
+        $course->fullname = 'International Studies';
+        $course->startdate = 0;
+
+        $slug = period_resolver::for_course($course);
+        $this->assertSame('LSU_AM_springint_2012', $slug);
+    }
+
     // -----------------------------------------------------------------------
     // backadel_resolve_path() — filepath_full preference + fallback
     // -----------------------------------------------------------------------

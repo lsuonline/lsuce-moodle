@@ -42,7 +42,12 @@ class period_resolver {
         return $resolver->resolve($year, $semester);
     }
 
-    /** @var array<string, string> Title-case semester keyword to folder token. */
+    /** @var array<string, string> Title-case semester keyword to folder token.
+     *
+     * Keys must match the post-`ucfirst(strtolower())` form of the semester string emitted
+     * by {@see filename_pattern_library::normalize_semester()} (e.g. `Springint`, not
+     * `SpringInt`) — see {@see self::abbr_from_semester()} for the casing pipeline. The
+     * international-session variants (bug-043) round-trip into `LSU_AM_springint_<year>`. */
     private const SEM_ABBR = [
         'Spring' => 'spring',
         'Summer' => 'summer',
@@ -50,6 +55,10 @@ class period_resolver {
         'Winter' => 'winter',
         'Secondfall' => 'secondfall',
         'Secondsummer' => 'secondsummer',
+        'Springint' => 'springint',
+        'Summerint' => 'summerint',
+        'Fallint' => 'fallint',
+        'Winterint' => 'winterint',
     ];
 
     /**
@@ -107,10 +116,13 @@ class period_resolver {
      */
     private static function infer_year_semester(\stdClass $course): array {
         $haystack = self::haystack_sources($course);
+        // Longer literals (SecondFall/SecondSummer + the optional INTL/Int suffix) precede
+        // shorter ones so PCRE alternation picks the most specific match (bug-043).
         if (
             preg_match(
                 '/(?P<year>\d{4})' .
-                '(?P<semester>Spring|Summer|Fall|Winter|SecondFall|SecondSummer|spring|summer|fall|winter|secondfall|secondsummer)' .
+                '(?P<semester>SecondFall|SecondSummer|secondfall|secondsummer|' .
+                '(?:Spring|Summer|Fall|Winter|spring|summer|fall|winter)(?:INTL|Int|intl|int)?)' .
                 '/',
                 $haystack,
                 $m
@@ -156,12 +168,22 @@ class period_resolver {
      * Returns empty string when the input cannot be mapped to a known semester.
      */
     private static function abbr_from_semester(string $semester): string {
+        // Tolerate the canonical normalised form (`SpringInt`) as well as raw filename
+        // tokens like `SpringINTL` / `springint` by collapsing to the lowercase letter
+        // run, mapping `*intl` to `*int` (the canonical folder slug suffix), then
+        // checking the whitelist (bug-043).
         $title = ucfirst(strtolower(trim($semester)));
         if (isset(self::SEM_ABBR[$title])) {
             return self::SEM_ABBR[$title];
         }
         $clean = strtolower((string) preg_replace('/[^a-zA-Z]/i', '', $semester));
-        return in_array($clean, ['spring', 'summer', 'fall', 'winter', 'secondfall', 'secondsummer'], true)
-            ? $clean : '';
+        if ($clean !== '' && str_ends_with($clean, 'intl')) {
+            $clean = substr($clean, 0, -1);
+        }
+        $whitelist = [
+            'spring', 'summer', 'fall', 'winter', 'secondfall', 'secondsummer',
+            'springint', 'summerint', 'fallint', 'winterint',
+        ];
+        return in_array($clean, $whitelist, true) ? $clean : '';
     }
 }

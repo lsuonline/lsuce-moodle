@@ -36,14 +36,30 @@ namespace block_backadel\local;
  */
 final class filename_pattern_library {
 
-    /** @var string Primary legacy semester backup pattern (uppercase semester + dept). */
+    /** @var string Primary legacy semester backup pattern (uppercase semester + dept).
+     *
+     * The semester alternation accepts an optional `INTL` / `Int` suffix to recognise LSU's
+     * international-session archives (bug-043). `SecondFall` / `SecondSummer` precede the
+     * single-season tokens so the longer literal wins regardless of PCRE optimisation, and
+     * `INTL` precedes `Int` for the same reason. */
     public const PATTERN_SEMESTER_LEGACY =
-        '/^(?P<year>\d{4})(?P<semester>Spring|Summer|Fall|Winter|SecondFall|SecondSummer)(?P<dept>[A-Z]{2,8})(?P<digit_run>\d{4,})(?P<tt_suffix>tt\d+)?' .
+        '/^(?P<year>\d{4})(?P<semester>SecondFall|SecondSummer|(?:Spring|Summer|Fall|Winter)(?:INTL|Int)?)(?P<dept>[A-Z]{2,8})(?P<digit_run>\d{4,})(?P<tt_suffix>tt\d+)?' .
         '(?:_(?P<instructors>[a-z0-9][a-z0-9_-]*?))?_(?P<backup_ts>\d{9,12})\.(zip|mbz)$/';
 
-    /** @var string Lowercase-semester variant of {@see self::PATTERN_SEMESTER_LEGACY}. */
+    /** @var string Lowercase-semester variant of {@see self::PATTERN_SEMESTER_LEGACY}.
+     *
+     * Mirrors the international-session suffix support added for bug-043. */
     public const PATTERN_SEMESTER_LEGACY_LC =
-        '/^(?P<year>\d{4})(?P<semester>spring|summer|fall|winter|secondfall|secondsummer)(?P<dept>[a-zA-Z]{2,8})(?P<digit_run>\d{4,})(?P<tt_suffix>tt\d+)?' .
+        '/^(?P<year>\d{4})(?P<semester>secondfall|secondsummer|(?:spring|summer|fall|winter)(?:intl|int)?)(?P<dept>[a-zA-Z]{2,8})(?P<digit_run>\d{4,})(?P<tt_suffix>tt\d+)?' .
+        '(?:_(?P<instructors>[a-z0-9][a-z0-9_-]*?))?_(?P<backup_ts>\d{9,12})\.(zip|mbz)$/';
+
+    /** @var string International-session legacy archive without an embedded department code (bug-043).
+     *
+     * Production samples like `2012SpringINTL200020207_nicklen_…zip` have no dept letters
+     * between the `INTL` suffix and the trailing digit run. The dedicated pattern emits
+     * dept/course_num/course_idnumber as null and a normalised `SpringInt`-style semester. */
+    public const PATTERN_SEMESTER_LEGACY_INTL =
+        '/^(?P<year>\d{4})(?P<semester>(?:Spring|Summer|Fall|Winter|spring|summer|fall|winter)(?:INTL|Int|intl|int))(?P<digit_run>\d{4,})(?P<tt_suffix>tt\d+)?' .
         '(?:_(?P<instructors>[a-z0-9][a-z0-9_-]*?))?_(?P<backup_ts>\d{9,12})\.(zip|mbz)$/';
 
     /** @var string Optional instructor tokens without departmental course numbering. */
@@ -60,7 +76,7 @@ final class filename_pattern_library {
      * Captures year, semester, dept, course_num, and email-style instructor tokens.
      */
     public const PATTERN_BACKADEL_INSTRUCTOR =
-        '/^(?:full-)?backadel-+(?P<year>\d{4})-(?P<semester>Spring|Summer|Fall|Winter|SecondFall|SecondSummer)' .
+        '/^(?:full-)?backadel-+(?P<year>\d{4})-(?P<semester>SecondFall|SecondSummer|(?:Spring|Summer|Fall|Winter)(?:INTL|Int)?)' .
         '-(?P<dept>[A-Z]{2,8})(?:-\((?P<section>[A-Za-z])\))?-(?P<course_num>\d{3,5})' .
         '(?:-Course-\d+)?' .
         '-for-[A-Za-z]+(?:-[A-Za-z]+)+' .
@@ -80,9 +96,12 @@ final class filename_pattern_library {
     /** @var string Pre-semester-era archives: letter prefix, no year, trailing 9-12 digit timestamp. Allows hyphen and dot in slug. */
     public const PATTERN_STORAGE_LEGACY = '/^(?P<slug>[A-Za-z][A-Za-z0-9_.\-]*)_(?P<backup_ts>\d{9,12})\.(zip|mbz)$/i';
 
-    /** @var string Clone/copy of a semester course (slug ending in cl\d+, no strict dept code). */
+    /** @var string Clone/copy of a semester course (slug ending in cl\d+, no strict dept code).
+     *
+     * The semester alternation also accepts the optional `INTL` / `Int` international suffix
+     * for parity with PATTERN_SEMESTER_LEGACY (bug-043). */
     public const PATTERN_SEMESTER_LEGACY_CLONE =
-        '/^(?P<year>\d{4})(?P<semester>Spring|Summer|Fall|Winter|SecondFall|SecondSummer|spring|summer|fall|winter|secondfall|secondsummer)' .
+        '/^(?P<year>\d{4})(?P<semester>SecondFall|SecondSummer|secondfall|secondsummer|(?:Spring|Summer|Fall|Winter|spring|summer|fall|winter)(?:INTL|Int|intl|int)?)' .
         '(?P<slug>[A-Za-z0-9]+cl\d+)(?P<instructor_tail>(?:_[A-Za-z0-9]+)*)_(?P<backup_ts>\d{9,12})\.(zip|mbz)$/i';
 
     /** @var string Moodle username token at end of Backadel slug segments. */
@@ -118,6 +137,13 @@ final class filename_pattern_library {
      * @return array<string, mixed>
      */
     private static function parse_basename_internal(string $basename, string $raw): array {
+        // International-session legacy archives (bug-043) MUST be matched before
+        // PATTERN_SEMESTER_LEGACY: in the international shape there is no dept code
+        // between the `INTL` suffix and the digit run, but `[A-Z]{2,8}\d{4,}` would
+        // happily eat `INTL` as a fake department.
+        if (preg_match(self::PATTERN_SEMESTER_LEGACY_INTL, $basename, $m)) {
+            return self::parsed_semester_intl($raw, $m);
+        }
         if (preg_match(self::PATTERN_SEMESTER_LEGACY, $basename, $m)) {
             return self::parsed_semester('semester_legacy', $raw, $m);
         }
@@ -226,6 +252,42 @@ final class filename_pattern_library {
             $dept,
             $coursenum,
             $courseidnumber,
+            $instructors,
+            $shortnamehint
+        );
+
+        if (!empty($m['tt_suffix'])) {
+            $result['team_teach_suffix'] = (string) $m['tt_suffix'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<string, string> $m Regex named captures for PATTERN_SEMESTER_LEGACY_INTL.
+     * @return array<string, mixed>
+     */
+    private static function parsed_semester_intl(string $raw, array $m): array {
+        $year = (int) $m['year'];
+        $semester = self::normalize_semester($m['semester']);
+        $backupts = (int) $m['backup_ts'];
+        $instructors = self::instructors_from_capture($m['instructors'] ?? '');
+
+        // The digit run after `INTL` is an LSU course-instance ID, not a course number,
+        // and there is no embedded department code — leave dept/course_num/idnumber null
+        // and surface the raw digit run via the shortname hint for catalogue display.
+        $digitrun = $m['digit_run'] ?? '';
+        $shortnamehint = $digitrun !== '' ? $semester . ' ' . $digitrun : $semester;
+
+        $result = self::result_template(
+            'semester_legacy_intl',
+            $raw,
+            $backupts,
+            $year,
+            $semester,
+            null,
+            null,
+            null,
             $instructors,
             $shortnamehint
         );
@@ -361,7 +423,9 @@ final class filename_pattern_library {
             }
         }
 
-        $semester = ucfirst(strtolower($m['semester']));
+        // Normalise via the shared helper so international suffix variants
+        // (SpringINTL, SpringInt, …) collapse to the canonical SpringInt form (bug-043).
+        $semester = self::normalize_semester($m['semester']);
         $year = (int) $m['year'];
 
         return self::result_template(
@@ -426,13 +490,27 @@ final class filename_pattern_library {
 
     /**
      * Normalise semester word to canonical catalogue form.
-     * SecondFall/SecondSummer require special handling (ucfirst produces Secondfall/Secondsummer).
+     *
+     * SecondFall / SecondSummer require an explicit map because ucfirst() would only
+     * capitalise the leading `S`. International-session variants (`SpringINTL`,
+     * `springint`, `SpringInt`, `springintl`, …) all collapse to the canonical
+     * `<Season>Int` form per bug-043 — `Int` is the form that appears most often in
+     * production filenames and round-trips into the `LSU_AM_springint_<year>` folder
+     * slug without truncation.
      */
     private static function normalize_semester(string $semester): string {
         $lower = strtolower($semester);
         $map = [
             'secondfall'   => 'SecondFall',
             'secondsummer' => 'SecondSummer',
+            'springint'    => 'SpringInt',
+            'springintl'   => 'SpringInt',
+            'summerint'    => 'SummerInt',
+            'summerintl'   => 'SummerInt',
+            'fallint'      => 'FallInt',
+            'fallintl'     => 'FallInt',
+            'winterint'    => 'WinterInt',
+            'winterintl'   => 'WinterInt',
         ];
         return $map[$lower] ?? ucfirst($lower);
     }

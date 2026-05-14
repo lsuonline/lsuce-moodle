@@ -273,4 +273,130 @@ class filename_parser_test extends \advanced_testcase {
         $this->assertSame('semester_legacy', $r['pattern']);
         $this->assertSame($f, $r['raw_filename']);
     }
+
+    // -----------------------------------------------------------------------
+    // bug-043 — international-session semester variants (Int / INTL)
+    // -----------------------------------------------------------------------
+
+    /**
+     * SpringINTL with a real dept code following: parses as semester_legacy with
+     * canonical `SpringInt` semester and the dept correctly extracted.
+     */
+    public function test_intl_long_form_with_dept(): void {
+        $r = $this->parse('2012SpringINTLSPAN10010001_nicklen_1338842283.zip');
+        $this->assertNotNull($r);
+        $this->assertSame('semester_legacy', $r['pattern']);
+        $this->assertSame(2012, $r['year']);
+        $this->assertSame('SpringInt', $r['semester']);
+        $this->assertSame('SPAN', $r['dept']);
+        $this->assertSame('1001', $r['course_num']);
+        $this->assertSame(['nicklen'], $r['instructors']);
+    }
+
+    /**
+     * SpringINTL followed only by a digit run (no dept code) — production sample
+     * `2012SpringINTL200020207_nicklen_…zip`. Routes through the dedicated
+     * `semester_legacy_intl` pattern with dept null.
+     */
+    public function test_intl_long_form_no_dept(): void {
+        $r = $this->parse('2012SpringINTL200020207_nicklen_1338842283.zip');
+        $this->assertNotNull($r);
+        $this->assertSame('semester_legacy_intl', $r['pattern']);
+        $this->assertSame(2012, $r['year']);
+        $this->assertSame('SpringInt', $r['semester']);
+        $this->assertNull($r['dept']);
+        $this->assertNull($r['course_num']);
+        $this->assertNull($r['course_idnumber']);
+        $this->assertSame(['nicklen'], $r['instructors']);
+        $this->assertSame(1338842283, $r['backup_ts']);
+    }
+
+    /**
+     * Short `Int` form with dept code (the most common production shape, 138 files).
+     * Previously fell through to `unknown` because the dept regex tripped over `n` in `Int`.
+     */
+    public function test_int_short_form_with_dept(): void {
+        $r = $this->parse('2012SpringIntAAAS241010589_jamsulli_1338841826.zip');
+        $this->assertNotNull($r);
+        $this->assertSame('semester_legacy', $r['pattern']);
+        $this->assertSame(2012, $r['year']);
+        $this->assertSame('SpringInt', $r['semester']);
+        $this->assertSame('AAAS', $r['dept']);
+        $this->assertSame('2410', $r['course_num']);
+        $this->assertSame(['jamsulli'], $r['instructors']);
+    }
+
+    /**
+     * Lowercase `int` short form must also normalise to `SpringInt` and route through
+     * the LC pattern.
+     */
+    public function test_int_short_form_lowercase(): void {
+        $r = $this->parse('2012springintaaas241010589_jamsulli_1338841826.zip');
+        $this->assertNotNull($r);
+        $this->assertSame('semester_legacy_lc', $r['pattern']);
+        $this->assertSame('SpringInt', $r['semester']);
+        $this->assertSame('AAAS', $r['dept']);
+    }
+
+    /**
+     * Defensive coverage: Fall + INTL parses correctly (LSU only ships Spring INTL today
+     * but the parser must handle the full season set).
+     */
+    public function test_fall_intl_with_dept(): void {
+        $r = $this->parse('2018FallINTLENGL40010001_jdoe_1538841826.zip');
+        $this->assertNotNull($r);
+        $this->assertSame('semester_legacy', $r['pattern']);
+        $this->assertSame('FallInt', $r['semester']);
+        $this->assertSame('ENGL', $r['dept']);
+    }
+
+    /**
+     * Backadel-prefixed instructor archive carrying the SpringINTL semester token —
+     * dept LA (the academic college) must still be extracted, semester normalised.
+     */
+    public function test_backadel_instructor_intl(): void {
+        $r = $this->parse('backadel-2019-SpringINTL-SPAN-1001-for-Jane-Doe_jdoe@lsu.edu.zip');
+        $this->assertNotNull($r);
+        $this->assertSame('backadel_instructor', $r['pattern']);
+        $this->assertSame(2019, $r['year']);
+        $this->assertSame('SpringInt', $r['semester']);
+        $this->assertSame('SPAN', $r['dept']);
+        $this->assertSame('1001', $r['course_num']);
+        $this->assertContains('jdoe', $r['instructors']);
+    }
+
+    /**
+     * Backadel-prefixed instructor archive with the short `Int` semester variant.
+     */
+    public function test_backadel_instructor_int_short(): void {
+        $r = $this->parse('backadel-2019-SpringInt-LA-1203-for-Jane-Doe_jdoe@lsu.edu.zip');
+        $this->assertNotNull($r);
+        $this->assertSame('backadel_instructor', $r['pattern']);
+        $this->assertSame(2019, $r['year']);
+        $this->assertSame('SpringInt', $r['semester']);
+        $this->assertSame('LA', $r['dept']);
+        $this->assertSame('1203', $r['course_num']);
+    }
+
+    /**
+     * Regression guard: SecondFall must still beat the new optional `Int` suffix and
+     * the dept group must not accidentally consume `Int` from a real dept name.
+     */
+    public function test_second_fall_still_parses_after_intl_changes(): void {
+        $r = $this->parse('2024SecondFallMATH1201_jsmith_1234567890.zip');
+        $this->assertNotNull($r);
+        $this->assertSame('semester_legacy', $r['pattern']);
+        $this->assertSame('SecondFall', $r['semester']);
+        $this->assertSame('MATH', $r['dept']);
+        $this->assertSame('1201', $r['course_num']);
+    }
+
+    /**
+     * Regression guard: pre-bug-043 `dept = INTL` no longer leaks for the int-suffixed
+     * filename — the catalogue used to record `dept=INTL` for these files, which was wrong.
+     */
+    public function test_intl_no_longer_recorded_as_dept(): void {
+        $r = $this->parse('2012SpringINTL200020207_nicklen_1338842283.zip');
+        $this->assertNotSame('INTL', $r['dept']);
+    }
 }
