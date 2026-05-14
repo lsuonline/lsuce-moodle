@@ -293,7 +293,11 @@ abstract class simple_restore_utils {
         ];
         $data->catalogue_filters = $filters;
 
-        $catalogueshort = (string) ($course->shortname ?? '');
+        // In admin mode $data->shortname is the course code entered in the search form;
+        // $course is the site course (id=SITEID) whose shortname is irrelevant for catalogue lookup.
+        $catalogueshort = (isset($data->shortname) && (string) $data->shortname !== '')
+            ? (string) $data->shortname
+            : (string) ($course->shortname ?? '');
         $catopts = self::get_catalogue_filter_options($catalogueshort);
 
         $yearopts = [
