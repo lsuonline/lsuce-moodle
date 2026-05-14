@@ -55,13 +55,21 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
     public function execute(): void {
         global $CFG;
 
+        // Prevent SIGPIPE from killing the process when the cron runner's stdout pipe
+        // closes before our chunk completes. Without this, fwrite() to a closed pipe
+        // sends SIGPIPE which PHP CLI handles by terminating the process, losing the cursor.
+        if (function_exists('pcntl_signal')) {
+            pcntl_signal(SIGPIPE, SIG_IGN);
+        }
+        ignore_user_abort(true);
+
         $custom = (array) ($this->get_custom_data() ?? []);
 
         // ---- Resolve / freeze the run list on first chunk -----------------------
         if (empty($custom['runs']) || !is_array($custom['runs'])) {
             $runs = $this->build_runs_from_config();
             if ($runs === []) {
-                mtrace('block_backadel migrate_filesystem_adhoc: no runs configured (block_backadel/path empty); aborting.');
+                @mtrace('block_backadel migrate_filesystem_adhoc: no runs configured (block_backadel/path empty); aborting.');
                 return;
             }
             $custom = [
@@ -90,7 +98,7 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
         }
         $deadline = time() + ($timeoutmin * 60);
 
-        mtrace(sprintf(
+        @mtrace(sprintf(
             'block_backadel migrate_filesystem_adhoc[%s]: starting chunk at dir_index=%d file_index=%d, '
                 . 'budget=%dmin, chain_started=%s, files_done_so_far=%d',
             $chainid, $dirindex, $fileindex, $timeoutmin, date('c', $chainstarted), $filesdone
@@ -114,7 +122,7 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
 
             if ($fileindex >= $dirtotal) {
                 // Finished this dir — advance to next.
-                mtrace(sprintf(
+                @mtrace(sprintf(
                     'block_backadel migrate_filesystem_adhoc[%s]: completed dir %s (%d files).',
                     $chainid, $dir, $dirtotal
                 ));
@@ -138,8 +146,8 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
                 $filesdone++;
                 $filesinserted  += $inserted;
 
-                if ($chunkprocessed % 200 === 0) {
-                    mtrace(sprintf(
+                if ($chunkprocessed % 5000 === 0) {
+                    @mtrace(sprintf(
                         'block_backadel migrate_filesystem_adhoc[%s]: %d files processed in this chunk so far (dir %s).',
                         $chainid, $chunkprocessed, $dir
                     ));
@@ -156,7 +164,7 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
         // ---- Decide: queue successor or finish chain? ---------------------------
         $remaining = $this->count_remaining($rundefs, $dirindex, $fileindex);
 
-        mtrace(sprintf(
+        @mtrace(sprintf(
             'block_backadel migrate_filesystem_adhoc[%s]: chunk done. processed=%d, inserted=%d, '
                 . 'chain_total_processed=%d, chain_total_inserted=%d, remaining=%d, stopped_early=%s',
             $chainid, $chunkprocessed, $chunkinserted,
@@ -175,12 +183,12 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
                 'files_inserted'   => $filesinserted,
             ]);
             \core\task\manager::queue_adhoc_task($successor, true);
-            mtrace(sprintf(
+            @mtrace(sprintf(
                 'block_backadel migrate_filesystem_adhoc[%s]: queued successor task to continue at dir_index=%d file_index=%d.',
                 $chainid, $dirindex, $fileindex
             ));
         } else {
-            mtrace(sprintf(
+            @mtrace(sprintf(
                 'block_backadel migrate_filesystem_adhoc[%s]: chain complete. No successor queued.',
                 $chainid
             ));
