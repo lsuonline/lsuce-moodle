@@ -21,12 +21,12 @@ const injectStyles = () => {
     style.id = 'block-backadel-offcanvas-css';
     style.textContent = `
 /* block_backadel: offcanvas positioning — Snap does not ship Bootstrap 5 offcanvas CSS.
-   Selectors are scoped to our specific panel IDs so they do NOT affect Snap's own
-   sidebar drawer elements (which also carry the .offcanvas class).
+   Scoped to .backadel-offcanvas-panel (set on every panel rendered by filter_panel.mustache)
+   so these rules do NOT affect Snap's own sidebar drawer elements (which carry .offcanvas
+   without our marker class).
    right: 50px — keeps the panel clear of Snap's 50px-wide fixed sidebar strip (#snap-sidebar-menu,
    z-index 1050) so it remains clickable while the filter panel is open. */
-#backadel-catalogue-filters.offcanvas,
-#sr-list-filters.offcanvas {
+.backadel-offcanvas-panel.offcanvas {
     position: fixed !important;
     top: 0;
     right: 50px;
@@ -43,29 +43,25 @@ const injectStyles = () => {
     overflow-y: auto;
     pointer-events: none;
 }
-#backadel-catalogue-filters.offcanvas.show,
-#sr-list-filters.offcanvas.show {
+.backadel-offcanvas-panel.offcanvas.show {
     transform: none !important;
     visibility: visible !important;
     pointer-events: auto;
 }
-#backadel-catalogue-filters .offcanvas-header,
-#sr-list-filters .offcanvas-header {
+.backadel-offcanvas-panel .offcanvas-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 1rem;
     flex-shrink: 0;
 }
-#backadel-catalogue-filters .offcanvas-title,
-#sr-list-filters .offcanvas-title {
+.backadel-offcanvas-panel .offcanvas-title {
     margin-bottom: 0;
     line-height: 1.5;
     font-size: 1.1rem;
     font-weight: 600;
 }
-#backadel-catalogue-filters .offcanvas-body,
-#sr-list-filters .offcanvas-body {
+.backadel-offcanvas-panel .offcanvas-body {
     flex-grow: 1;
     padding: 1rem;
     overflow-y: auto;
