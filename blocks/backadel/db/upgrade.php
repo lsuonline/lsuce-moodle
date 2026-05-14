@@ -252,5 +252,22 @@ function xmldb_block_backadel_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026051300, 'block', 'backadel');
     }
 
+    if ($oldversion < 2026051301) {
+        // bug-039: Clean up any catalogue rows where path concatenation produced double slashes
+        // before the rtrim() fix was applied. Safe to run mid-import: the adhoc task cursor
+        // lives in task custom_data and is unaffected by changes to filepath column values.
+        if ($dbman->table_exists(new xmldb_table('block_backadel_catalogue'))) {
+            $DB->execute(
+                "UPDATE {block_backadel_catalogue}
+                    SET filepath_full = REPLACE(filepath_full, '//', '/'),
+                        filepath      = REPLACE(filepath,      '//', '/')
+                  WHERE filepath_full LIKE '%//%'
+                     OR filepath      LIKE '%//%'"
+            );
+        }
+
+        upgrade_plugin_savepoint(true, 2026051301, 'block', 'backadel');
+    }
+
     return true;
 }

@@ -53,6 +53,10 @@ function backadel_resolve_path(int $catalogueid): string {
         ? $path
         : $CFG->dataroot . '/' . ltrim($path, '/');
 
+    // Defensive: collapse any double-slashes that crept in from stale DB data written before bug-039 was
+    // fixed. These are always absolute filesystem paths, so replacing // with / is always safe here.
+    $resolved = str_replace('//', '/', $resolved);
+
     $prefix = (string) get_config('block_backadel', 'catalogue_path_prefix');
     if ($prefix !== '' && strpos($prefix, '=') !== false) {
         [$old, $new] = explode('=', $prefix, 2);
