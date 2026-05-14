@@ -55,6 +55,16 @@ $functions = [
         'ajax' => true,
         'loginrequired' => true,
     ],
+    'block_backadel_get_migration_status' => [
+        'classname' => 'block_backadel\\external\\get_migration_status',
+        'methodname' => 'execute',
+        'classpath' => '',
+        'description' => 'Get current migration status and backup counts for the sidebar widget',
+        'type' => 'read',
+        'capabilities' => 'block/backadel:managebackups',
+        'ajax' => true,
+        'loginrequired' => true,
+    ],
     'block_backadel_set_coursetype_override' => [
         'classname' => 'block_backadel\\external\\set_coursetype_override',
         'methodname' => 'execute',

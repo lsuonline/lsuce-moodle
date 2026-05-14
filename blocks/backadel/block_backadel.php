@@ -84,7 +84,7 @@ class block_backadel extends block_base {
 
     #[\Override]
     public function get_content(): stdClass {
-        global $DB, $OUTPUT, $USER;
+        global $DB, $OUTPUT, $PAGE, $USER;
 
         if ($this->content !== null) {
             return $this->content;
@@ -121,18 +121,21 @@ class block_backadel extends block_base {
                     'url'      => (new moodle_url('/blocks/backadel/search.php'))->out(false),
                     'label'    => get_string('block_index', 'block_backadel'),
                     'count'    => null,
+                    'countkey' => '',
                 ],
                 [
                     'iconhtml' => $OUTPUT->pix_icon('i/delete', '', 'moodle', $iconparams),
                     'url'      => (new moodle_url('/blocks/backadel/delete.php'))->out(false),
                     'label'    => get_string('block_delete', 'block_backadel'),
                     'count'    => $numpending > 0 ? $numpending : null,
+                    'countkey' => 'pending',
                 ],
                 [
                     'iconhtml' => $OUTPUT->pix_icon('i/risk_xss', '', 'moodle', $iconparams),
                     'url'      => (new moodle_url('/blocks/backadel/failed.php'))->out(false),
                     'label'    => get_string('block_failed', 'block_backadel'),
                     'count'    => $numfailed > 0 ? $numfailed : null,
+                    'countkey' => 'failed',
                 ],
             ],
             'statustext'     => $statustext,
@@ -140,6 +143,11 @@ class block_backadel extends block_base {
         ];
 
         $this->content->text = $OUTPUT->render_from_template('block_backadel/block_widget', $data);
+
+        // Boot the live-polling AMD module so the widget refreshes every 10 s.
+        $PAGE->requires->string_for_js('status_running', 'block_backadel');
+        $PAGE->requires->string_for_js('status_not_running', 'block_backadel');
+        $PAGE->requires->js_call_amd('block_backadel/migration_status_poll', 'init');
 
         return $this->content;
     }
