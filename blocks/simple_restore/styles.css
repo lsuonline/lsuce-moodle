@@ -77,3 +77,17 @@
     z-index: 1;
     box-shadow: -2px 0 5px rgba(0, 0, 0, 0.08);
 }
+
+/* Row hover: only apply to body rows, never to <thead>.
+   Bootstrap's .table-hover and a number of Snap rules cascade onto every
+   <tr>, which leaves the header row with an unintended highlight on mouseover.
+   Re-scope the hover to tbody and cancel it on thead at higher specificity. */
+#page-blocks-simple_restore-list table.generaltable thead tr:hover,
+#page-blocks-simple_restore-list table.generaltable thead tr:hover th {
+    background-color: inherit;
+    background: inherit;
+    cursor: default;
+}
+#page-blocks-simple_restore-list table.generaltable tbody tr:hover {
+    background-color: var(--bs-table-hover-bg, rgba(0, 0, 0, 0.04));
+}

@@ -43,6 +43,9 @@ class restore_files_table extends flexible_table {
     /** @var int Restore-to selector forwarded to the modal trigger. */
     private int $restoreto;
 
+    /** @var bool Whether the viewer is an admin/manager (controls visibility of admin-only columns). */
+    private bool $isadmin;
+
     /** @var stdClass[] Normalized row objects for paging/output. */
     private array $filerows = [];
 
@@ -51,36 +54,47 @@ class restore_files_table extends flexible_table {
      * @param int $courseid Target course id.
      * @param string $shortname Course short name.
      * @param int $restoreto Restore-to selector (0 = current course, 2 = system / archive).
+     * @param bool $isadmin When true, render admin-only columns (Course type, Status). Teachers see neither.
      */
-    public function __construct(string $uniqueid, int $courseid, string $shortname, int $restoreto = 0) {
+    public function __construct(string $uniqueid, int $courseid, string $shortname, int $restoreto = 0, bool $isadmin = false) {
         parent::__construct($uniqueid);
         $this->courseid = $courseid;
         $this->shortname = $shortname;
         $this->restoreto = $restoreto;
+        $this->isadmin = $isadmin;
 
-        $this->define_columns([
-            'year', 'semester', 'dept', 'filename',
-            'coursetype', 'status',
-            'filesize', 'modified', 'action',
-        ]);
-        $this->define_headers([
-            get_string('table_col_year',       'block_simple_restore'),
-            get_string('table_col_semester',   'block_simple_restore'),
-            get_string('table_col_dept',       'block_simple_restore'),
-            get_string('table_col_filename',   'block_simple_restore'),
-            get_string('table_col_coursetype', 'block_simple_restore'),
-            get_string('table_col_status',     'block_simple_restore'),
-            get_string('table_col_filesize',   'block_simple_restore'),
-            get_string('table_col_modified',   'block_simple_restore'),
-            get_string('table_col_action',     'block_simple_restore'),
-        ]);
+        // Admin-only columns (Course type, Status) are omitted entirely for teachers — no <th> and no <td>.
+        $columns = ['year', 'semester', 'dept', 'filename'];
+        $headers = [
+            get_string('table_col_year',     'block_simple_restore'),
+            get_string('table_col_semester', 'block_simple_restore'),
+            get_string('table_col_dept',     'block_simple_restore'),
+            get_string('table_col_filename', 'block_simple_restore'),
+        ];
+        if ($this->isadmin) {
+            $columns[] = 'coursetype';
+            $columns[] = 'status';
+            $headers[] = get_string('table_col_coursetype', 'block_simple_restore');
+            $headers[] = get_string('table_col_status',     'block_simple_restore');
+        }
+        $columns[] = 'filesize';
+        $columns[] = 'modified';
+        $columns[] = 'action';
+        $headers[] = get_string('table_col_filesize', 'block_simple_restore');
+        $headers[] = get_string('table_col_modified', 'block_simple_restore');
+        $headers[] = get_string('table_col_action',   'block_simple_restore');
+
+        $this->define_columns($columns);
+        $this->define_headers($headers);
         $this->sortable(false);
         $this->collapsible(false);
         $this->set_attribute('class', 'generaltable table-sm w-100');
         // Hide lower-priority columns on small screens.
         $this->column_class('year',     'd-none d-sm-table-cell');
         $this->column_class('dept',     'd-none d-md-table-cell');
-        $this->column_class('status',   'd-none d-xl-table-cell');
+        if ($this->isadmin) {
+            $this->column_class('status',   'd-none d-xl-table-cell');
+        }
         $this->column_class('filesize', 'd-none d-lg-table-cell');
         $this->column_class('modified', 'd-none d-lg-table-cell');
     }
@@ -126,11 +140,12 @@ class restore_files_table extends flexible_table {
      * @param int $courseid Target course id.
      * @param string $shortname Course short name (matched against catalogue.shortname).
      * @param int $restoreto Restore-to selector (0 = current course, 2 = system / archive).
+     * @param bool $isadmin Forward to constructor — controls admin-only column visibility.
      */
-    public static function from_catalogue(string $uniqueid, int $courseid, string $shortname, int $restoreto = 0): self {
+    public static function from_catalogue(string $uniqueid, int $courseid, string $shortname, int $restoreto = 0, bool $isadmin = false): self {
         global $DB;
 
-        $table = new self($uniqueid, $courseid, $shortname, $restoreto);
+        $table = new self($uniqueid, $courseid, $shortname, $restoreto, $isadmin);
 
         if (get_config('block_backadel', 'catalogue_fallback_scandir')) {
             // Fallback: populate from filesystem e.g. simple_restore_utils::backadel_backups() matching $shortname.

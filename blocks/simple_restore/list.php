@@ -324,7 +324,7 @@ if ($hascatalogue || $sractivefiltercount > 0) {
     ]);
 }
 
-$displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $data, $restoreto) {
+$displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $data, $restoreto, $isadmin) {
     $source = $list->source ?? '';
     if (in_array($source, ['semester_backadel', 'catalogue'], true) && !empty($list->backups)) {
         echo $OUTPUT->heading($list->header);
@@ -348,7 +348,8 @@ $displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $d
                     'simple_restore_semester_' . $courseid . '_y' . $year,
                     $courseid,
                     (string) $shortname,
-                    $restoreto
+                    $restoreto,
+                    $isadmin
                 );
                 $table->populate($bucket, 'catalogue');
                 echo html_writer::start_div('table-responsive');
@@ -360,7 +361,8 @@ $displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $d
                 'simple_restore_semester_' . $courseid,
                 $courseid,
                 (string) $shortname,
-                $restoreto
+                $restoreto,
+                $isadmin
             );
             $table->populate($list->backups, $source);  // Pass source so catalogue rows get catalogue_id.
             echo html_writer::start_div('table-responsive');
