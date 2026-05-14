@@ -144,6 +144,23 @@ function core_myprofile_navigation(core_user\output\myprofile\tree $tree, $user,
         $tree->add_node($node);
     }
 
+    if (!empty($user->id)) {
+        $uidvalue = null;
+        $dbman = $DB->get_manager();
+        if ($dbman->table_exists('enrol_wds_students')) {
+            $uidvalue = $DB->get_field('enrol_wds_students', 'universal_id', ['userid' => $user->id]);
+        }
+        if (empty($uidvalue) && $dbman->table_exists('enrol_wds_teachers')) {
+            $uidvalue = $DB->get_field('enrol_wds_teachers', 'universal_id', ['userid' => $user->id]);
+        }
+        if (!empty($uidvalue)) {
+            $node = new core_user\output\myprofile\node('contact', 'userid', get_string('useruid'), null, null,
+              s($uidvalue), null, 'userprofile-userid');
+            $tree->add_node($node);
+        }
+
+    }
+
     if ($iscurrentuser
         or (!isset($hiddenfields['email']) and (
             $user->maildisplay == core_user::MAILDISPLAY_EVERYONE
@@ -214,12 +231,6 @@ function core_myprofile_navigation(core_user\output\myprofile\tree $tree, $user,
     if (isset($identityfields['department']) && $user->department) {
         $node = new core_user\output\myprofile\node('contact', 'department', get_string('department'), null, null,
             $user->department);
-        $tree->add_node($node);
-    }
-
-    if (isset($identityfields['idnumber']) && $user->idnumber) {
-        $node = new core_user\output\myprofile\node('contact', 'idnumber', get_string('idnumber'), null, null,
-            s($user->idnumber));
         $tree->add_node($node);
     }
 
