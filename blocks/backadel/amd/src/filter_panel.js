@@ -3,84 +3,13 @@
  *
  * Moodle 4.5 / Snap does not expose Bootstrap 5's Offcanvas class globally,
  * so data-bs-toggle="offcanvas" does nothing out of the box.  This module
- * wires up the open/close behaviour manually AND injects the positioning CSS
- * that Bootstrap 5 would normally provide via its stylesheet (which Snap
- * does not include on standalone admin pages).
+ * wires up the open/close behaviour manually.  Offcanvas positioning CSS lives
+ * in block_backadel/styles.css (plugin stylesheet).
  *
  * @module     block_backadel/filter_panel
  * @copyright  2026 Louisiana State University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
-/** Inject Bootstrap-5-compatible offcanvas CSS that Snap omits on admin pages. */
-const injectStyles = () => {
-    if (document.getElementById('block-backadel-offcanvas-css')) {
-        return; // Already injected.
-    }
-    const style = document.createElement('style');
-    style.id = 'block-backadel-offcanvas-css';
-    style.textContent = `
-/* block_backadel: offcanvas positioning — Snap does not ship Bootstrap 5 offcanvas CSS.
-   Scoped to .backadel-offcanvas-panel (set on every panel rendered by filter_panel.mustache)
-   so these rules do NOT affect Snap's own sidebar drawer elements (which carry .offcanvas
-   without our marker class).
-   right: 50px — keeps the panel clear of Snap's 50px-wide fixed sidebar strip (#snap-sidebar-menu,
-   z-index 1050) so it remains clickable while the filter panel is open. */
-.backadel-offcanvas-panel.offcanvas {
-    position: fixed !important;
-    top: 0;
-    right: 50px;
-    bottom: 0;
-    width: min(400px, calc(90vw - 50px));
-    z-index: 1055;
-    display: flex;
-    flex-direction: column;
-    background-color: #fff;
-    border-left: 1px solid rgba(0,0,0,.175);
-    transform: translateX(100%);
-    transition: transform .3s ease-in-out;
-    visibility: hidden;
-    overflow-y: auto;
-    pointer-events: none;
-}
-.backadel-offcanvas-panel.offcanvas.show {
-    transform: none !important;
-    visibility: visible !important;
-    pointer-events: auto;
-}
-.backadel-offcanvas-panel .offcanvas-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem;
-    flex-shrink: 0;
-}
-.backadel-offcanvas-panel .offcanvas-title {
-    margin-bottom: 0;
-    line-height: 1.5;
-    font-size: 1.1rem;
-    font-weight: 600;
-}
-.backadel-offcanvas-panel .offcanvas-body {
-    flex-grow: 1;
-    padding: 1rem;
-    overflow-y: auto;
-}
-/* Dim backdrop when an offcanvas is open. pointer-events: none prevents the pseudo-element
-   from intercepting clicks outside the offcanvas (the JS dismiss listener handles those).
-   body.offcanvas-open is only set by our JS, so this pseudo-element only appears when
-   our filter panel is open — it does not affect Snap's own drawer behaviour. */
-body.offcanvas-open::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.45);
-    z-index: 1054;
-    pointer-events: none;
-}
-`;
-    document.head.appendChild(style);
-};
 
 /**
  * Open an offcanvas panel.
@@ -120,8 +49,6 @@ const closeOffcanvas = (offcanvasEl) => {
  * Initialise all offcanvas trigger buttons on the page.
  */
 export const init = () => {
-    injectStyles();
-
     // Handle trigger buttons (data-bs-toggle="offcanvas").
     document.addEventListener('click', (e) => {
         const trigger = e.target.closest('[data-bs-toggle="offcanvas"]');

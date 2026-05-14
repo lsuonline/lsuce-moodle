@@ -9,35 +9,7 @@
 import Modal from 'core/modal';
 import Notification from 'core/notification';
 import Pending from 'core/pending';
-
-/**
- * Escape text for safe insertion into HTML.
- *
- * @param {string} value Raw text.
- * @returns {string} Escaped HTML.
- */
-const escapeHtml = (value) => {
-    const div = document.createElement('div');
-    div.textContent = value;
-    return div.innerHTML;
-};
-
-/**
- * Build HTML body for instructor rows.
- *
- * @param {Array<{username: string, fullname: string}>} rows Instructor rows from PHP.
- * @param {object} strings Localised labels.
- * @returns {string} HTML fragment.
- */
-const buildBodyHtml = (rows, strings) => {
-    if (!rows.length) {
-        return `<p class="text-muted">${strings.none}</p>`;
-    }
-    const head = `<thead><tr><th scope="col">${strings.colUsername}</th>` +
-        `<th scope="col">${strings.colFullname}</th></tr></thead>`;
-    const body = rows.map((r) => `<tr><td>${escapeHtml(r.username)}</td><td>${escapeHtml(r.fullname)}</td></tr>`).join('');
-    return `<div class="block_backadel-modal-body"><table class="table table-sm">${head}<tbody>${body}</tbody></table></div>`;
-};
+import Templates from 'core/templates';
 
 /**
  * Parse instructors payload from a trigger button.
@@ -71,7 +43,11 @@ const showInstructorsModal = async(btn, strings) => {
 
     try {
         const rows = parseRows(btn.dataset.instructors || '');
-        const bodyHtml = buildBodyHtml(rows, strings);
+        const {html: bodyHtml} = await Templates.renderForPromise('block_backadel/local/instructors_modal_body', {
+            hasrows: rows.length > 0,
+            rows,
+            strings,
+        });
 
         const modal = await Modal.create({
             title: strings.modalTitle,

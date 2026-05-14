@@ -9,6 +9,7 @@
 import Modal from 'core/modal';
 import Notification from 'core/notification';
 import Pending from 'core/pending';
+import Templates from 'core/templates';
 import {call as fetchMany} from 'core/ajax';
 
 /**
@@ -110,55 +111,6 @@ const refreshTriggerDataset = (catalogueId, response) => {
 };
 
 /**
- * @param {number} catalogueId
- * @param {string} currentType
- * @param {string} currentNote
- * @param {object} strings
- * @returns {string} Modal body HTML.
- */
-const buildBodyHtml = (catalogueId, currentType, currentNote, strings) => {
-    const rname = `cowtype_${catalogueId}`;
-    const clearId = `cow-clear-${catalogueId}`;
-    const type = (currentType || '').toLowerCase();
-    const teachingChecked = type === 'teaching' ? 'checked' : '';
-    const blueprintChecked = type === 'blueprint' ? 'checked' : '';
-    const otherChecked = type === 'other' || (type !== 'teaching' && type !== 'blueprint')
-        ? 'checked'
-        : '';
-
-    return `
-<div class="block_backadel-modal-body">
-  <div class="mb-3">
-    <div class="fw-semibold mb-2">${escapeHtml(strings.labelType)}</div>
-    <div class="form-check">
-      <input class="form-check-input" type="radio" name="${rname}" id="${rname}-teaching" value="teaching" ${teachingChecked}/>
-      <label class="form-check-label" for="${rname}-teaching">${escapeHtml(strings.typeTeaching)}</label>
-    </div>
-    <div class="form-check">
-      <input class="form-check-input" type="radio" name="${rname}" id="${rname}-blueprint" value="blueprint" ${blueprintChecked}/>
-      <label class="form-check-label" for="${rname}-blueprint">${escapeHtml(strings.typeBlueprint)}</label>
-    </div>
-    <div class="form-check">
-      <input class="form-check-input" type="radio" name="${rname}" id="${rname}-other" value="other" ${otherChecked}/>
-      <label class="form-check-label" for="${rname}-other">${escapeHtml(strings.typeOther)}</label>
-    </div>
-  </div>
-  <div class="form-check mb-3">
-    <input class="form-check-input" type="checkbox" value="1" id="${clearId}" data-field="clear-override" />
-    <label class="form-check-label" for="${clearId}">${escapeHtml(strings.clearLabel)}</label>
-  </div>
-  <div class="mb-3">
-    <label class="form-label" for="${rname}-note">${escapeHtml(strings.labelNote)}</label>
-    <textarea class="form-control" id="${rname}-note" data-field="override-note"
-              rows="3" maxlength="1024">${escapeHtml(currentNote)}</textarea>
-  </div>
-  <div>
-    <button type="button" class="btn btn-primary" data-action="save-coursetype-override">${escapeHtml(strings.save)}</button>
-  </div>
-</div>`;
-};
-
-/**
  * Open modal and wire save / clear-disable behaviour.
  *
  * @param {HTMLElement} btn Trigger element.
@@ -175,7 +127,20 @@ const showOverrideModal = async(btn, strings) => {
         const currentType = btn.dataset.currentType || '';
         const currentNote = btn.dataset.currentNote || '';
 
-        const bodyHtml = buildBodyHtml(catalogueId, currentType, currentNote, strings);
+        const rname = `cowtype_${catalogueId}`;
+        const clearId = `cow-clear-${catalogueId}`;
+        const noteId = `${rname}-note`;
+        const type = (currentType || '').toLowerCase();
+        const {html: bodyHtml} = await Templates.renderForPromise('block_backadel/local/coursetype_override_modal', {
+            rname,
+            clearId,
+            noteId,
+            currentNote,
+            teachingChecked: type === 'teaching',
+            blueprintChecked: type === 'blueprint',
+            otherChecked: type === 'other' || (type !== 'teaching' && type !== 'blueprint'),
+            strings,
+        });
 
         const modal = await Modal.create({
             title: strings.modalTitle,
@@ -195,8 +160,7 @@ const showOverrideModal = async(btn, strings) => {
             return;
         }
 
-        const rname = `cowtype_${catalogueId}`;
-        const clearSelector = `#cow-clear-${catalogueId}`;
+        const clearSelector = `#${clearId}`;
 
         const syncRadiosDisabled = () => {
             const clearEl = rootEl.querySelector(clearSelector);
@@ -208,7 +172,7 @@ const showOverrideModal = async(btn, strings) => {
 
         rootEl.addEventListener('change', (e) => {
             const target = e.target;
-            if (target && target.id === `cow-clear-${catalogueId}`) {
+            if (target && target.id === clearId) {
                 syncRadiosDisabled();
             }
         });
