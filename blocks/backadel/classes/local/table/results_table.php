@@ -18,8 +18,6 @@ declare(strict_types=1);
 
 namespace block_backadel\local\table;
 
-defined('MOODLE_INTERNAL') || die();
-
 use html_writer;
 use stdClass;
 

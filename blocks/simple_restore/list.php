@@ -110,9 +110,9 @@ if ($archivemode) {
 
 // Return the number of grades.
 $sql = "SELECT COUNT(*) as count
-        FROM {course} AS c
-        JOIN {grade_items} AS gi ON gi.courseid = c.id
-        JOIN {grade_grades} AS gg ON gi.id = gg.itemid
+        FROM {course} c
+        JOIN {grade_items} gi ON gi.courseid = c.id
+        JOIN {grade_grades} gg ON gi.id = gg.itemid
         WHERE NOT gg.finalgrade <=> NULL
         AND gi.courseid = :courseid";
 $count = $DB->count_records_sql($sql, array("courseid" => $courseid));
@@ -138,7 +138,7 @@ if ($count > 0) {
 }
 
 // The user has chosen a file.
-if ($file and $action and $name) {
+if ($file && $action && $name) {
 
     // We need to get the course name, etc differently when in archive mode.
     if ($archivemode) {
@@ -192,7 +192,7 @@ $system = context_system::instance();
 
 $isadmin = has_capability('moodle/course:create', $system);
 
-if (empty($shortname) and $isadmin) {
+if (empty($shortname) && $isadmin) {
     require_once('list_form.php');
 
     $form = new list_form();
@@ -221,21 +221,21 @@ if (empty($shortname) and $isadmin) {
 }
 
 // Count active catalogue filters for the pill-button badge.
-$srActiveFilterCount = 0;
+$sractivefiltercount = 0;
 if ($listfltq !== '') {
-    $srActiveFilterCount++;
+    $sractivefiltercount++;
 }
 if ($listfltyear > 0) {
-    $srActiveFilterCount++;
+    $sractivefiltercount++;
 }
 if ($listfltsem !== '') {
-    $srActiveFilterCount++;
+    $sractivefiltercount++;
 }
 if ($listfltcourse !== '') {
-    $srActiveFilterCount++;
+    $sractivefiltercount++;
 }
 if ($listfltstatus !== '' && $listfltstatus !== 'available') {
-    $srActiveFilterCount++;
+    $sractivefiltercount++;
 }
 
 $PAGE->requires->js_call_amd('block_backadel/filter_panel', 'init');
@@ -273,7 +273,7 @@ foreach ($data->lists as $lst) {
         break;
     }
 }
-if ($hascatalogue || $srActiveFilterCount > 0) {
+if ($hascatalogue || $sractivefiltercount > 0) {
     $cf = $data->catalogue_filters ?? [];
     $filtersactive =
         (($cf['q'] ?? '') !== '') ||
@@ -314,12 +314,12 @@ if ($hascatalogue || $srActiveFilterCount > 0) {
     ]);
     ob_start();
     $filterform->display();
-    $srFormHtml = ob_get_clean();
+    $srformhtml = ob_get_clean();
     echo $OUTPUT->render_from_template('block_backadel/local/filter_panel', [
         'collapseid'       => 'sr-list-filters',
         'title'            => get_string('filter_panel_toggle', 'block_backadel'),
-        'activecount'      => $srActiveFilterCount,
-        'formhtml'         => $srFormHtml,
+        'activecount'      => $sractivefiltercount,
+        'formhtml'         => $srformhtml,
         'extrabuttonshtml' => $srhelpbtn,
     ]);
 }
@@ -362,7 +362,7 @@ $displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $d
                 (string) $shortname,
                 $restoreto
             );
-            $table->populate($list->backups, $source);  // pass source so catalogue rows get catalogue_id.
+            $table->populate($list->backups, $source);  // Pass source so catalogue rows get catalogue_id.
             echo html_writer::start_div('table-responsive');
             $table->setup_and_out(30);
             echo html_writer::end_div();

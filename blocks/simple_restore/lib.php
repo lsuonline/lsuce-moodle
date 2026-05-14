@@ -34,19 +34,19 @@ defined('MOODLE_INTERNAL') || die();
  * @param int $catalogue_id Primary key in block_backadel_catalogue.
  * @return string Absolute path on disk.
  */
-function backadel_resolve_path(int $catalogue_id): string {
+function backadel_resolve_path(int $catalogueid): string {
     global $DB, $CFG;
 
     $rec = $DB->get_record(
         'block_backadel_catalogue',
-        ['id' => $catalogue_id],
+        ['id' => $catalogueid],
         'filepath, filepath_full, filename',
         IGNORE_MISSING
     );
     if (!$rec) {
         return '';
     }
-    // filepath_full (TEXT) is preferred; filepath (char 255) may be truncated for index compat.
+    // Filepath_full (TEXT) is preferred; filepath (char 255) may be truncated for index compat.
     $path = (!empty($rec->filepath_full)) ? (string) $rec->filepath_full : (string) $rec->filepath;
 
     $resolved = (strncmp($path, '/', 1) === 0)
@@ -336,19 +336,19 @@ abstract class simple_restore_utils {
         $data->lists[] = $list;
 
         return (
-            self::course_backups($data) and
+            self::course_backups($data) &&
             self::user_backups($data)
         );
     }
 
     public static function course_backups($data) {
         if (isset($data->shortname)) {
-            $courses = simple_restore_utils::filter_courses($data->shortname);
+            $courses = self::filter_courses($data->shortname);
         } else {
             $courses = enrol_get_my_courses();
         }
 
-        $to_html = function($in, $course) use ($data) {
+        $tohtml = function($in, $course) use ($data) {
             global $DB, $OUTPUT;
 
             $ctx = context_course::instance($course->id);
@@ -360,7 +360,9 @@ abstract class simple_restore_utils {
                 'mimetype' => 'application/vnd.moodle.backup'
             ), 'timemodified DESC');
 
-            if (empty($backups)) return $in;
+            if (empty($backups)) {
+                return $in;
+            }
 
             return $in . (
                 $OUTPUT->heading($course->shortname) .
@@ -374,7 +376,7 @@ abstract class simple_restore_utils {
         };
 
         $list = new stdClass;
-        $list->html = array_reduce($courses, $to_html, '');
+        $list->html = array_reduce($courses, $tohtml, '');
         $list->backups = !empty($list->html);
         $list->order = 100;
 
@@ -386,19 +388,20 @@ abstract class simple_restore_utils {
     public static function user_backups($data) {
         global $USER, $DB, $PAGE, $OUTPUT;
 
-        $user_context = context_user::instance($USER->id);
+        $usercontext = context_user::instance($USER->id);
         $context = context_course::instance($data->courseid);
 
         $params = array(
             'component' => 'user',
             'filearea' => 'backup',
-            'contextid' => $user_context->id,
+            'contextid' => $usercontext->id,
         );
-        $correct_files = function($file) { return $file->filename != '.'; };
-        $backup_files = $DB->get_records('files', $params);
+        $correctfiles = function($file) { return $file->filename != '.';
+        };
+        $backupfiles = $DB->get_records('files', $params);
 
         $params = array(
-            'contextid' => $user_context->id,
+            'contextid' => $usercontext->id,
             'currentcontext' => $context->id,
             'filearea' => 'backup',
             'component' => 'user',
@@ -410,7 +413,7 @@ abstract class simple_restore_utils {
 
         $list = new stdClass;
         $list->header = get_string('choosefilefromuserbackup', 'backup');
-        $list->backups = array_filter($backup_files, $correct_files);
+        $list->backups = array_filter($backupfiles, $correctfiles);
         $list->order = 200;
 
         $list->html = (
@@ -419,7 +422,7 @@ abstract class simple_restore_utils {
         );
 
         if ($list->backups) {
-            $list->html .= simple_restore_utils::build_table(
+            $list->html .= self::build_table(
                 $list->backups,
                 'user',
                 $data->courseid,
@@ -437,6 +440,7 @@ abstract class simple_restore_utils {
         return has_capability("block/simple_restore:{$cap}", $context);
     }
 
+    // phpcs:ignore PSR2.Methods.MethodDeclaration.Underscore -- legacy public API, renaming would break 18+ call sites.
     public static function _s($name, $a=null) {
         return get_string($name, 'block_simple_restore', $a);
     }
@@ -591,7 +595,7 @@ abstract class simple_restore_utils {
             $keepgroups = (bool) get_config('simple_restore', 'keep_groups_and_groupings');
 
             // No need to re-enroll.
-            if ($keepgroups and $keepenrollments) {
+            if ($keepgroups && $keepenrollments) {
                 $enrolinstances = $DB->get_records('enrol', array(
                     'courseid' => $oldcourse->id,
                     'enrol' => 'ues'
@@ -689,7 +693,7 @@ class simple_restore {
     public $course;
     public $context;
     public $filename;
-    public $restore_to;
+    public $restoreto;
     public $restoreto;
 
     public function __construct($course, $filename, $restoreto = 0) {
@@ -761,7 +765,7 @@ class simple_restore {
                     continue;
                 }
 
-                if ($adminsetting and isset($filedependencies[$settingname])) {
+                if ($adminsetting && isset($filedependencies[$settingname])) {
                     $basepath = $task->get_taskbasepath();
                     if (!file_exists("$basepath/$settingname.xml")) {
                         continue;
@@ -812,7 +816,6 @@ class simple_restore {
 
         $useasync = (bool)get_config('simple_restore', 'async_toggle');
 
-        // if (isset($useasync) && $useasync == "1") {
         if ($useasync) {
             // Prepare a progress bar which can display optionally during long-running
             // operations while setting up the UI.
@@ -858,9 +861,9 @@ class simple_restore {
         if ($useasync) {
 
             // Get the renderer so we can use the backup status template.
-            $renderer = $PAGE->get_renderer('core','backup');
+            $renderer = $PAGE->get_renderer('core', 'backup');
 
-            $restore = new restore_ui($rc, array('contextid'=>$this->context->id));
+            $restore = new restore_ui($rc, array('contextid' => $this->context->id));
             $restore->set_progress_reporter($slowprogress);
 
             if (!$restore->is_independent()) {

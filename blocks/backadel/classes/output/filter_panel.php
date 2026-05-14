@@ -18,8 +18,6 @@ declare(strict_types=1);
 
 namespace block_backadel\output;
 
-defined('MOODLE_INTERNAL') || die();
-
 use renderer_base;
 use renderable;
 use templatable;

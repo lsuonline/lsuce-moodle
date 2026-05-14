@@ -26,8 +26,6 @@ declare(strict_types=1);
 
 namespace block_backadel\external;
 
-defined('MOODLE_INTERNAL') || die();
-
 use block_backadel\local\catalogue_allowlists;
 use context_system;
 use core_external\external_api;

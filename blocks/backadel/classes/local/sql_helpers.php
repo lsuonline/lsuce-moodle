@@ -26,8 +26,6 @@ declare(strict_types=1);
 
 namespace block_backadel\local;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Catalogue SQL snippets reused across filters and listings.
  */
