@@ -217,7 +217,7 @@ if (!$table->is_downloading()) {
     echo html_writer::div(
         html_writer::tag('button', '?', [
             'type' => 'button',
-            'class' => 'btn btn-sm btn-outline-secondary float-end mb-2',
+            'class' => 'btn btn-sm btn-outline-secondary float-end mb-2 px-2',
             'data-action' => 'show-help',
             'data-help-topic' => 'catalogue',
             'data-help-title' => get_string('catalogue_title', 'block_backadel'),
