@@ -97,15 +97,11 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
             $timeoutmin = 15;
         }
         $deadline = time() + ($timeoutmin * 60);
-        $chunkstarted = time();
 
         @mtrace(sprintf(
             'block_backadel migrate_filesystem_adhoc[%s]: starting chunk at dir_index=%d file_index=%d, '
-                . 'budget=%dmin, chain_started=%s, chain_elapsed=%s, files_done_so_far=%d',
-            $chainid, $dirindex, $fileindex, $timeoutmin,
-            date('c', $chainstarted),
-            $this->format_duration(max(0, time() - $chainstarted)),
-            $filesdone
+                . 'budget=%dmin, chain_started=%s, files_done_so_far=%d',
+            $chainid, $dirindex, $fileindex, $timeoutmin, date('c', $chainstarted), $filesdone
         ));
 
         $migrator = new \block_backadel\local\migrator();
@@ -152,11 +148,8 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
 
                 if ($chunkprocessed % 5000 === 0) {
                     @mtrace(sprintf(
-                        'block_backadel migrate_filesystem_adhoc[%s]: %d files processed in this chunk so far (dir %s)'
-                            . ' — chunk_rate=%.1f/min, chunk_elapsed=%s.',
-                        $chainid, $chunkprocessed, $dir,
-                        $this->rate_per_min($chunkprocessed, max(1, time() - $chunkstarted)),
-                        $this->format_duration(max(0, time() - $chunkstarted))
+                        'block_backadel migrate_filesystem_adhoc[%s]: %d files processed in this chunk so far (dir %s).',
+                        $chainid, $chunkprocessed, $dir
                     ));
                 }
             }
@@ -171,29 +164,11 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
         // ---- Decide: queue successor or finish chain? ---------------------------
         $remaining = $this->count_remaining($rundefs, $dirindex, $fileindex);
 
-        $chunkelapsed = max(0, time() - $chunkstarted);
-        $chainelapsed = max(0, time() - $chainstarted);
-        $chunkrate    = $this->rate_per_min($chunkprocessed, $chunkelapsed);
-        $chainrate    = $this->rate_per_min($filesdone, $chainelapsed);
-        $etarate = $chainrate > 0 ? $chainrate : $chunkrate;
-        if ($etarate > 0 && $remaining > 0) {
-            $etaseconds = (int) round($remaining * 60.0 / $etarate);
-            $etastr     = $this->format_duration($etaseconds) . ' (~' . date('c', time() + $etaseconds) . ')';
-        } else if ($remaining === 0) {
-            $etastr = 'complete';
-        } else {
-            $etastr = 'unknown';
-        }
-
         @mtrace(sprintf(
             'block_backadel migrate_filesystem_adhoc[%s]: chunk done. processed=%d, inserted=%d, '
-                . 'chunk_elapsed=%s, chunk_rate=%.1f/min, chain_total_processed=%d, chain_total_inserted=%d, '
-                . 'chain_elapsed=%s, chain_rate=%.1f/min, remaining=%d, eta=%s, stopped_early=%s',
+                . 'chain_total_processed=%d, chain_total_inserted=%d, remaining=%d, stopped_early=%s',
             $chainid, $chunkprocessed, $chunkinserted,
-            $this->format_duration($chunkelapsed), $chunkrate,
-            $filesdone, $filesinserted,
-            $this->format_duration($chainelapsed), $chainrate,
-            $remaining, $etastr, $stoppedearly ? 'yes' : 'no'
+            $filesdone, $filesinserted, $remaining, $stoppedearly ? 'yes' : 'no'
         ));
 
         if ($stoppedearly && $remaining > 0) {
@@ -264,32 +239,5 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
             $remaining += max(0, $count - ($i === $dirindex ? $fileindex : 0));
         }
         return $remaining;
-    }
-
-    /**
-     * Format a duration in seconds as "Xh MMm SSs".
-     *
-     * @param int $seconds Elapsed seconds (non-negative).
-     * @return string Human-readable duration string.
-     */
-    private function format_duration(int $seconds): string {
-        $h = intdiv($seconds, 3600);
-        $m = intdiv($seconds % 3600, 60);
-        $s = $seconds % 60;
-        return sprintf('%dh %02dm %02ds', $h, $m, $s);
-    }
-
-    /**
-     * Compute processing rate in files-per-minute, rounded to one decimal.
-     *
-     * @param int $count          Number of files processed.
-     * @param int $elapsedseconds Wall-clock seconds elapsed (>0 to get a rate).
-     * @return float Files per minute, or 0.0 if elapsed time is non-positive.
-     */
-    private function rate_per_min(int $count, int $elapsedseconds): float {
-        if ($elapsedseconds <= 0) {
-            return 0.0;
-        }
-        return round($count * 60.0 / $elapsedseconds, 1);
     }
 }

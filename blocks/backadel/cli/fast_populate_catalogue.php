@@ -19,11 +19,13 @@ require(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir . '/clilib.php');
 
 [$options, $unrecognised] = cli_get_params([
-    'dir'     => null,
-    'source'  => 'legacy_moodleus',
-    'batch'   => 500,
-    'dry-run' => false,
-    'help'    => false,
+    'dir'      => null,
+    'source'   => 'legacy_moodleus',
+    'batch'    => 500,
+    'dry-run'  => false,
+    'truncate' => false,
+    'force'    => false,
+    'help'     => false,
 ], ['h' => 'help', 'n' => 'dry-run']);
 
 if ($options['help'] || $unrecognised) {
@@ -32,6 +34,8 @@ if ($options['help'] || $unrecognised) {
     echo "  --source=NAME   Source label (default: legacy_moodleus)\n";
     echo "  --batch=N       Rows per INSERT batch (default: 500)\n";
     echo "  --dry-run       Parse only; count but do not write\n";
+    echo "  --truncate      TRUNCATE block_backadel_catalogue and block_backadel_courses before inserting\n";
+    echo "  --force         Skip the interactive confirmation prompt when --truncate is used\n";
     exit($unrecognised ? 1 : 0);
 }
 
@@ -68,6 +72,33 @@ mtrace("  Found $total archive files");
 if ($total === 0) {
     mtrace("  Nothing to import.");
     exit(0);
+}
+
+$existingcount = $DB->count_records('block_backadel_catalogue', ['source' => $source]);
+if ($existingcount > 0 && !$options['truncate']) {
+    mtrace("WARNING: block_backadel_catalogue already contains {$existingcount} rows for source='{$source}'.");
+    mtrace("         Running without --truncate will cause duplicate-key errors on any overlapping files.");
+    mtrace("         Use --truncate to clear existing rows first, or --dry-run to preview.");
+}
+
+if ($options['truncate']) {
+    $catcount = $DB->count_records('block_backadel_catalogue');
+    $crscount = $DB->count_records('block_backadel_courses');
+    if (!$options['force']) {
+        mtrace("WARNING: --truncate will DELETE ALL {$catcount} rows from block_backadel_catalogue");
+        mtrace("         and ALL {$crscount} rows from block_backadel_courses.");
+        mtrace("         Type 'yes' to continue or anything else to abort: ");
+        $confirm = trim(fgets(STDIN));
+        if ($confirm !== 'yes') {
+            mtrace("Aborted.");
+            exit(1);
+        }
+    }
+    if (!$dryrun) {
+        $DB->delete_records('block_backadel_catalogue');
+        $DB->delete_records('block_backadel_courses');
+        mtrace("Truncated block_backadel_catalogue ({$catcount} rows) and block_backadel_courses ({$crscount} rows).");
+    }
 }
 
 $now = time();
@@ -156,7 +187,12 @@ foreach ($files as $i => $basename) {
         flush_batch_to($crsrows, 'block_backadel_courses', $dryrun, $crsins);
         if ($catins % $progress_every < $batch) {
             $elapsed = round(microtime(true) - $start, 1);
-            mtrace("  Progress: $catins / $total catalogue rows  ({$elapsed}s)");
+            $rate = $elapsed > 0 ? round($catins * 60 / $elapsed, 1) : 0.0;
+            $remaining = $total - $catins;
+            $etastr = ($rate > 0 && $remaining > 0)
+                ? round($remaining / $rate, 1) . ' min'
+                : 'unknown';
+            mtrace("  Progress: {$catins} / {$total} catalogue rows  ({$elapsed}s, {$rate}/min, eta={$etastr})");
         }
     }
 }
@@ -167,9 +203,10 @@ flush_batch_to($crsrows, 'block_backadel_courses', $dryrun, $crsins);
 $elapsed = round(microtime(true) - $start, 1);
 $verb = $dryrun ? 'parsed (dry-run)' : 'inserted';
 
+$totalrate = $elapsed > 0 ? round($catins * 60 / $elapsed, 1) : 0.0;
 mtrace(sprintf(
-    "  Done: %d catalogue rows %s, %d courses rows %s in %.1fs",
-    $catins, $verb, $crsins, $verb, $elapsed
+    "  Done: %d catalogue rows %s, %d courses rows %s in %.1fs (avg %.1f rows/min)",
+    $catins, $verb, $crsins, $verb, $elapsed, $totalrate
 ));
 
 if (!$dryrun) {
