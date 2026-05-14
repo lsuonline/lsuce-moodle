@@ -694,7 +694,6 @@ class simple_restore {
     public $context;
     public $filename;
     public $restoreto;
-    public $restoreto;
 
     public function __construct($course, $filename, $restoreto = 0) {
         if (empty($course)) {
