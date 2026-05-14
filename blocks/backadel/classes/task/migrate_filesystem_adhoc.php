@@ -63,7 +63,13 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
         }
         ignore_user_abort(true);
 
-        $custom = (array) ($this->get_custom_data() ?? []);
+        // get_custom_data() returns stdClass (json_decode without assoc=true); a shallow
+        // (array) cast leaves nested objects — notably runs[] items — as stdClass, which
+        // causes "Cannot use object of type stdClass as array" on resumed chunks when the
+        // loop accesses $run['dir'] / $run['source']. Round-trip through JSON to force
+        // every nested level into associative arrays.
+        $rawcustom = $this->get_custom_data();
+        $custom = json_decode(json_encode($rawcustom ?? new \stdClass()), true) ?? [];
 
         // ---- Resolve / freeze the run list on first chunk -----------------------
         if (empty($custom['runs']) || !is_array($custom['runs'])) {
