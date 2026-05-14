@@ -273,7 +273,14 @@ foreach ($data->lists as $lst) {
         break;
     }
 }
-if ($hascatalogue || $sractivefiltercount > 0) {
+// Bug-041: render the filter panel + ? help button whenever the catalogue
+// table exists (i.e. block_backadel is installed), not only when the current
+// course already yielded catalogue rows. Previously instructors lost the
+// filter UI and inline help any time their course shortname did not match a
+// catalogue row exactly. Filters are still useful with 0 catalogue rows
+// (they let users narrow the filesystem fallback list).
+$cataloguetableexists = $DB->get_manager()->table_exists('block_backadel_catalogue');
+if ($hascatalogue || $sractivefiltercount > 0 || $cataloguetableexists) {
     $cf = $data->catalogue_filters ?? [];
     $filtersactive =
         (($cf['q'] ?? '') !== '') ||

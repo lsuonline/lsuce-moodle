@@ -158,8 +158,34 @@ abstract class simple_restore_utils {
         if (empty($crit)) {
             return "";
         }
-        $search = $crit == 'username' ? '_' . $USER->username : $course->{$crit};
+        if ($crit == 'username') {
+            // Backadel filenames embed only the bare local-part of the username
+            // (e.g. "_lafry_" / "_lafry."), NOT the full email-style username
+            // ("_lafry@lsu.edu_") that LSU adopted later. Strip the @domain so
+            // the regex matches both legacy bare usernames and new email-style
+            // ones. preg_quote() guards against regex metacharacters in usernames.
+            // Bug-040: was previously emitting "_lafry@lsu.edu[_\.]" which never matched.
+            $local = self::username_local_part((string) $USER->username);
+            $search = '_' . preg_quote($local, '/');
+        } else {
+            $search = preg_quote((string) $course->{$crit}, '/');
+        }
         return "{$search}[_\.]";
+    }
+
+    /**
+     * Strip @domain from an email-style username, preserving non-email usernames as-is.
+     *
+     * Both Backadel filenames and the catalogue's instructors JSON store the
+     * bare local-part (e.g. "lafry"), so any code path that compares a
+     * Moodle $USER->username against either source must normalise first.
+     *
+     * @param string $username Raw username (may or may not contain '@').
+     * @return string Local-part (substring before first '@') or original string if no '@'.
+     */
+    public static function username_local_part(string $username): string {
+        $local = strstr($username, '@', true);
+        return $local !== false ? $local : $username;
     }
 
     /**
@@ -211,21 +237,86 @@ abstract class simple_restore_utils {
      *
      * Returns an empty array if the table does not exist or no rows match.
      *
-     * @param string $shortname Course shortname to look up.
+     * Bug-040: when $instructorusername is provided AND the shortname predicate
+     * yields no rows, retries the same query OR-matching against the instructors
+     * JSON column (e.g. `["lafry"]`). The instructor match uses LIKE on a
+     * quoted local-part of the username for DB portability (PG / MariaDB).
+     *
+     * @param string $shortname Course shortname to look up. Empty string skips the shortname predicate.
      * @param array $filters Optional keys: q, year (int), semester, coursetype, status ('' = any status).
+     * @param string $instructorusername Current user's username — falls back to instructor-match when shortname yields 0 rows.
      * @return array Normalised backup objects with id, filename, filesize, timemodified, year, coursetype.
      */
-    private static function backups_from_catalogue(string $shortname, array $filters = []): array {
+    private static function backups_from_catalogue(
+        string $shortname,
+        array $filters = [],
+        string $instructorusername = ''
+    ): array {
         global $DB;
-        if ($shortname === '' || !$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+        if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
             return [];
         }
-        $likesql = $DB->sql_like('cat.shortname', ':sn', false, true, false);
+        // Need at least one identifier to find rows: either a shortname or a username.
+        if ($shortname === '' && $instructorusername === '') {
+            return [];
+        }
+        $rows = self::query_catalogue_rows($shortname, $filters);
 
-        $where = [$likesql];
-        $params = [
-            'sn' => $DB->sql_like_escape($shortname),
-        ];
+        // Fallback: catalogue rows for this instructor regardless of course shortname.
+        // The catalogue's `instructors` column is a JSON array of bare local-parts
+        // (`["lafry"]`). When a teacher's course has no shortname-matching catalogue
+        // rows (the common case — teacher course "2024 Fall LA 1203 for Charles
+        // Fryling" never matches catalogue shortname "LA-1203"), surface their files
+        // by matching the instructor field instead. Catalogue shortname is the
+        // preferred predicate; instructor match supplements it.
+        if (empty($rows) && $instructorusername !== '') {
+            $rows = self::query_catalogue_rows('', $filters, $instructorusername);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Internal: build & run the catalogue SQL with the given predicates.
+     *
+     * Either $shortname or $instructorusername must be non-empty; the caller
+     * (backups_from_catalogue) is responsible for choosing which to pass.
+     *
+     * @param string $shortname Course shortname (LIKE predicate on cat.shortname). Empty = skip.
+     * @param array $filters Same shape as {@see backups_from_catalogue}.
+     * @param string $instructorusername Optional username for instructors-JSON LIKE match.
+     * @return array Normalised backup objects (see backups_from_catalogue).
+     */
+    private static function query_catalogue_rows(
+        string $shortname,
+        array $filters = [],
+        string $instructorusername = ''
+    ): array {
+        global $DB;
+
+        $where = [];
+        $params = [];
+
+        if ($shortname !== '') {
+            $where[] = $DB->sql_like('cat.shortname', ':sn', false, true, false);
+            $params['sn'] = $DB->sql_like_escape($shortname);
+        }
+
+        if ($instructorusername !== '') {
+            // Match a JSON array literal entry: instructors stores ["lafry"], so
+            // search for the quoted local-part. LIKE keeps this DB-portable
+            // (avoids JSON_CONTAINS / JSON_QUOTE which differ between PG and MariaDB).
+            $local = self::username_local_part($instructorusername);
+            if ($local !== '') {
+                $where[] = $DB->sql_like('cat.instructors', ':instr', false, true, false);
+                $params['instr'] = '%"' . $DB->sql_like_escape($local) . '"%';
+            }
+        }
+
+        // Refuse to run an unbounded scan: at least one predicate must be present.
+        if (empty($where)) {
+            return [];
+        }
 
         $statusflt = isset($filters['status']) ? (string) $filters['status'] : 'available';
         if ($statusflt !== '') {
@@ -298,8 +389,42 @@ abstract class simple_restore_utils {
         }, $rows ?: []));
     }
 
+    /**
+     * Merge catalogue + filesystem result sets, deduping by basename.
+     *
+     * Catalogue rows are richer (year, semester, dept, coursetype, status, file
+     * id) and win on collision; filesystem rows only fill in basenames that the
+     * catalogue does not yet cover (e.g. files not yet ingested by migration).
+     * Result preserves catalogue ordering first, then any extra filesystem rows.
+     *
+     * @param array $catalogue Rows from {@see backups_from_catalogue}.
+     * @param array $filesystem Rows from {@see backadel_backups}.
+     * @return array Merged unique-by-basename row list.
+     */
+    public static function merge_backup_rows(array $catalogue, array $filesystem): array {
+        $seen = [];
+        $merged = [];
+        foreach ($catalogue as $row) {
+            $base = basename((string) ($row->filename ?? ''));
+            if ($base === '' || isset($seen[$base])) {
+                continue;
+            }
+            $seen[$base] = true;
+            $merged[] = $row;
+        }
+        foreach ($filesystem as $row) {
+            $base = basename((string) ($row->filename ?? ''));
+            if ($base === '' || isset($seen[$base])) {
+                continue;
+            }
+            $seen[$base] = true;
+            $merged[] = $row;
+        }
+        return $merged;
+    }
+
     public static function backup_list($data) {
-        global $DB;
+        global $DB, $USER;
         $course = isset($data->shortname)
             ? (object)['shortname' => $data->shortname]
             : $DB->get_record('course', ['id' => $data->courseid]);
@@ -318,6 +443,11 @@ abstract class simple_restore_utils {
         $catalogueshort = (isset($data->shortname) && (string) $data->shortname !== '')
             ? (string) $data->shortname
             : (string) ($course->shortname ?? '');
+        // Bug-040: in teacher mode (no admin shortname filter) also OR-match the
+        // catalogue against the current user's username, so instructors find
+        // their own historical backups even when no catalogue row's shortname
+        // matches their Moodle course shortname. Admin mode keeps shortname-only.
+        $instructorusername = isset($data->shortname) ? '' : (string) $USER->username;
         $catopts = self::get_catalogue_filter_options($catalogueshort);
 
         $yearopts = [
@@ -342,19 +472,29 @@ abstract class simple_restore_utils {
         $list->order  = 10;
         $list->html   = '';
 
-        // Try catalogue first.
-        $cataloguerows = self::backups_from_catalogue($catalogueshort, $filters);
+        // Bug-040: merge catalogue rows + filesystem rows instead of either/or.
+        // Catalogue rows (richer metadata: year/semester/dept/coursetype/status)
+        // win on key collisions; filesystem rows fill in any gaps for files that
+        // haven't been ingested yet. Dedupe by basename so a file present on
+        // both sides shows once. The list is tagged as "catalogue" if any
+        // catalogue row participates so the UI gets the catalogue render path.
+        $cataloguerows = self::backups_from_catalogue($catalogueshort, $filters, $instructorusername);
 
-        if (!empty($cataloguerows)) {
-            $list->backups = $cataloguerows;
-            $list->source  = 'catalogue';
+        $search = isset($data->shortname)
+            ? self::backadel_shortname($data->shortname)
+            : self::backadel_criterion($course);
+        $fsrows = ($search !== '') ? self::backadel_backups($search) : [];
+
+        $merged = self::merge_backup_rows($cataloguerows, $fsrows);
+
+        if (!empty($merged)) {
+            $list->backups = $merged;
+            // Tag as catalogue when catalogue rows were involved so the UI uses
+            // the year-bucketed render path; otherwise it's a pure filesystem list.
+            $list->source = !empty($cataloguerows) ? 'catalogue' : 'semester_backadel';
         } else {
-            // Fallback to filesystem scandir (legacy path, or if catalogue is empty/not yet migrated).
-            $search = isset($data->shortname)
-                ? self::backadel_shortname($data->shortname)
-                : self::backadel_criterion($course);
-            $list->backups = self::backadel_backups($search);
-            $list->source  = 'semester_backadel';
+            $list->backups = [];
+            $list->source = 'semester_backadel';
         }
 
         $data->lists[] = $list;

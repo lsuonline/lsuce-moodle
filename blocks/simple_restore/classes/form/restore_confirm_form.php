@@ -114,7 +114,25 @@ class restore_confirm_form extends dynamic_form {
     }
 
     /**
+     * Threshold (bytes) above which sync mode releases the session lock and
+     * raises the PHP time limit before executing. Bug-042A.
+     */
+    private const LARGE_BACKUP_BYTES = 100 * 1024 * 1024;
+
+    /**
      * Prepare the backup file and run the same restore pipeline as {@see restore.php}.
+     *
+     * Bug-042A: previously the entire restore was wrapped in
+     * ob_start()/ob_end_clean() which discarded the async progress UI
+     * (`core/async_backup_status`) emitted by {@see \simple_restore::execute()}
+     * — leaving the modal "hanging" indefinitely on large backups. Now:
+     *   - async mode: stage the file and redirect to restore.php?confirm=1, which
+     *     renders the async progress page server-side. The browser navigates
+     *     out of the modal AJAX call immediately.
+     *   - sync mode: execute inline as before, but for backups >= 100 MB raise
+     *     the PHP time limit and release the session write-lock so other tabs
+     *     don't hang waiting on the same session, and drop the ob_*() wrap so
+     *     errors / progress are not silently swallowed.
      *
      * @return array{success: bool, message: string, redirecturl: string}
      */
@@ -141,7 +159,7 @@ class restore_confirm_form extends dynamic_form {
 
         if ($catalogueid > 0) {
             // Catalogue path: resolve absolute path via backadel_resolve_path().
-            $fullpath = backadel_resolve_path($catalogueid);
+            $fullpath = \backadel_resolve_path($catalogueid);
             if ($fullpath === '' || !is_readable($fullpath)) {
                 throw new \moodle_exception('filenotfound', 'error');
             }
@@ -168,18 +186,57 @@ class restore_confirm_form extends dynamic_form {
             }
         }
 
+        $useasync = (bool) get_config('simple_restore', 'async_toggle');
+        $contextid = ($restoreto === 2)
+            ? \context_system::instance()->id
+            : \context_course::instance($courseid)->id;
+
+        if ($useasync) {
+            // Async mode: don't run the restore inline (its async progress
+            // template would be discarded by the modal's AJAX response).
+            // Hand off to restore.php which renders the standard
+            // core/async_backup_status progress page server-side. The modal's
+            // redirecturl tells the browser to navigate there immediately.
+            $progressurl = new moodle_url('/blocks/simple_restore/restore.php', [
+                'contextid'  => $contextid,
+                'filename'   => $tempfilename,
+                'restore_to' => $restoreto,
+                'confirm'    => 1,
+            ]);
+            return [
+                'success'     => true,
+                'message'     => get_string('restore_success', 'block_simple_restore'),
+                'redirecturl' => $progressurl->out(false),
+            ];
+        }
+
+        // Sync mode. Large files (>= 100 MB) need extra runway: raise the PHP
+        // time limit and release the session lock so the user's other tabs
+        // remain responsive while the restore runs.
+        $size = (int) (@filesize($fullpath) ?: 0);
+        if ($size >= self::LARGE_BACKUP_BYTES) {
+            \core_php_time_limit::raise(60 * 30); // 30 minutes.
+            // Release session lock without disabling sessions altogether.
+            // session_write_close() is the canonical PHP way; Moodle's
+            // \core\session\manager::write_close() wraps it.
+            if (class_exists('\\core\\session\\manager')
+                && method_exists('\\core\\session\\manager', 'write_close')) {
+                \core\session\manager::write_close();
+            } else if (function_exists('session_write_close')) {
+                @session_write_close();
+            }
+        }
+
         // The restore_ui pipeline uses global optional_param() which reads from $_POST,
         // not from the form's $ajaxformdata. Inject the temp filename so the CONFIRM
         // stage can locate the extracted backup file without falling back to pathnamehash.
         $_POST['filename'] = $tempfilename;
         $restore = new \simple_restore($course, $tempfilename, $restoreto);
         try {
-            ob_start();
-            try {
-                $restore->execute();
-            } finally {
-                ob_end_clean();
-            }
+            // No ob_*() wrap: in sync mode the restore engine writes nothing
+            // useful to stdout (no async template), so we don't need to swallow
+            // output, and swallowing it hid real errors / fatal warnings.
+            $restore->execute();
         } catch (\Throwable $e) {
             throw new \moodle_exception('no_restore', 'block_simple_restore', '', $e->getMessage());
         } finally {
