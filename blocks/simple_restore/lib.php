@@ -109,6 +109,19 @@ abstract class simple_restore_utils {
             return true;
         }
 
+        // Validate the source backup is not empty. A 0-byte ZIP cannot produce
+        // a working course and may still create a broken shell that breaks the
+        // Snap renderer (Call to a member function get_filename() on null).
+        $sourcesize = @filesize($realpath);
+        if ($sourcesize === 0) {
+            throw new moodle_exception(
+                'error_backup_empty',
+                'block_simple_restore',
+                '',
+                $data->fileid
+            );
+        }
+
         copy($realpath, $data->to_path);
         $data->filename = $data->fileid;
         return true;
@@ -527,6 +540,19 @@ abstract class simple_restore_utils {
 
         if (empty($data->filename)) {
             throw new Exception(self::_s('no_file'));
+        }
+
+        // Final size check on the staged temp copy — covers user-area backups
+        // and catches a corrupted copy that may have ended up zero bytes.
+        if (file_exists($data->to_path) && @filesize($data->to_path) === 0) {
+            // Clean up the empty temp copy so it doesn't linger.
+            @unlink($data->to_path);
+            throw new moodle_exception(
+                'error_backup_empty',
+                'block_simple_restore',
+                '',
+                $data->fileid
+            );
         }
 
         return $filename;

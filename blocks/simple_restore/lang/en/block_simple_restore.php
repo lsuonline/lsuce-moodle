@@ -34,6 +34,9 @@ $string['no_file'] = 'Empty file: A restore object must be given a file.';
 $string['no_filter'] = 'Enter a valid course shortname.';
 $string['no_arguments'] = $string['pluginname'] . ' error: Invalid arguments were passed to prep restore.';
 $string['no_restore'] = 'The restore was unable to complete due to the following error: {$a}';
+$string['no_restore_friendly'] = 'The restore of "{$a->filename}" could not be completed. The backup file may be corrupted or incomplete. Please contact your administrator. (Details: {$a->message})';
+$string['error_backup_empty'] = 'The backup file "{$a}" is empty (0 bytes) and cannot be restored. Please choose a different backup or contact your administrator.';
+$string['error_backup_missing'] = 'The backup file "{$a}" could not be found on disk. Please contact your administrator.';
 $string['empty_backups'] = 'No course backups found.';
 $string['have_grades'] = 'This course cannot use Simple Restore now that there are grades in the gradebook. Selective Import is available.';
 

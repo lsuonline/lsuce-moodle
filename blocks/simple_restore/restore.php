@@ -111,6 +111,23 @@ if ($confirm and data_submitted()) {
     echo $OUTPUT->heading($header);
     echo '<span class="restore_template_progress_hider">';
     try {
+        // Defense-in-depth: validate the staged backup file is non-empty before
+        // handing it to the restore engine. A 0-byte backup can otherwise
+        // produce a broken course shell that crashes the Snap renderer with
+        // "Call to a member function get_filename() on null".
+        $tempdir = isset($CFG->backuptempdir) ? $CFG->backuptempdir : $CFG->tempdir;
+        $tempdir = substr($tempdir, -1) === '/' ? $tempdir : $tempdir . '/';
+        $stagedpath = $tempdir . $filename;
+        if (file_exists($stagedpath) && @filesize($stagedpath) === 0) {
+            @unlink($stagedpath);
+            throw new moodle_exception(
+                'error_backup_empty',
+                'block_simple_restore',
+                '',
+                $filename
+            );
+        }
+
         $restore->execute();
         if (!$useasync) {
             echo $OUTPUT->notification(
@@ -118,8 +135,25 @@ if ($confirm and data_submitted()) {
             );
         }
     } catch (Exception $e) {
-        $a = $e->getMessage();
-        echo $OUTPUT->notification(simple_restore_utils::_s('no_restore', $a));
+        // Log the full exception (message + stack trace) so admins can
+        // diagnose restore failures from the Moodle debug log. Teachers
+        // see only the friendly notification below.
+        debugging(
+            'block_simple_restore: restore failed for filename "' . $filename . '": '
+            . $e->getMessage() . "\n" . $e->getTraceAsString(),
+            DEBUG_DEVELOPER
+        );
+
+        // Show a friendlier notification that names the backup and points the
+        // user to their administrator. The raw exception message is included
+        // in parentheses for context, but framed by helpful copy.
+        $a = (object) [
+            'filename' => $filename,
+            'message'  => $e->getMessage(),
+        ];
+        echo $OUTPUT->notification(
+            simple_restore_utils::_s('no_restore_friendly', $a)
+        );
 
         // In case of an aborted archive restore, the 'new' course will have been deleted.
         $course->id = $archivemode == 1 ? 1 : $course->id;
