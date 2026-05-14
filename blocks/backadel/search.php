@@ -125,17 +125,16 @@ $PAGE->requires->js_call_amd('block_backadel/crud_actions', 'init');
 $renderer = $PAGE->get_renderer('block_backadel');
 
 echo $OUTPUT->header();
-echo html_writer::div(
-    html_writer::tag('button', '?', [
-        'type' => 'button',
-        'class' => 'btn btn-sm btn-outline-secondary float-end mb-2',
-        'data-action' => 'show-help',
-        'data-help-topic' => 'search',
-        'data-help-title' => get_string('nav_search', 'block_backadel'),
-        'aria-label' => get_string('help_button_label', 'block_backadel'),
-    ]),
-    'position-relative'
-);
+
+$helpbtn = html_writer::tag('button', '?', [
+    'type' => 'button',
+    'class' => 'btn btn-outline-secondary px-2 ms-2',
+    'data-action' => 'show-help',
+    'data-help-topic' => 'search',
+    'data-help-title' => get_string('nav_search', 'block_backadel'),
+    'aria-label' => get_string('help_button_label', 'block_backadel'),
+]);
+
 ob_start();
 $form->display();
 $formhtml = ob_get_clean();
@@ -144,6 +143,7 @@ echo $renderer->render_filter_panel(new \block_backadel\output\filter_panel(
     get_string('filter_panel_toggle', 'block_backadel'),
     $activefiltercount,
     $formhtml,
+    $helpbtn,
 ));
 echo $OUTPUT->heading(get_string('search_results', 'block_backadel'));
 if (!$hasfilters) {
