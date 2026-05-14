@@ -57,7 +57,7 @@ class block_backadel extends block_base {
      * @param int $secondsrun Elapsed seconds.
      * @return string Human-readable duration (e.g. "2 hours, 5 minutes, 30 seconds").
      */
-    private function seconds2human(int $secondsrun): string {
+    public static function seconds2human(int $secondsrun): string {
         $months = (int) floor($secondsrun / 2592000);
         $days   = (int) floor(($secondsrun % 2592000) / 86400);
         $hours  = (int) floor(($secondsrun % 86400) / 3600);
@@ -90,13 +90,17 @@ class block_backadel extends block_base {
             return $this->content;
         }
 
-        $this->content = new stdClass;
-        $this->content->text = '';
-        $this->content->footer = '';
-
         if (!is_siteadmin($USER->id)) {
+            $this->content = new stdClass();
+            $this->content->items = [];
+            $this->content->icons = [];
+            $this->content->footer = '';
             return $this->content;
         }
+
+        $this->content = new stdClass();
+        $this->content->text = '';
+        $this->content->footer = '';
 
         $numpending = $DB->count_records_select('block_backadel_statuses', "status='SUCCESS'");
         $numfailed  = $DB->count_records_select('block_backadel_statuses', "status='FAIL'");
@@ -106,7 +110,7 @@ class block_backadel extends block_base {
             $statustext = get_string('status_not_running', 'block_backadel');
         } else {
             $secondsrun = (int) round(time() - (int) $running);
-            $statustext = get_string('status_running', 'block_backadel', $this->seconds2human($secondsrun));
+            $statustext = get_string('status_running', 'block_backadel', self::seconds2human($secondsrun));
         }
 
         $iconparams = ['class' => 'icon'];
