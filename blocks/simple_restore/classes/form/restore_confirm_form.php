@@ -168,6 +168,10 @@ class restore_confirm_form extends dynamic_form {
             }
         }
 
+        // The restore_ui pipeline uses global optional_param() which reads from $_POST,
+        // not from the form's $ajaxformdata. Inject the temp filename so the CONFIRM
+        // stage can locate the extracted backup file without falling back to pathnamehash.
+        $_POST['filename'] = $tempfilename;
         $restore = new \simple_restore($course, $tempfilename, $restoreto);
         try {
             ob_start();
@@ -178,6 +182,8 @@ class restore_confirm_form extends dynamic_form {
             }
         } catch (\Throwable $e) {
             throw new \moodle_exception('no_restore', 'block_simple_restore', '', $e->getMessage());
+        } finally {
+            unset($_POST['filename']);
         }
 
         return [
