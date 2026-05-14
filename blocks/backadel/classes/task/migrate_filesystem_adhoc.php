@@ -132,7 +132,7 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
                 }
 
                 $basename       = $basenames[$i];
-                $inserted       = $migrator->migrate_file($dir . '/' . $basename, $source);
+                $inserted       = $migrator->migrate_file(rtrim($dir, '/') . '/' . $basename, $source);
                 $chunkprocessed++;
                 $chunkinserted  += $inserted;
                 $filesdone++;
@@ -208,7 +208,7 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
             foreach ((array) $split as $line) {
                 $line = trim((string) $line);
                 if ($line !== '') {
-                    $runs[] = ['dir' => $line, 'source' => 'legacy_moodleus'];
+                    $runs[] = ['dir' => rtrim($line, '/'), 'source' => 'legacy_moodleus'];
                 }
             }
         }

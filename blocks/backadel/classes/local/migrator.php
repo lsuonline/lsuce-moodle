@@ -81,7 +81,7 @@ class migrator {
             if ($entry === '.' || $entry === '..') {
                 continue;
             }
-            $filepathfull = $dirpath . '/' . $entry;
+            $filepathfull = rtrim($dirpath, '/') . '/' . $entry;
             if (!is_file($filepathfull)) {
                 continue;
             }
@@ -147,7 +147,7 @@ class migrator {
         $insertedtotal = 0;
 
         foreach ($basenames as $basename) {
-            $insertedtotal += $this->migrate_file($dirpath . '/' . $basename, $source);
+            $insertedtotal += $this->migrate_file(rtrim($dirpath, '/') . '/' . $basename, $source);
             $done++;
             $this->maybe_track_progress($done, $total);
         }
