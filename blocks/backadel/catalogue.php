@@ -214,17 +214,14 @@ if (!$table->is_downloading()) {
     }
     echo $OUTPUT->header();
 
-    echo html_writer::div(
-        html_writer::tag('button', '?', [
-            'type' => 'button',
-            'class' => 'btn btn-sm btn-outline-secondary float-end mb-2 px-2',
-            'data-action' => 'show-help',
-            'data-help-topic' => 'catalogue',
-            'data-help-title' => get_string('catalogue_title', 'block_backadel'),
-            'aria-label' => get_string('help_button_label', 'block_backadel'),
-        ]),
-        'position-relative'
-    );
+    $helpbtn = html_writer::tag('button', '?', [
+        'type' => 'button',
+        'class' => 'btn btn-sm btn-outline-secondary px-2',
+        'data-action' => 'show-help',
+        'data-help-topic' => 'catalogue',
+        'data-help-title' => get_string('catalogue_title', 'block_backadel'),
+        'aria-label' => get_string('help_button_label', 'block_backadel'),
+    ]);
 
     $renderer = $PAGE->get_renderer('block_backadel');
     ob_start();
@@ -235,6 +232,7 @@ if (!$table->is_downloading()) {
         get_string('filter_panel_toggle', 'block_backadel'),
         $activefiltercount,
         $formhtml,
+        $helpbtn,
     ));
 }
 

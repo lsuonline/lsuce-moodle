@@ -302,28 +302,25 @@ if ($hascatalogue || $srActiveFilterCount > 0) {
         'restore_to' => $restoreto,
     ]);
 
-    // Help button.
-    echo html_writer::div(
-        html_writer::tag('button', '?', [
-            'type' => 'button',
-            'class' => 'btn btn-sm btn-outline-secondary float-end mb-2',
-            'data-action' => 'show-help',
-            'data-help-topic' => 'simple_restore_list',
-            'data-help-title' => get_string('pluginname', 'block_simple_restore'),
-            'aria-label' => get_string('help_button_label', 'block_backadel'),
-        ]),
-        'position-relative'
-    );
-
     // Offcanvas filter panel (reuses block_backadel components).
+    // The ? help button is rendered inside the filter panel's flex row via extrabuttonshtml.
+    $srhelpbtn = html_writer::tag('button', '?', [
+        'type' => 'button',
+        'class' => 'btn btn-sm btn-outline-secondary px-2',
+        'data-action' => 'show-help',
+        'data-help-topic' => 'simple_restore_list',
+        'data-help-title' => get_string('pluginname', 'block_simple_restore'),
+        'aria-label' => get_string('help_button_label', 'block_backadel'),
+    ]);
     ob_start();
     $filterform->display();
     $srFormHtml = ob_get_clean();
     echo $OUTPUT->render_from_template('block_backadel/local/filter_panel', [
-        'collapseid'  => 'sr-list-filters',
-        'title'       => get_string('filter_panel_toggle', 'block_backadel'),
-        'activecount' => $srActiveFilterCount,
-        'formhtml'    => $srFormHtml,
+        'collapseid'       => 'sr-list-filters',
+        'title'            => get_string('filter_panel_toggle', 'block_backadel'),
+        'activecount'      => $srActiveFilterCount,
+        'formhtml'         => $srFormHtml,
+        'extrabuttonshtml' => $srhelpbtn,
     ]);
 }
 
