@@ -1,0 +1,31 @@
+{{!
+    @template block_backadel/block_widget
+
+    Block sidebar widget — navigation links for the Backadel admin block.
+
+    Context variables:
+    * links - Array of navigation link objects.
+    * links.iconhtml - Rendered pix_icon HTML.
+    * links.url - Link href.
+    * links.label - Link text.
+    * links.count - Optional count badge (omit or null to hide).
+    * statustext - Current job running status string.
+    * statusiconhtml - Rendered pix_icon HTML for the status row.
+
+    Example context (json):
+    {
+        "links": [
+            {"iconhtml": "", "url": "/blocks/backadel/search.php", "label": "Backup", "count": null},
+            {"iconhtml": "", "url": "/blocks/backadel/delete.php", "label": "Delete", "count": 3},
+            {"iconhtml": "", "url": "/blocks/backadel/failed.php", "label": "Failures", "count": null}
+        ],
+        "statustext": "Not Running",
+        "statusiconhtml": ""
+    }
+}}
+<ul class="list-unstyled mb-0">
+{{#links}}
+    <li>{{{iconhtml}}}<a href="{{url}}">{{label}}</a>{{#count}} ({{count}}){{/count}}</li>
+{{/links}}
+    <li>{{{statusiconhtml}}}{{statustext}}</li>
+</ul>
