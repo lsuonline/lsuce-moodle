@@ -257,6 +257,18 @@ $string['migrate_what_happens'] = 'Running a migration scan walks the configured
 $string['migrate_completed'] = 'Migration complete. The counts above have been updated.';
 $string['migrate_warn_no_path'] = 'The backup storage path is not configured. Running a migration scan now will index zero files. <a href="{$a}">Go to Global Settings</a> and set the Storage Path before running a migration.';
 $string['migrate_scan_path'] = 'Scan directory:';
+$string['task_reclassify_catalogue_adhoc'] = 'Backadel: Re-classify catalogue entries (on-demand)';
+$string['reclassify_heading'] = 'Re-classify Catalogue Entries';
+$string['reclassify_what_happens'] = 'Re-parses filenames for existing catalogue rows and updates course type, instructor lists, and missing-file status without re-scanning the filesystem. Use this after updating filename patterns or fixing classification bugs.';
+$string['reclassify_run_button'] = 'Re-classify selected rows';
+$string['reclassify_queued'] = 'Re-classification task queued. The catalogue will be updated in the background.';
+$string['reclassify_dryrun_result'] = 'Dry run: {$a} catalogue rows match the selected criteria. No changes were made.';
+$string['reclassify_disabled_queued'] = 'A Backadel task is already running. Wait for it to complete before re-classifying.';
+$string['reclassify_label_patterns'] = 'Re-classify rows with these filename patterns:';
+$string['reclassify_label_null_semester'] = 'Include rows where semester is not set';
+$string['reclassify_label_dry_run'] = 'Dry run (count only, no changes)';
+$string['reclassify_none_selected'] = 'Select at least one pattern or enable "Null semester" to re-classify.';
+$string['reclassify_null_semester_help_title'] = 'Null Semester Rows';
 
 // Admin navigation labels (settings.php admin_externalpage entries).
 $string['tab_settings']      = 'Global settings';

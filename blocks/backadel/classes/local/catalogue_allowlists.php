@@ -35,6 +35,7 @@ final class catalogue_allowlists {
     public const VALID_PATTERNS = [
         'semester_legacy',
         'semester_legacy_lc',
+        'semester_legacy_intl',
         'semester_legacy_clone',
         'storage_course',
         'storagecourse_dept',

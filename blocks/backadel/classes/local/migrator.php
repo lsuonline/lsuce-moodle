@@ -131,6 +131,47 @@ class migrator {
     }
 
     /**
+     * Re-parse a catalogue entry from disk — selective reclassification without scanning trees.
+     *
+     * @param string $filepathfull Absolute path referenced by the catalogue row.
+     * @param string $source       Catalogue source key (must match the row being reclassified).
+     * @return array{status: string, rows: int}
+     */
+    public function reclassify_file(string $filepathfull, string $source): array {
+        $filepathhash = sha1($filepathfull);
+        $ext = strtolower(pathinfo($filepathfull, PATHINFO_EXTENSION));
+
+        if (!is_file($filepathfull) || !in_array($ext, ['zip', 'mbz'], true)) {
+            try {
+                $this->mark_catalogue_and_courses_missing($source, $filepathhash);
+            } catch (\Throwable $e) {
+                @mtrace('block_backadel migrator reclassify_file: ' . $e->getMessage());
+            }
+            return ['status' => 'missing', 'rows' => 0];
+        }
+
+        try {
+            $parsed = filename_parser::parse($filepathfull);
+            if ($parsed === null) {
+                return ['status' => 'unparseable', 'rows' => 0];
+            }
+
+            $existingcat = $this->get_catalogue_row($source, $filepathhash);
+            $this->upsert_catalogue($source, $filepathfull, $parsed);
+            if ($existingcat !== null && $existingcat->status === 'archived') {
+                global $DB;
+                $DB->set_field('block_backadel_catalogue', 'status', 'archived', ['id' => (int) $existingcat->id]);
+            }
+
+            $inserted = $this->rebuild_courses_and_teachers($filepathfull, $parsed);
+            return ['status' => 'reclassified', 'rows' => $inserted];
+        } catch (\Throwable $e) {
+            @mtrace('block_backadel migrator reclassify_file: ' . $e->getMessage());
+            return ['status' => 'unparseable', 'rows' => 0];
+        }
+    }
+
+    /**
      * Scan a directory for archives and upsert catalogue (+ warm path) rows.
      *
      * Delegates per-file work to {@see self::migrate_file()} so the adhoc task
@@ -330,6 +371,147 @@ class migrator {
         $this->resolve_instructors($parsed, $coursesid);
 
         return ($wasinsert ? 1 : 0) + $this->resolveinstructorsinserted;
+    }
+
+    /**
+     * Warm-path upsert plus full teacher rebuild (delete then resolve).
+     *
+     * @param string $filepathfull
+     * @param array<string, mixed> $parsed
+     * @return int Teacher rows inserted by {@see self::resolve_instructors()}.
+     */
+    private function rebuild_courses_and_teachers(string $filepathfull, array $parsed): int {
+        $pattern = (string) ($parsed['pattern'] ?? '');
+        if (!in_array($pattern, [
+            'semester_legacy',
+            'semester_legacy_lc',
+            'semester_legacy_intl',
+            'backadel_modern',
+            'backadel_instructor',
+            'storage_course',
+            'storage_legacy',
+            'storagecourse_dept',
+        ], true)) {
+            return 0;
+        }
+
+        global $DB;
+
+        $now = time();
+        $basename = basename($filepathfull);
+        $filesizeraw = filesize($filepathfull);
+        $filesize = ($filesizeraw !== false) ? (int) $filesizeraw : null;
+        $mtime = filemtime($filepathfull);
+        $backupcreated = ($mtime !== false) ? (int) $mtime : null;
+
+        $year = isset($parsed['year']) ? (int) $parsed['year'] : 0;
+        $semesterphrase = isset($parsed['semester']) && $parsed['semester'] !== null
+            ? trim((string) $parsed['semester'])
+            : '';
+        $semesterfolder = ($year > 0 && $semesterphrase !== '')
+            ? $this->periodresolver->resolve($year, $semesterphrase)
+            : null;
+
+        $hint = isset($parsed['shortname_hint']) && $parsed['shortname_hint'] !== null
+            ? trim((string) $parsed['shortname_hint'])
+            : '';
+        $label = $hint !== '' ? $hint : $basename;
+        $label = core_text::substr($label, 0, 255);
+
+        $filepathhash = sha1($filepathfull);
+
+        $row = new stdClass();
+        $row->courseid = null;
+        $row->coursefullname = $label;
+        $row->courseshortname = $label;
+        $row->courseidnumber = isset($parsed['course_idnumber']) && $parsed['course_idnumber'] !== null
+            ? core_text::substr((string) $parsed['course_idnumber'], 0, 255)
+            : null;
+        $row->status = 'available';
+        $row->filepath = $filepathfull;
+        $row->filepath_hash = $filepathhash;
+        $row->filename = core_text::substr($basename, 0, 255);
+        $row->filesize = $filesize;
+        $row->backupcreated = $backupcreated;
+        $row->semester = $semesterfolder;
+        $row->academicperiodid = null;
+        $row->coursetype = course_type_resolver::resolve($parsed);
+        $row->statusid = null;
+
+        $existing = $DB->get_record('block_backadel_courses', ['filepath_hash' => $filepathhash]);
+        if ($existing !== false && isset($existing->status) && (string) $existing->status === 'archived') {
+            $row->status = 'archived';
+        }
+
+        $wasinsert = false;
+        if ($existing !== false) {
+            $row->id = $existing->id;
+            $row->timecreated = $existing->timecreated;
+            $DB->update_record('block_backadel_courses', $row);
+            $coursesid = (int) $existing->id;
+        } else {
+            $row->timecreated = $now;
+            try {
+                $coursesid = (int) $DB->insert_record('block_backadel_courses', $row);
+                $wasinsert = true;
+            } catch (dml_write_exception $e) {
+                $winner = $DB->get_record('block_backadel_courses', ['filepath_hash' => $filepathhash]);
+                if ($winner === false) {
+                    throw $e;
+                }
+                $row->id = $winner->id;
+                $row->timecreated = $winner->timecreated;
+                if (isset($winner->status) && (string) $winner->status === 'archived') {
+                    $row->status = 'archived';
+                }
+                $DB->update_record('block_backadel_courses', $row);
+                $coursesid = (int) $winner->id;
+            }
+        }
+
+        $DB->delete_records('block_backadel_teachers', ['coursesid' => $coursesid]);
+        $this->resolve_instructors($parsed, $coursesid);
+
+        return ($wasinsert ? 1 : 0) + $this->resolveinstructorsinserted;
+    }
+
+    /**
+     * @param string $source
+     * @param string $filepathhash sha1 hexdigest
+     */
+    private function mark_catalogue_and_courses_missing(string $source, string $filepathhash): void {
+        global $DB;
+
+        $cat = $DB->get_record('block_backadel_catalogue', [
+            'source' => $source,
+            'filepath_hash' => $filepathhash,
+        ], 'id', IGNORE_MISSING);
+        if ($cat === false) {
+            return;
+        }
+
+        $now = time();
+        $DB->set_field('block_backadel_catalogue', 'status', 'missing', ['id' => (int) $cat->id]);
+        $DB->set_field('block_backadel_catalogue', 'timemodified', $now, ['id' => (int) $cat->id]);
+
+        $course = $DB->get_record('block_backadel_courses', ['filepath_hash' => $filepathhash], 'id', IGNORE_MISSING);
+        if ($course !== false) {
+            $DB->set_field('block_backadel_courses', 'status', 'missing', ['id' => (int) $course->id]);
+        }
+    }
+
+    /**
+     * @param string $source
+     * @param string $filepathhash
+     * @return stdClass|null
+     */
+    private function get_catalogue_row(string $source, string $filepathhash): ?stdClass {
+        global $DB;
+        $rec = $DB->get_record('block_backadel_catalogue', [
+            'source' => $source,
+            'filepath_hash' => $filepathhash,
+        ], '*', IGNORE_MISSING);
+        return $rec === false ? null : $rec;
     }
 
     /**

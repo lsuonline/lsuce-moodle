@@ -45,6 +45,8 @@ class get_help_content extends external_api {
         'failed',
         'delete',
         'migrate',
+        'reclassify',
+        'reclassify_null_semester',
         'restore',
         'simple_restore_list',
     ];
