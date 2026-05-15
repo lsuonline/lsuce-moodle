@@ -106,7 +106,9 @@ if (!$confirm) {
 $useasync = (bool)get_config('simple_restore', 'async_toggle');
 
 // This conditional returns html content for the ajax reponse.
-if ($confirm and data_submitted()) {
+// Bug-054: async mode redirects here via GET (confirm=1); data_submitted() is
+// false on GET, so we also fire when async is active and confirm is set.
+if ($confirm and ($useasync or data_submitted())) {
     echo $OUTPUT->header();
     echo $OUTPUT->heading($header);
     echo '<span class="restore_template_progress_hider">';
