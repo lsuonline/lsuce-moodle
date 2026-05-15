@@ -48,7 +48,11 @@ $syscontext = context_system::instance();
 $ismanager = has_capability('block/backadel:managebackups', $syscontext);
 
 if (!$ismanager) {
-    // Teacher path: courseid param required; catalogue shortname must match course.
+    // Teacher path: courseid param required; catalogue row must belong to the
+    // teacher (either via exact shortname match to the target course, OR — for
+    // blueprint / shared-storage rows whose shortname is a slug like
+    // `MaterialsCourse_AAAS_2000_tsimpson` — via the teacher's username
+    // appearing in the catalogue row's shortname/filename or instructors JSON).
     if ($courseid <= 0) {
         require_capability('block/backadel:managebackups', $syscontext); // throws.
     }
@@ -57,9 +61,35 @@ if (!$ismanager) {
         throw new moodle_exception('invalidcourseid', 'error');
     }
     require_capability('block/simple_restore:canrestore', $coursecontext);
-    // Verify the catalogue row actually belongs to this course (shortname match).
     $course = $DB->get_record('course', ['id' => $courseid], 'shortname', MUST_EXIST);
-    if (strtolower((string) $record->shortname) !== strtolower((string) $course->shortname)) {
+
+    $allowed = (strtolower((string) $record->shortname) === strtolower((string) $course->shortname));
+
+    if (!$allowed) {
+        // Bug-047: blueprint / shared catalogue rows do NOT have a course
+        // shortname (they are owned by an instructor, not a course). Accept the
+        // download when the current user's username appears in the catalogue
+        // row's slug or filename, or is listed in the instructors JSON.
+        require_once($CFG->dirroot . '/blocks/simple_restore/lib.php');
+        $local = simple_restore_utils::username_local_part((string) $USER->username);
+        if ($local !== '') {
+            $needleslug = '_' . strtolower($local);
+            $needlefile = '_' . strtolower($local) . '_';
+            $shortlower = strtolower((string) $record->shortname);
+            $filelower  = strtolower((string) $record->filename);
+            $instr      = (string) ($record->instructors ?? '');
+            $instrhit   = strpos($instr, '"' . $local . '"') !== false;
+            if (
+                $instrhit
+                || str_ends_with($shortlower, $needleslug)
+                || strpos($filelower, $needlefile) !== false
+            ) {
+                $allowed = true;
+            }
+        }
+    }
+
+    if (!$allowed) {
         throw new moodle_exception('filenotfound');
     }
 }
