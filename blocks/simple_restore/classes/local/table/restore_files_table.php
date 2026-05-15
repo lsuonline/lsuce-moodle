@@ -46,6 +46,16 @@ class restore_files_table extends flexible_table {
     /** @var bool Whether the viewer is an admin/manager (controls visibility of admin-only columns). */
     private bool $isadmin;
 
+    /**
+     * @var string Column layout variant.
+     *  - 'year' (default): year, semester, dept, filename, [admin: coursetype, status], filesize, modified, action.
+     *    Used inside year-bucketed sections where the bucket heading conveys the year context.
+     *  - 'flat':  coursecode, filename, [admin: coursetype, status], filesize, modified, action.
+     *    Used in the Blueprints / Other collapsible sections (bug-050) where rows have no
+     *    meaningful year/semester/dept and a course-code surrogate is shown instead.
+     */
+    private string $variant;
+
     /** @var stdClass[] Normalized row objects for paging/output. */
     private array $filerows = [];
 
@@ -55,22 +65,39 @@ class restore_files_table extends flexible_table {
      * @param string $shortname Course short name.
      * @param int $restoreto Restore-to selector (0 = current course, 2 = system / archive).
      * @param bool $isadmin When true, render admin-only columns (Course type, Status). Teachers see neither.
+     * @param string $variant Column layout variant: 'year' (default) or 'flat' (bug-050, blueprint/other sections).
      */
-    public function __construct(string $uniqueid, int $courseid, string $shortname, int $restoreto = 0, bool $isadmin = false) {
+    public function __construct(
+        string $uniqueid,
+        int $courseid,
+        string $shortname,
+        int $restoreto = 0,
+        bool $isadmin = false,
+        string $variant = 'year'
+    ) {
         parent::__construct($uniqueid);
         $this->courseid = $courseid;
         $this->shortname = $shortname;
         $this->restoreto = $restoreto;
         $this->isadmin = $isadmin;
+        $this->variant = ($variant === 'flat') ? 'flat' : 'year';
 
         // Admin-only columns (Course type, Status) are omitted entirely for teachers — no <th> and no <td>.
-        $columns = ['year', 'semester', 'dept', 'filename'];
-        $headers = [
-            get_string('table_col_year',     'block_simple_restore'),
-            get_string('table_col_semester', 'block_simple_restore'),
-            get_string('table_col_dept',     'block_simple_restore'),
-            get_string('table_col_filename', 'block_simple_restore'),
-        ];
+        if ($this->variant === 'flat') {
+            $columns = ['coursecode', 'filename'];
+            $headers = [
+                get_string('table_col_coursecode', 'block_simple_restore'),
+                get_string('table_col_filename',   'block_simple_restore'),
+            ];
+        } else {
+            $columns = ['year', 'semester', 'dept', 'filename'];
+            $headers = [
+                get_string('table_col_year',     'block_simple_restore'),
+                get_string('table_col_semester', 'block_simple_restore'),
+                get_string('table_col_dept',     'block_simple_restore'),
+                get_string('table_col_filename', 'block_simple_restore'),
+            ];
+        }
         if ($this->isadmin) {
             $columns[] = 'coursetype';
             $columns[] = 'status';
@@ -90,8 +117,12 @@ class restore_files_table extends flexible_table {
         $this->collapsible(false);
         $this->set_attribute('class', 'generaltable table-sm w-100');
         // Hide lower-priority columns on small screens.
-        $this->column_class('year',     'd-none d-sm-table-cell');
-        $this->column_class('dept',     'd-none d-md-table-cell');
+        if ($this->variant === 'flat') {
+            $this->column_class('coursecode', 'd-none d-md-table-cell');
+        } else {
+            $this->column_class('year', 'd-none d-sm-table-cell');
+            $this->column_class('dept', 'd-none d-md-table-cell');
+        }
         if ($this->isadmin) {
             $this->column_class('status',   'd-none d-xl-table-cell');
         }
@@ -125,6 +156,9 @@ class restore_files_table extends flexible_table {
             $normalized->coursetype = (string) ($row->coursetype ?? '');
             $normalized->status     = (string) ($row->status ?? '');
             $normalized->pattern    = (string) ($row->pattern ?? '');
+            // Bug-050: course_num is the surrogate identifier rendered by the 'flat' variant
+            // (Blueprints / Other sections). May be empty for filesystem rows; renders as em-dash.
+            $normalized->course_num = (string) ($row->course_num ?? '');
             // For catalogue rows the integer row ID is passed as $row->id.
             $rawid = $row->id ?? 0;
             $normalized->catalogue_id = ($source === 'catalogue' && is_int($rawid) && $rawid > 0)
@@ -218,6 +252,20 @@ class restore_files_table extends flexible_table {
     }
 
     /**
+     * Bug-050: Course code surrogate column used by the 'flat' variant (Blueprints / Other
+     * sections). Blueprint catalogue rows have no year/semester/dept, but they do carry
+     * a parsed {@code course_num} (e.g. "LA-1203", "AAAS_2000") which is the most useful
+     * single identifier for the user.
+     *
+     * @param stdClass $row
+     * @return string Course code or em-dash when unknown.
+     */
+    public function col_coursecode(stdClass $row): string {
+        $v = (string) ($row->course_num ?? '');
+        return $v !== '' ? s($v) : html_writer::tag('span', '—', ['class' => 'text-muted']);
+    }
+
+    /**
      * @param stdClass $row
      * @return string Bootstrap badge for course type, or em-dash if unknown.
      */
@@ -272,11 +320,24 @@ class restore_files_table extends flexible_table {
     }
 
     /**
+     * Render the "Modified" column.
+     *
+     * When the row carries no usable timestamp ({@code <= 0}) we render an
+     * em-dash instead of {@see userdate(0)} which would otherwise display
+     * the Unix epoch (e.g. "December 31, 1969") in the viewer's locale.
+     * Backadel-instructor archives (filename pattern
+     * `backadel-YYYY-Semester-DEPT-COURSE-for-NAME_user@host.zip`) have no
+     * embedded Unix timestamp so the catalogue stores {@code backup_ts = 0}
+     * for those rows — this guard prevents the spurious 1969/1970 display.
+     *
      * @param stdClass $row
-     * @return string Localised modified date/time.
+     * @return string Localised modified date/time, or em-dash for unknown ts.
      */
     public function col_modified(stdClass $row): string {
         $ts = (int) ($row->modified ?? $row->timemodified ?? 0);
+        if ($ts <= 0) {
+            return html_writer::tag('span', '—', ['class' => 'text-muted']);
+        }
         return userdate($ts);
     }
 

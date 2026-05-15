@@ -331,39 +331,114 @@ if ($hascatalogue || $sractivefiltercount > 0 || $cataloguetableexists) {
     ]);
 }
 
-$displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $data, $restoreto, $isadmin) {
+$displaylist = function ($in, $list) use ($OUTPUT, $PAGE, $courseid, $course, $data, $restoreto, $isadmin, $listfltcourse) {
     $source = $list->source ?? '';
     if (in_array($source, ['semester_backadel', 'catalogue'], true) && !empty($list->backups)) {
-        echo $OUTPUT->heading($list->header);
         $shortname = isset($data->shortname) ? $data->shortname : $course->shortname;
         if ($source === 'catalogue') {
-            $buckets = [];
-            foreach ($list->backups as $backup) {
-                $year = (string) ($backup->year ?? '');
-                if ($year === '') {
-                    $year = (string) date('Y', (int) ($backup->timemodified ?? 0));
-                }
-                if (!isset($buckets[$year])) {
-                    $buckets[$year] = [];
-                }
-                $buckets[$year][] = $backup;
-            }
-            krsort($buckets, SORT_STRING);
-            foreach ($buckets as $year => $bucket) {
-                echo $OUTPUT->heading((string) $year, 4);
-                $table = new \block_simple_restore\local\table\restore_files_table(
-                    'simple_restore_semester_' . $courseid . '_y' . $year,
+            // Bug-050: split the catalogue rows into three coursetype groups and render each in its own
+            // section. Teaching backups keep the existing year-bucket layout; blueprint and other rows
+            // render in collapsible <details> sections above/below the year buckets so they no longer
+            // leak into a spurious "2026" year bucket (where their migration backup_ts had placed them).
+            echo $OUTPUT->heading($list->header);
+            $parts = \simple_restore_utils::partition_by_coursetype($list->backups);
+            $rendered = false;
+
+            // --- Blueprints section (above year buckets) -----------------------------------------
+            if (!empty($parts['blueprint'])) {
+                $bpopen = ($listfltcourse === 'blueprint');
+                echo \simple_restore_utils::render_collapsible_section_open(
+                    'sr-blueprints-' . $courseid,
+                    get_string('blueprints_section_heading', 'block_simple_restore'),
+                    get_string('blueprints_section_help', 'block_simple_restore'),
+                    count($parts['blueprint']),
+                    $bpopen
+                );
+                $bptable = new \block_simple_restore\local\table\restore_files_table(
+                    'simple_restore_blueprints_' . $courseid,
                     $courseid,
                     (string) $shortname,
                     $restoreto,
-                    $isadmin
+                    $isadmin,
+                    'flat'
                 );
-                $table->populate($bucket, 'catalogue');
+                $bptable->populate($parts['blueprint'], 'catalogue');
                 echo html_writer::start_div('table-responsive');
-                $table->setup_and_out(30);
+                $bptable->setup_and_out(30);
                 echo html_writer::end_div();
+                echo '</details>';
+                $rendered = true;
             }
+
+            // --- Year buckets (teaching only) ----------------------------------------------------
+            if (!empty($parts['teaching'])) {
+                $buckets = [];
+                foreach ($parts['teaching'] as $backup) {
+                    $year = (string) ($backup->year ?? '');
+                    if ($year === '') {
+                        // Bug-048 guard: never derive 1969/1970 from a zero timestamp.
+                        $ts = (int) ($backup->timemodified ?? 0);
+                        $year = $ts > 0 ? (string) date('Y', $ts) : 'unknown';
+                    }
+                    $buckets[$year][] = $backup;
+                }
+                // Keep the "unknown" bucket at the bottom regardless of locale sort.
+                $unknownbucket = $buckets['unknown'] ?? null;
+                unset($buckets['unknown']);
+                krsort($buckets, SORT_STRING);
+                if ($unknownbucket !== null) {
+                    $buckets['unknown'] = $unknownbucket;
+                }
+                foreach ($buckets as $year => $bucket) {
+                    $heading = $year === 'unknown'
+                        ? get_string('year_bucket_unknown', 'block_simple_restore')
+                        : (string) $year;
+                    echo $OUTPUT->heading($heading, 4);
+                    $table = new \block_simple_restore\local\table\restore_files_table(
+                        'simple_restore_semester_' . $courseid . '_y' . $year,
+                        $courseid,
+                        (string) $shortname,
+                        $restoreto,
+                        $isadmin,
+                        'year'
+                    );
+                    $table->populate($bucket, 'catalogue');
+                    echo html_writer::start_div('table-responsive');
+                    $table->setup_and_out(30);
+                    echo html_writer::end_div();
+                }
+                $rendered = true;
+            }
+
+            // --- Other backups section (below year buckets) --------------------------------------
+            if (!empty($parts['other'])) {
+                $otheropen = ($listfltcourse === 'other');
+                echo \simple_restore_utils::render_collapsible_section_open(
+                    'sr-other-' . $courseid,
+                    get_string('other_section_heading', 'block_simple_restore'),
+                    get_string('other_section_help', 'block_simple_restore'),
+                    count($parts['other']),
+                    $otheropen
+                );
+                $otable = new \block_simple_restore\local\table\restore_files_table(
+                    'simple_restore_other_' . $courseid,
+                    $courseid,
+                    (string) $shortname,
+                    $restoreto,
+                    $isadmin,
+                    'flat'
+                );
+                $otable->populate($parts['other'], 'catalogue');
+                echo html_writer::start_div('table-responsive');
+                $otable->setup_and_out(30);
+                echo html_writer::end_div();
+                echo '</details>';
+                $rendered = true;
+            }
+
+            return $rendered;
         } else {
+            echo $OUTPUT->heading($list->header);
             $table = new \block_simple_restore\local\table\restore_files_table(
                 'simple_restore_semester_' . $courseid,
                 $courseid,

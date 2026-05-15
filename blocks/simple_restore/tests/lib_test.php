@@ -306,4 +306,272 @@ final class lib_test extends \advanced_testcase {
             'list.php filter-panel render gate (bug-041) requires this table to exist'
         );
     }
+
+    // -----------------------------------------------------------------------
+    // Bug-049: get_catalogue_filter_options() must accept an instructor
+    // username so the Year / Semester dropdowns aren't empty when the user's
+    // only matching rows come from the instructors-JSON fallback.
+    // -----------------------------------------------------------------------
+
+    /**
+     * Helper: invoke private get_catalogue_filter_options() via reflection.
+     *
+     * @param string $shortname
+     * @param string $instructorusername
+     * @return array
+     */
+    private static function invoke_filter_options(string $shortname, string $instructorusername = ''): array {
+        $method = new ReflectionMethod(simple_restore_utils::class, 'get_catalogue_filter_options');
+        $method->setAccessible(true);
+        return $method->invoke(null, $shortname, $instructorusername);
+    }
+
+    /**
+     * Bug-049 guard: empty shortname AND empty instructor returns empty —
+     * no unbounded table scan.
+     *
+     * @covers \simple_restore_utils::get_catalogue_filter_options
+     */
+    public function test_filter_options_empty_inputs_return_empty(): void {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+            $this->markTestSkipped('block_backadel_catalogue table not present');
+        }
+
+        $opts = self::invoke_filter_options('', '');
+        $this->assertSame(['years' => [], 'semesters' => []], $opts);
+    }
+
+    /**
+     * Bug-049: shortname-only call returns the years/semesters of rows
+     * whose shortname LIKE-matches (pre-existing behaviour preserved).
+     *
+     * @covers \simple_restore_utils::get_catalogue_filter_options
+     */
+    public function test_filter_options_shortname_only_returns_matching_years(): void {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+            $this->markTestSkipped('block_backadel_catalogue table not present');
+        }
+
+        $now = time();
+        $DB->insert_record('block_backadel_catalogue', (object) [
+            'filename'      => 'teach-2023.zip',
+            'filepath'      => '/lsubackupdata/teach-2023.zip',
+            'filepath_full' => '/lsubackupdata/teach-2023.zip',
+            'filepath_hash' => sha1('/lsubackupdata/teach-2023.zip-shortname'),
+            'source'        => 'backadel_current',
+            'year'          => 2023,
+            'semester'      => 'Fall',
+            'shortname'     => 'LA-1203',
+            'instructors'   => '["someoneelse"]',
+            'pattern'       => 'storage_course',
+            'backup_ts'     => $now,
+            'status'        => 'available',
+            'timecreated'   => $now,
+            'timemodified'  => $now,
+        ]);
+        $DB->insert_record('block_backadel_catalogue', (object) [
+            'filename'      => 'teach-2024.zip',
+            'filepath'      => '/lsubackupdata/teach-2024.zip',
+            'filepath_full' => '/lsubackupdata/teach-2024.zip',
+            'filepath_hash' => sha1('/lsubackupdata/teach-2024.zip-shortname'),
+            'source'        => 'backadel_current',
+            'year'          => 2024,
+            'semester'      => 'Spring',
+            'shortname'     => 'LA-1203',
+            'instructors'   => '["someoneelse"]',
+            'pattern'       => 'storage_course',
+            'backup_ts'     => $now,
+            'status'        => 'available',
+            'timecreated'   => $now,
+            'timemodified'  => $now,
+        ]);
+
+        $opts = self::invoke_filter_options('LA-1203');
+        // Years are returned DESC.
+        $this->assertSame([2024, 2023], $opts['years']);
+        $this->assertEqualsCanonicalizing(['Fall', 'Spring'], $opts['semesters']);
+    }
+
+    /**
+     * Bug-049 core: when shortname does NOT match but the instructor username
+     * does, the year/semester filter options must still surface from those rows.
+     *
+     * Simulates a teacher viewing their course "2024 Fall LA 1203 for Charles
+     * Fryling" — catalogue rows live under shortname "LA-1203" but the teacher
+     * course shortname does not match. Filter dropdowns previously came up
+     * empty; with bug-049, the instructor JSON OR-match contributes the years.
+     *
+     * @covers \simple_restore_utils::get_catalogue_filter_options
+     */
+    public function test_filter_options_instructor_match_surfaces_years(): void {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+            $this->markTestSkipped('block_backadel_catalogue table not present');
+        }
+
+        $now = time();
+        $DB->insert_record('block_backadel_catalogue', (object) [
+            'filename'      => '2012SpringLA120315827_lafry_1337815526.zip',
+            'filepath'      => '/lsubackupdata/2012SpringLA120315827_lafry_1337815526.zip',
+            'filepath_full' => '/lsubackupdata/2012SpringLA120315827_lafry_1337815526.zip',
+            'filepath_hash' => sha1('/lsubackupdata/2012SpringLA120315827_lafry_1337815526.zip-bug049'),
+            'source'        => 'legacy_moodleus',
+            'year'          => 2012,
+            'semester'      => 'Spring',
+            'dept'          => 'LA',
+            'course_num'    => '1203',
+            'shortname'     => 'LA-1203',
+            'instructors'   => '["lafry"]',
+            'pattern'       => 'semester_legacy',
+            'backup_ts'     => $now - 86400,
+            'file_size'     => 12345,
+            'status'        => 'available',
+            'timecreated'   => $now,
+            'timemodified'  => $now,
+        ]);
+        $DB->insert_record('block_backadel_catalogue', (object) [
+            'filename'      => '2014FallLA120399999_lafry_1500000000.zip',
+            'filepath'      => '/lsubackupdata/2014FallLA120399999_lafry_1500000000.zip',
+            'filepath_full' => '/lsubackupdata/2014FallLA120399999_lafry_1500000000.zip',
+            'filepath_hash' => sha1('/lsubackupdata/2014FallLA120399999_lafry_1500000000.zip-bug049'),
+            'source'        => 'legacy_moodleus',
+            'year'          => 2014,
+            'semester'      => 'Fall',
+            'dept'          => 'LA',
+            'course_num'    => '1203',
+            'shortname'     => 'LA-1203',
+            'instructors'   => '["lafry"]',
+            'pattern'       => 'semester_legacy',
+            'backup_ts'     => $now - 86400,
+            'status'        => 'available',
+            'timecreated'   => $now,
+            'timemodified'  => $now,
+        ]);
+
+        // Shortname-only call (no instructor) should miss these because the
+        // teacher course shortname doesn't match the catalogue shortname.
+        $opts = self::invoke_filter_options('2024-Fall-LA-1203-for-Charles-Fryling');
+        $this->assertSame([], $opts['years'], 'control: shortname-only must NOT match catalogue rows');
+
+        // With instructor username supplied, the OR predicate fires and
+        // years come through.
+        $opts = self::invoke_filter_options('2024-Fall-LA-1203-for-Charles-Fryling', 'lafry@lsu.edu');
+        $this->assertSame([2014, 2012], $opts['years']);
+        $this->assertEqualsCanonicalizing(['Fall', 'Spring'], $opts['semesters']);
+
+        // Bare-username also works (no @ to strip).
+        $opts = self::invoke_filter_options('2024-Fall-LA-1203-for-Charles-Fryling', 'lafry');
+        $this->assertSame([2014, 2012], $opts['years']);
+    }
+
+    /**
+     * Bug-049 corner case: when ALL the instructor's rows are blueprints
+     * (year IS NULL), the Year filter correctly stays empty. Blueprints
+     * have no academic year; this is expected behaviour. Bug-050 will
+     * present blueprints in their own section with a different filter UX.
+     *
+     * @covers \simple_restore_utils::get_catalogue_filter_options
+     */
+    public function test_filter_options_blueprint_only_instructor_returns_empty_years(): void {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+            $this->markTestSkipped('block_backadel_catalogue table not present');
+        }
+
+        $now = time();
+        // Two blueprint rows for this instructor — year IS NULL, semester NULL/empty.
+        $DB->insert_record('block_backadel_catalogue', (object) [
+            'filename'      => 'blueprint-mastercourse-A.zip',
+            'filepath'      => '/lsubackupdata/blueprint-mastercourse-A.zip',
+            'filepath_full' => '/lsubackupdata/blueprint-mastercourse-A.zip',
+            'filepath_hash' => sha1('/lsubackupdata/blueprint-mastercourse-A.zip-bug049'),
+            'source'        => 'backadel_current',
+            'year'          => null,
+            'semester'      => null,
+            'shortname'     => null,
+            'instructors'   => '["blueprintonly"]',
+            'pattern'       => 'blueprint',
+            'backup_ts'     => $now,
+            'status'        => 'available',
+            'timecreated'   => $now,
+            'timemodified'  => $now,
+        ]);
+        $DB->insert_record('block_backadel_catalogue', (object) [
+            'filename'      => 'blueprint-materials-B.zip',
+            'filepath'      => '/lsubackupdata/blueprint-materials-B.zip',
+            'filepath_full' => '/lsubackupdata/blueprint-materials-B.zip',
+            'filepath_hash' => sha1('/lsubackupdata/blueprint-materials-B.zip-bug049'),
+            'source'        => 'backadel_current',
+            'year'          => null,
+            'semester'      => '',
+            'shortname'     => null,
+            'instructors'   => '["blueprintonly"]',
+            'pattern'       => 'blueprint',
+            'backup_ts'     => $now,
+            'status'        => 'available',
+            'timecreated'   => $now,
+            'timemodified'  => $now,
+        ]);
+
+        $opts = self::invoke_filter_options('', 'blueprintonly');
+        $this->assertSame([], $opts['years'], 'blueprint-only catalogue rows correctly yield no Year options');
+        $this->assertSame([], $opts['semesters'], 'blueprint-only catalogue rows correctly yield no Semester options');
+    }
+
+    /**
+     * Bug-049 mixed case: an instructor who has BOTH a teaching row (with
+     * year/semester) AND blueprint rows (year=NULL) must see the teaching
+     * row's year/semester in the filter options.
+     *
+     * @covers \simple_restore_utils::get_catalogue_filter_options
+     */
+    public function test_filter_options_mixed_teaching_and_blueprint_surfaces_years(): void {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+            $this->markTestSkipped('block_backadel_catalogue table not present');
+        }
+
+        $now = time();
+        // Teaching row with year/semester.
+        $DB->insert_record('block_backadel_catalogue', (object) [
+            'filename'      => '2023SpringEN200012345_mixedteach_1700000000.zip',
+            'filepath'      => '/lsubackupdata/2023SpringEN200012345_mixedteach_1700000000.zip',
+            'filepath_full' => '/lsubackupdata/2023SpringEN200012345_mixedteach_1700000000.zip',
+            'filepath_hash' => sha1('/lsubackupdata/2023SpringEN200012345_mixedteach_1700000000.zip-bug049'),
+            'source'        => 'legacy_moodleus',
+            'year'          => 2023,
+            'semester'      => 'Spring',
+            'shortname'     => 'EN-2000',
+            'instructors'   => '["mixedteach"]',
+            'pattern'       => 'semester_legacy',
+            'backup_ts'     => $now,
+            'status'        => 'available',
+            'timecreated'   => $now,
+            'timemodified'  => $now,
+        ]);
+        // Blueprint row (year=NULL) — should not contribute to year filter.
+        $DB->insert_record('block_backadel_catalogue', (object) [
+            'filename'      => 'blueprint-EN2000.zip',
+            'filepath'      => '/lsubackupdata/blueprint-EN2000.zip',
+            'filepath_full' => '/lsubackupdata/blueprint-EN2000.zip',
+            'filepath_hash' => sha1('/lsubackupdata/blueprint-EN2000.zip-bug049'),
+            'source'        => 'backadel_current',
+            'year'          => null,
+            'semester'      => null,
+            'shortname'     => null,
+            'instructors'   => '["mixedteach"]',
+            'pattern'       => 'blueprint',
+            'backup_ts'     => $now,
+            'status'        => 'available',
+            'timecreated'   => $now,
+            'timemodified'  => $now,
+        ]);
+
+        // Course shortname does NOT match the catalogue row, only instructor does.
+        $opts = self::invoke_filter_options('2024-Spring-EN-2000-for-J-Doe', 'mixedteach');
+        $this->assertSame([2023], $opts['years'], 'teaching row contributes year even when blueprint rows share instructor');
+        $this->assertSame(['Spring'], $opts['semesters']);
+    }
 }

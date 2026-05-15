@@ -71,15 +71,25 @@ $string['filter_type_other'] = 'Other backup';
 $string['toggle_recent_show'] = 'Show most recent backup only';
 $string['toggle_recent_all'] = 'Show all backups';
 
+$string['year_bucket_unknown'] = 'Other backups';
 $string['table_col_year']      = 'Year';
 $string['table_col_semester']  = 'Semester';
 $string['table_col_dept']      = 'Department';
+$string['table_col_coursecode'] = 'Course code';
 $string['table_col_coursetype'] = 'Course type';
 $string['table_col_status']    = 'Status';
 $string['table_col_filename']  = 'Filename';
 $string['table_col_filesize']  = 'Size';
 $string['table_col_modified']  = 'Modified';
 $string['table_col_action']    = 'Action';
+
+// Bug-050: collapsible blueprint / other sections rendered above & below year buckets.
+$string['blueprints_section_heading'] = 'Blueprints (template courses)';
+$string['blueprints_section_help']    = 'Master/template courses without a specific term — expand to view.';
+$string['blueprints_section_empty']   = 'No template backups available for this course.';
+$string['other_section_heading']      = 'Other backups';
+$string['other_section_help']         = 'Backups that are neither live-course nor template — expand to view.';
+$string['other_section_empty']        = 'No other backups available for this course.';
 $string['restore_action']      = 'Restore';
 $string['download_action']     = 'Download';
 $string['status_available']    = 'Available';

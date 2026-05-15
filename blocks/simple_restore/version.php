@@ -23,6 +23,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2026051400;
+$plugin->version = 2026051500;
 $plugin->requires = 2018051700;
 $plugin->component = 'block_simple_restore';

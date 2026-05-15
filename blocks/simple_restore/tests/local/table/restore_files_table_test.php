@@ -84,4 +84,88 @@ final class restore_files_table_test extends \advanced_testcase {
         $this->assertSame(display_size(1048576), $formatted);
         $this->assertStringContainsString('MB', $formatted);
     }
+
+    /**
+     * Bug-048: rows whose backup timestamp is zero (e.g. backadel-instructor
+     * archives that have no embedded Unix timestamp) must render an em-dash
+     * rather than {@see userdate(0)} which would show "Dec 31, 1969" in the
+     * America/Chicago locale.
+     *
+     * @covers ::col_modified
+     */
+    public function test_col_modified_renders_dash_for_zero_timestamp(): void {
+        $table = new restore_files_table('unittest_restore_mod_zero', 1, 'C1', 0);
+        $row = (object) ['modified' => 0];
+
+        $rendered = $table->col_modified($row);
+
+        $this->assertStringContainsString('—', $rendered);
+        $this->assertStringContainsString('text-muted', $rendered);
+        $this->assertStringNotContainsString('1969', $rendered);
+        $this->assertStringNotContainsString('1970', $rendered);
+    }
+
+    /**
+     * Bug-048: a missing 'modified' / 'timemodified' key must behave like zero
+     * — never fall through to userdate(0).
+     *
+     * @covers ::col_modified
+     */
+    public function test_col_modified_renders_dash_for_missing_timestamp(): void {
+        $table = new restore_files_table('unittest_restore_mod_missing', 1, 'C1', 0);
+        $row = (object) ['filename' => 'no-ts.zip'];
+
+        $rendered = $table->col_modified($row);
+
+        $this->assertStringContainsString('—', $rendered);
+        $this->assertStringContainsString('text-muted', $rendered);
+    }
+
+    /**
+     * Bug-048: sanity guard — negative timestamps must also render the dash
+     * rather than wrapping around to a pre-epoch date.
+     *
+     * @covers ::col_modified
+     */
+    public function test_col_modified_renders_dash_for_negative_timestamp(): void {
+        $table = new restore_files_table('unittest_restore_mod_neg', 1, 'C1', 0);
+        $row = (object) ['modified' => -1];
+
+        $rendered = $table->col_modified($row);
+
+        $this->assertStringContainsString('—', $rendered);
+        $this->assertStringContainsString('text-muted', $rendered);
+    }
+
+    /**
+     * Bug-048: with a valid positive timestamp we delegate to {@see userdate()}.
+     *
+     * @covers ::col_modified
+     */
+    public function test_col_modified_renders_userdate_for_valid_timestamp(): void {
+        $table = new restore_files_table('unittest_restore_mod_ok', 1, 'C1', 0);
+        $ts = 1700000000;
+        $row = (object) ['modified' => $ts];
+
+        $rendered = $table->col_modified($row);
+
+        $this->assertSame(userdate($ts), $rendered);
+        $this->assertStringNotContainsString('text-muted', $rendered);
+    }
+
+    /**
+     * Bug-048: when the row only carries 'timemodified' (filesystem source)
+     * the column should still pick it up.
+     *
+     * @covers ::col_modified
+     */
+    public function test_col_modified_falls_back_to_timemodified(): void {
+        $table = new restore_files_table('unittest_restore_mod_tm', 1, 'C1', 0);
+        $ts = 1600000000;
+        $row = (object) ['timemodified' => $ts];
+
+        $rendered = $table->col_modified($row);
+
+        $this->assertSame(userdate($ts), $rendered);
+    }
 }

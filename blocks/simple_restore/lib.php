@@ -189,23 +189,65 @@ abstract class simple_restore_utils {
     }
 
     /**
-     * Lookup distinct catalogue years / semesters matching a Moodle course shortname.
+     * Lookup distinct catalogue years / semesters matching a Moodle course shortname
+     * and/or an instructor username.
      *
-     * @param string $shortname Course shortname
+     * Bug-049: when a user's catalogue rows are predominantly blueprint files
+     * (shortname is empty / does not match the Moodle course shortname), the
+     * shortname-only predicate yielded 0 rows and the Year / Semester filter
+     * dropdowns came up empty. Mirror the OR-shortname-OR-instructor pattern
+     * used by {@see query_catalogue_rows()} so the filter options reflect the
+     * same row-set the list will actually display.
+     *
+     * Rows where year IS NULL (blueprint rows) are correctly excluded from
+     * the Year fieldset — blueprints have no academic year. If a user has
+     * ONLY blueprints, the Year filter will (correctly) remain empty; the
+     * teaching-course rows surfaced via instructor match still contribute
+     * their years.
+     *
+     * @param string $shortname Course shortname (LIKE predicate on `shortname`). Empty = skip.
+     * @param string $instructorusername Optional username for instructors-JSON LIKE match.
      * @return array{years: int[], semesters: string[]}
      */
-    private static function get_catalogue_filter_options(string $shortname): array {
+    private static function get_catalogue_filter_options(
+        string $shortname,
+        string $instructorusername = ''
+    ): array {
         global $DB;
-        if ($shortname === '' || !$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+        if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
             return ['years' => [], 'semesters' => []];
         }
-        $likesql = $DB->sql_like('shortname', ':sn', false, true, false);
-        $params = ['sn' => $DB->sql_like_escape($shortname)];
+
+        $where = [];
+        $params = [];
+
+        if ($shortname !== '') {
+            $where[] = $DB->sql_like('shortname', ':sn', false, true, false);
+            $params['sn'] = $DB->sql_like_escape($shortname);
+        }
+
+        if ($instructorusername !== '') {
+            // Match a JSON array literal entry: instructors stores ["lafry"], so
+            // search for the quoted local-part. LIKE keeps this DB-portable
+            // (avoids JSON_CONTAINS / JSON_QUOTE which differ between PG and MariaDB).
+            $local = self::username_local_part($instructorusername);
+            if ($local !== '') {
+                $where[] = $DB->sql_like('instructors', ':instr', false, true, false);
+                $params['instr'] = '%"' . $DB->sql_like_escape($local) . '"%';
+            }
+        }
+
+        // Refuse to run an unbounded scan: at least one predicate must be present.
+        if (empty($where)) {
+            return ['years' => [], 'semesters' => []];
+        }
+
+        $wheresql = '(' . implode(' OR ', $where) . ')';
 
         $years = $DB->get_fieldset_sql(
             "SELECT DISTINCT year
                FROM {block_backadel_catalogue}
-              WHERE {$likesql}
+              WHERE {$wheresql}
                 AND year IS NOT NULL
            ORDER BY year DESC",
             $params
@@ -216,7 +258,7 @@ abstract class simple_restore_utils {
         $semesters = $DB->get_fieldset_sql(
             "SELECT DISTINCT semester
                FROM {block_backadel_catalogue}
-              WHERE {$likesql}
+              WHERE {$wheresql}
                 AND semester IS NOT NULL
                 AND semester <> ''
            ORDER BY semester ASC",
@@ -306,10 +348,29 @@ abstract class simple_restore_utils {
             // Match a JSON array literal entry: instructors stores ["lafry"], so
             // search for the quoted local-part. LIKE keeps this DB-portable
             // (avoids JSON_CONTAINS / JSON_QUOTE which differ between PG and MariaDB).
+            //
+            // Bug-047: blueprint catalogue rows (pattern=storage_legacy, e.g.
+            // `MaterialsCourse_AAAS_2000_tsimpson_<ts>.zip`) embed the instructor's
+            // username in the slug/shortname/filename rather than in the
+            // instructors JSON (which is `[]` for that pattern). Also OR-match
+            // shortname and filename so an instructor sees their own blueprint
+            // backups in the catalogue path (and therefore gets the catalogue id
+            // needed for the Download button).
             $local = self::username_local_part($instructorusername);
             if ($local !== '') {
-                $where[] = $DB->sql_like('cat.instructors', ':instr', false, true, false);
-                $params['instr'] = '%"' . $DB->sql_like_escape($local) . '"%';
+                $instrlike = $DB->sql_like('cat.instructors', ':instrjson',  false, true, false);
+                $shortlike = $DB->sql_like('cat.shortname',   ':instrshort', false, true, false);
+                $filelike  = $DB->sql_like('cat.filename',    ':instrfile',  false, true, false);
+                $where[] = "({$instrlike} OR {$shortlike} OR {$filelike})";
+                $escaped = $DB->sql_like_escape($local);
+                $params['instrjson']  = '%"' . $escaped . '"%';
+                // Word-boundary on the slug / filename: leading `_` is a literal
+                // underscore (not a LIKE single-char wildcard), so escape it with
+                // the default backslash escape char that sql_like() emits.
+                // shortname end form: `_tsimpson` at end of slug.
+                $params['instrshort'] = '%\\_' . $escaped;
+                // filename form: `_tsimpson_<ts>.zip` (underscore on both sides).
+                $params['instrfile']  = '%\\_' . $escaped . '\\_%';
             }
         }
 
@@ -373,12 +434,21 @@ abstract class simple_restore_utils {
         $rows = $DB->get_records_sql($sql, $params);
 
         return array_values(array_map(static function ($row) {
+            // Bug-048: when both the stored year column and the parsed
+            // backup_ts are empty we leave year as '' rather than fall back
+            // to date('Y', 0) which would produce "1969"/"1970" depending
+            // on server timezone. Downstream rendering treats '' as the
+            // "Other backups" bucket / em-dash in the Year column.
+            $backupts = (int) ($row->backup_ts ?? 0);
+            $year = isset($row->year) && (string) $row->year !== ''
+                ? (string) $row->year
+                : ($backupts > 0 ? (string) date('Y', $backupts) : '');
             return (object)[
                 'id'           => (int) $row->id,
                 'filename'     => (string) ($row->filename ?? ''),
                 'filesize'     => (int) ($row->file_size ?? 0),
-                'timemodified' => (int) ($row->backup_ts ?? 0),
-                'year'         => (string) ($row->year ?? date('Y', (int) ($row->backup_ts ?? 0))),
+                'timemodified' => $backupts,
+                'year'         => $year,
                 'semester'     => (string) ($row->semester ?? ''),
                 'dept'         => (string) ($row->dept ?? ''),
                 'course_num'   => (string) ($row->course_num ?? ''),
@@ -387,6 +457,77 @@ abstract class simple_restore_utils {
                 'coursetype'   => (string) ($row->coursetype ?? 'other'),
             ];
         }, $rows ?: []));
+    }
+
+    /**
+     * Bug-050: Partition catalogue/backup rows by their {@code coursetype} into the three
+     * sections rendered on the Restore Courses page.
+     *
+     * - 'blueprint' — Master/template courses (no academic year/semester).
+     * - 'teaching'  — Live-course backups that fit into year buckets.
+     * - 'other'     — Anything else (including unknown/missing coursetype, archived stubs, etc.).
+     *
+     * Match is case-insensitive on the coursetype field. Within each bucket the input order
+     * is preserved (the caller controls overall ordering via the SQL ORDER BY clause).
+     *
+     * @param array $rows Rows from {@see backups_from_catalogue()} / {@see merge_backup_rows()}.
+     * @return array{blueprint: array, teaching: array, other: array}
+     */
+    public static function partition_by_coursetype(array $rows): array {
+        $result = ['blueprint' => [], 'teaching' => [], 'other' => []];
+        foreach ($rows as $row) {
+            $ctype = strtolower((string) ($row->coursetype ?? ''));
+            if ($ctype === 'blueprint') {
+                $result['blueprint'][] = $row;
+            } else if ($ctype === 'teaching') {
+                $result['teaching'][] = $row;
+            } else {
+                $result['other'][] = $row;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Bug-050: Build the opening HTML for a {@code <details>}/{@code <summary>} collapsible
+     * section used by the Blueprints / Other backup groups. Native HTML — no JavaScript
+     * required to open/close. The caller is responsible for closing the wrapper with a
+     * matching {@code </details>}.
+     *
+     * Moodle's {@see html_writer::start_tag()} treats every attribute value as a string and
+     * therefore can't cleanly emit a bare boolean attribute like {@code <details open>}; we
+     * hand-roll the opening tag for that reason. id/class/title/helptext are escaped via
+     * {@see s()} for safety.
+     *
+     * @param string $id          DOM id for the {@code <details>} element.
+     * @param string $title       Human-readable section title.
+     * @param string $helptext    Short inline help text. Empty string suppresses.
+     * @param int    $count       Item count rendered as a Bootstrap badge.
+     * @param bool   $open        When true, emit {@code <details open>} (initially expanded).
+     * @return string Opening markup (caller must append rows and close with </details>).
+     */
+    public static function render_collapsible_section_open(
+        string $id,
+        string $title,
+        string $helptext,
+        int $count,
+        bool $open
+    ): string {
+        $openattr = $open ? ' open' : '';
+        $badge = html_writer::tag(
+            'span',
+            (string) $count,
+            ['class' => 'badge bg-secondary ms-2']
+        );
+        $help = $helptext !== ''
+            ? html_writer::tag('small', s($helptext), ['class' => 'text-muted ms-2 fw-normal'])
+            : '';
+        $summary = html_writer::tag(
+            'summary',
+            html_writer::tag('span', s($title)) . $badge . $help,
+            ['class' => 'h4 d-flex align-items-center py-2']
+        );
+        return '<details id="' . s($id) . '" class="sr-collapsible mt-3"' . $openattr . '>' . $summary;
     }
 
     /**
@@ -448,7 +589,11 @@ abstract class simple_restore_utils {
         // their own historical backups even when no catalogue row's shortname
         // matches their Moodle course shortname. Admin mode keeps shortname-only.
         $instructorusername = isset($data->shortname) ? '' : (string) $USER->username;
-        $catopts = self::get_catalogue_filter_options($catalogueshort);
+        // Bug-049: pass the instructor username so the Year/Semester filter
+        // dropdowns match the same OR-shortname-OR-instructor row-set the list
+        // body queries. Without this, teachers with mostly-blueprint backups
+        // see "All years / All semesters" with no actual options.
+        $catopts = self::get_catalogue_filter_options($catalogueshort, $instructorusername);
 
         $yearopts = [
             0 => get_string('filter_all_years', 'block_simple_restore'),
