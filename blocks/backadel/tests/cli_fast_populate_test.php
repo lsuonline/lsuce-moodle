@@ -82,13 +82,15 @@ final class cli_fast_populate_test extends \advanced_testcase {
     private function insert_courses_row(string $filename): int {
         global $DB;
         $now = time();
+        $filepath = '/tmp/' . $filename;
         $row = (object) [
             'courseid'         => null,
             'coursefullname'   => $filename,
             'courseshortname'  => 'shortname_' . $filename,
             'courseidnumber'   => null,
             'status'           => 'available',
-            'filepath'         => '/tmp/' . $filename,
+            'filepath'         => $filepath,
+            'filepath_hash'    => sha1($filepath),     // bug-044: required for UNIQUE filepath_hash_uk
             'filename'         => $filename,
             'filesize'         => null,
             'timecreated'      => $now,

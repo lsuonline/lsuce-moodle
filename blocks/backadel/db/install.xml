@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="blocks/backadel/db" VERSION="20260506" COMMENT="XMLDB file for Moodle blocks/backadel"
+<XMLDB PATH="blocks/backadel/db" VERSION="20260515" COMMENT="XMLDB file for Moodle blocks/backadel"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
@@ -53,6 +53,11 @@
         <INDEX NAME="source_ix" UNIQUE="false" FIELDS="source"/>
         <INDEX NAME="status_ix" UNIQUE="false" FIELDS="status"/>
         <INDEX NAME="filename_ix" UNIQUE="false" FIELDS="filename"/>
+        <INDEX NAME="status_year_sem_ts_ix" UNIQUE="false" FIELDS="status, year, semester, backup_ts" COMMENT="bug-045: primary admin filter path"/>
+        <INDEX NAME="year_sem_ts_ix" UNIQUE="false" FIELDS="year, semester, backup_ts" COMMENT="bug-045: year/semester filter without status, also serves COUNT(*)"/>
+        <INDEX NAME="shortname_year_ix" UNIQUE="false" FIELDS="shortname, year" COMMENT="bug-045: covers DISTINCT year by shortname"/>
+        <INDEX NAME="status_ts_ix" UNIQUE="false" FIELDS="status, backup_ts" COMMENT="bug-045: status filter with backup_ts ORDER BY"/>
+        <INDEX NAME="pattern_ts_ix" UNIQUE="false" FIELDS="pattern, backup_ts" COMMENT="bug-045: pattern filter with backup_ts ORDER BY"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="block_backadel_courses" COMMENT="One row per backup file on disk (warm path / restore UX)">
@@ -64,6 +69,7 @@
         <FIELD NAME="courseidnumber" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Snapshot; used for teaching detection"/>
         <FIELD NAME="status" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="available" COMMENT="available, missing, pending_delete"/>
         <FIELD NAME="filepath" TYPE="text" NOTNULL="true" COMMENT="Full absolute path on disk"/>
+        <FIELD NAME="filepath_hash" TYPE="char" LENGTH="40" NOTNULL="true" DEFAULT="" COMMENT="bug-044: sha1(filepath) — unique discriminator for TEXT filepath column"/>
         <FIELD NAME="filename" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Denormalised basename"/>
         <FIELD NAME="filesize" TYPE="int" LENGTH="18" NOTNULL="false" COMMENT="Bytes from filesize() at insert time"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Row created (migration or new backup)"/>
@@ -75,6 +81,7 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="filepath_hash_uk" TYPE="unique" FIELDS="filepath_hash" COMMENT="bug-044: prevent duplicate warm-path rows under concurrent migrate_file()"/>
       </KEYS>
       <INDEXES>
         <INDEX NAME="courseid_ix" UNIQUE="false" FIELDS="courseid"/>
@@ -82,6 +89,7 @@
         <INDEX NAME="coursetype_ix" UNIQUE="false" FIELDS="coursetype"/>
         <INDEX NAME="statusid_ix" UNIQUE="false" FIELDS="statusid"/>
         <INDEX NAME="filename_ix" UNIQUE="false" FIELDS="filename"/>
+        <INDEX NAME="filename_courseid_ix" UNIQUE="false" FIELDS="filename, courseid" COMMENT="bug-045: covering for catalogue_table correlated subquery"/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="block_backadel_teachers" COMMENT="Instructors associated with a backup row">
@@ -97,6 +105,7 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="coursesid_username_uk" TYPE="unique" FIELDS="coursesid, username" COMMENT="bug-044: prevent duplicate teacher rows per (coursesid, username)"/>
       </KEYS>
       <INDEXES>
         <INDEX NAME="coursesid_ix" UNIQUE="false" FIELDS="coursesid"/>

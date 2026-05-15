@@ -170,6 +170,7 @@ foreach ($files as $i => $basename) {
         $crsrow->courseidnumber  = null;
         $crsrow->status          = 'available';
         $crsrow->filepath        = $filepathfull;
+        $crsrow->filepath_hash   = sha1($filepathfull);   // bug-044: required for UNIQUE filepath_hash_uk
         $crsrow->filename        = core_text::substr($basename, 0, 255);
         $crsrow->filesize        = null;
         $crsrow->timecreated     = $now;

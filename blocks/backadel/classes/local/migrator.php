@@ -21,6 +21,7 @@ namespace block_backadel\local;
 defined('MOODLE_INTERNAL') || die();
 
 use core_text;
+use dml_write_exception;
 use stdClass;
 
 /**
@@ -277,6 +278,8 @@ class migrator {
         $label = $hint !== '' ? $hint : $basename;
         $label = core_text::substr($label, 0, 255);
 
+        $filepathhash = sha1($filepathfull);
+
         $row = new stdClass();
         $row->courseid = null;
         $row->coursefullname = $label;
@@ -286,6 +289,7 @@ class migrator {
             : null;
         $row->status = 'available';
         $row->filepath = $filepathfull;
+        $row->filepath_hash = $filepathhash;
         $row->filename = core_text::substr($basename, 0, 255);
         $row->filesize = $filesize;
         $row->backupcreated = $backupcreated;
@@ -294,11 +298,10 @@ class migrator {
         $row->coursetype = course_type_resolver::resolve($parsed);
         $row->statusid = null;
 
-        $existing = $DB->get_record_select(
-            'block_backadel_courses',
-            $DB->sql_compare_text('filepath') . ' = ' . $DB->sql_compare_text(':fp'),
-            ['fp' => $filepathfull]
-        );
+        // bug-044: lookup by filepath_hash (indexed CHAR(40)) instead of TEXT filepath LIKE.
+        // The new UNIQUE KEY filepath_hash_uk on block_backadel_courses also guarantees this
+        // returns at most one row even under concurrent insert races.
+        $existing = $DB->get_record('block_backadel_courses', ['filepath_hash' => $filepathhash]);
         $wasinsert = false;
         if ($existing !== false) {
             $row->id = $existing->id;
@@ -307,8 +310,21 @@ class migrator {
             $coursesid = (int) $existing->id;
         } else {
             $row->timecreated = $now;
-            $coursesid = (int) $DB->insert_record('block_backadel_courses', $row);
-            $wasinsert = true;
+            try {
+                $coursesid = (int) $DB->insert_record('block_backadel_courses', $row);
+                $wasinsert = true;
+            } catch (dml_write_exception $e) {
+                // Concurrent migrate_file() chain inserted the same row between our SELECT
+                // and INSERT. Re-fetch and update the winner — the unique key did its job.
+                $winner = $DB->get_record('block_backadel_courses', ['filepath_hash' => $filepathhash]);
+                if ($winner === false) {
+                    throw $e;
+                }
+                $row->id = $winner->id;
+                $row->timecreated = $winner->timecreated;
+                $DB->update_record('block_backadel_courses', $row);
+                $coursesid = (int) $winner->id;
+            }
         }
 
         $this->resolve_instructors($parsed, $coursesid);
@@ -367,8 +383,16 @@ class migrator {
             }
             $teacher->timecreated = time();
 
-            $DB->insert_record('block_backadel_teachers', $teacher);
-            $this->resolveinstructorsinserted++;
+            // bug-044: the new UNIQUE KEY (coursesid, username) makes the insert idempotent
+            // at the DB level. Catch the duplicate-key exception that a TOCTOU race could
+            // produce so the surrounding migrate_file() loop is not aborted.
+            try {
+                $DB->insert_record('block_backadel_teachers', $teacher);
+                $this->resolveinstructorsinserted++;
+            } catch (dml_write_exception $e) {
+                // Another concurrent migrate_file() inserted the same row; safe to ignore.
+                continue;
+            }
         }
     }
 
