@@ -244,6 +244,7 @@ class migrator {
         if (!in_array($pattern, [
             'semester_legacy',
             'semester_legacy_lc',
+            'semester_legacy_intl',
             'backadel_modern',
             'backadel_instructor',
             'storage_course',      // Storage_Course_* / storage_course_* (~211 files; all blueprint)

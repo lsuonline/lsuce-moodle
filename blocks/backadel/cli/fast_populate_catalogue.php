@@ -53,7 +53,7 @@ require_once($CFG->dirroot . '/blocks/backadel/classes/local/course_type_resolve
 
 // Patterns that get a block_backadel_courses row (mirrors migrator.php allowlist).
 const COURSES_PATTERNS = [
-    'semester_legacy', 'semester_legacy_lc', 'semester_legacy_clone',
+    'semester_legacy', 'semester_legacy_lc', 'semester_legacy_clone', 'semester_legacy_intl',
     'backadel_modern', 'backadel_instructor',
     'storage_course', 'storage_legacy', 'storagecourse_dept',
 ];
