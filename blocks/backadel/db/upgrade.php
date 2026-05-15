@@ -303,9 +303,19 @@ function xmldb_block_backadel_upgrade($oldversion) {
             );
 
             // Step 1c: delete duplicate rows, keeping the lowest id per filepath_hash.
-            // MariaDB requires the multi-table DELETE syntax for the self-join. Wrap any
-            // failure so a flaky DELETE doesn't abort the upgrade — the unique key add
-            // below will still surface a real duplication problem.
+            // Add a temporary non-unique index on filepath_hash before the self-join DELETE
+            // so MariaDB can use an index lookup instead of a full O(N²) table scan.
+            // Without this, 142 K rows produce ~10 billion comparisons and the query
+            // hangs for hours (bug-046b). Drop the temp index after; the UNIQUE key in
+            // step 1d is a separate, narrower index object.
+            $tmpcoursesidx = new xmldb_index('tmp_filepath_hash_dedup', XMLDB_INDEX_NOTUNIQUE, ['filepath_hash']);
+            $uniquecoursesidx = new xmldb_index('filepath_hash_uk', XMLDB_INDEX_UNIQUE, ['filepath_hash']);
+            $addedtmpcoursesidx = false;
+            if (!$dbman->index_exists($coursestable, $uniquecoursesidx) &&
+                    !$dbman->index_exists($coursestable, $tmpcoursesidx)) {
+                $dbman->add_index($coursestable, $tmpcoursesidx);
+                $addedtmpcoursesidx = true;
+            }
             try {
                 $DB->execute(
                     "DELETE c1 FROM {block_backadel_courses} c1
@@ -318,6 +328,9 @@ function xmldb_block_backadel_upgrade($oldversion) {
                     'block_backadel upgrade 2026051400: courses dedup DELETE failed: '
                     . $e->getMessage(), DEBUG_DEVELOPER
                 );
+            }
+            if ($addedtmpcoursesidx && $dbman->index_exists($coursestable, $tmpcoursesidx)) {
+                $dbman->remove_index($coursestable, $tmpcoursesidx);
             }
 
             // Step 1d: add the UNIQUE index via xmldb_index (Moodle treats unique indexes
@@ -335,6 +348,15 @@ function xmldb_block_backadel_upgrade($oldversion) {
         if ($dbman->table_exists($teacherstable)) {
 
             // Step 2a: delete duplicate rows, keeping the lowest id per (coursesid, username).
+            // Same temp-index pattern as courses step 1c — avoids O(N²) self-join on large tables.
+            $tmpteachersidx = new xmldb_index('tmp_csid_uname_dedup', XMLDB_INDEX_NOTUNIQUE, ['coursesid', 'username']);
+            $uniqueteachersidx = new xmldb_index('coursesid_username_uk', XMLDB_INDEX_UNIQUE, ['coursesid', 'username']);
+            $addedtmpteachersidx = false;
+            if (!$dbman->index_exists($teacherstable, $uniqueteachersidx) &&
+                    !$dbman->index_exists($teacherstable, $tmpteachersidx)) {
+                $dbman->add_index($teacherstable, $tmpteachersidx);
+                $addedtmpteachersidx = true;
+            }
             try {
                 $DB->execute(
                     "DELETE t1 FROM {block_backadel_teachers} t1
@@ -348,6 +370,9 @@ function xmldb_block_backadel_upgrade($oldversion) {
                     'block_backadel upgrade 2026051400: teachers dedup DELETE failed: '
                     . $e->getMessage(), DEBUG_DEVELOPER
                 );
+            }
+            if ($addedtmpteachersidx && $dbman->index_exists($teacherstable, $tmpteachersidx)) {
+                $dbman->remove_index($teacherstable, $tmpteachersidx);
             }
 
             // Step 2b: add the UNIQUE composite index.
