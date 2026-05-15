@@ -85,7 +85,7 @@ $string['table_col_action']    = 'Action';
 
 // Bug-050: collapsible blueprint / other sections rendered above & below year buckets.
 $string['blueprints_section_heading'] = 'Blueprints (template courses)';
-$string['blueprints_section_help']    = 'Master/template courses without a specific term — expand to view.';
+$string['blueprints_section_help']    = 'Template (blueprint) courses without a specific term — expand to view.';
 $string['blueprints_section_empty']   = 'No template backups available for this course.';
 $string['other_section_heading']      = 'Other backups';
 $string['other_section_help']         = 'Backups that are neither live-course nor template — expand to view.';

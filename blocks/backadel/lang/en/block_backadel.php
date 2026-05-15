@@ -237,7 +237,7 @@ $string['coursetype_other'] = 'Other';
 // Admin settings — Catalogue & Migration (MD-2189 §2.13).
 $string['catalogue_migration_heading'] = 'Catalogue &amp; Migration';
 $string['blueprint_keywords'] = 'Blueprint keywords';
-$string['blueprint_keywords_desc'] = 'One keyword per line. Backups whose name contains any of these keywords are classified as blueprint/master courses.';
+$string['blueprint_keywords_desc'] = 'One keyword per line. Backups whose name contains any of these keywords are classified as blueprint (template) courses.';
 $string['excluded_categories'] = 'Excluded category IDs';
 $string['excluded_categories_desc'] = 'Category IDs (one per line) to exclude from migration scans.';
 $string['migration_extra_paths'] = 'Extra scan paths';
