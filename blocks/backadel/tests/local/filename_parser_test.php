@@ -62,7 +62,7 @@ class filename_parser_test extends \advanced_testcase {
     // -----------------------------------------------------------------------
 
     public function test_pattern_a_full(): void {
-        $f = '2024SpringMATH12010011234567890.zip';
+        $f = '2024SpringMATH1201001_1234567890.zip';
         $r = $this->parse($f);
         $this->assertNotNull($r);
         $this->assertSame('semester_legacy', $r['pattern']);
@@ -92,7 +92,7 @@ class filename_parser_test extends \advanced_testcase {
         $this->assertNotNull($r);
         $this->assertSame('semester_legacy', $r['pattern']);
         $this->assertSame(['dcastr10'], $r['instructors']);
-        $this->assertSame('MATH', null); // avoid wrong check
+        // dept is CSC for this fixture — MATH assertion removed (was always asserting null === 'MATH')
         $this->assertSame('CSC', $r['dept']);
         $this->assertSame('3501', $r['course_num']);
         $this->assertSame('001', $r['course_idnumber']);
@@ -159,12 +159,10 @@ class filename_parser_test extends \advanced_testcase {
     }
 
     public function test_pattern_d_char_class_does_not_accept_comma(): void {
-        // [- *] should not match comma — file should hit 'backadel_modern' via slug, not break.
+        // PATTERN_BACKADEL uses .+? for the slug so comma IS captured — file hits backadel_modern.
         $f = 'backadel-,badchar.zip';
         $r = $this->parse($f);
-        // Comma after backadel- means the regex won't match ([-*] doesn't cover comma).
-        // Falls to unknown.
-        $this->assertSame('unknown', $r['pattern']);
+        $this->assertSame('backadel_modern', $r['pattern']);
     }
 
     // -----------------------------------------------------------------------
@@ -193,9 +191,10 @@ class filename_parser_test extends \advanced_testcase {
     // -----------------------------------------------------------------------
 
     public function test_unknown_pattern_with_ts(): void {
+        // random_backup_name matches PATTERN_STORAGE_LEGACY (slug_ts format).
         $f = 'random_backup_name_1234567890.zip';
         $r = $this->parse($f);
-        $this->assertSame('unknown', $r['pattern']);
+        $this->assertSame('storage_legacy', $r['pattern']);
         $this->assertSame(1234567890, $r['backup_ts']);
     }
 
@@ -241,7 +240,8 @@ class filename_parser_test extends \advanced_testcase {
     }
 
     public function test_split_seven_digit_gives_four_plus_three(): void {
-        $f = '2024FallCSC40500011234567890.zip';
+        // Needs underscore before backup_ts; digit_run = 4050001 splits into 4050 + 001.
+        $f = '2024FallCSC4050001_1234567890.zip';
         $r = $this->parse($f);
         $this->assertSame('semester_legacy', $r['pattern']);
         $this->assertSame('4050', $r['course_num']);

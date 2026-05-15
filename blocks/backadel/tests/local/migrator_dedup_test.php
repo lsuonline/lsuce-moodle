@@ -51,10 +51,10 @@ final class migrator_dedup_test extends \advanced_testcase {
         parent::setUp();
         $this->resetAfterTest(true);
 
-        // Use an archive name the filename_parser will accept as a "warm-path" pattern
-        // (semester_legacy → /\d{4}(Spring|...)[A-Z]+\d{4,7}\d{10}\.zip/).
+        // Use an archive name the filename_parser will accept as semester_legacy
+        // (requires _<9–12-digit backup_ts> before .zip).
         $this->tmpdir   = make_temp_directory('block_backadel_dedup_' . uniqid('', true));
-        $this->basename = '2024SpringMATH12010011700000000.zip';
+        $this->basename = '2024SpringMATH1201001_1700000000.zip';
         file_put_contents($this->tmpdir . '/' . $this->basename, 'fake-zip-payload');
     }
 
@@ -189,7 +189,8 @@ final class migrator_dedup_test extends \advanced_testcase {
 
         // Use an instructor-pattern filename so the parser flags it as one of
         // the warm-path patterns AND extracts an instructor token.
-        $basename = 'FA2023_CSC1010_jdoe.mbz';
+        // Must be semester_legacy format so the parser extracts jdoe as an instructor.
+        $basename = '2023FallCSC1010_jdoe_1234567890.mbz';
         file_put_contents($this->tmpdir . '/' . $basename, 'fake-mbz');
 
         $filepathfull = $this->tmpdir . '/' . $basename;

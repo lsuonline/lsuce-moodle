@@ -133,7 +133,7 @@ final class migrator_path_test extends \advanced_testcase {
         // Spy subclass: intercepts migrate_file calls and records filepathfull.
         $recorded = [];
         $spy = new class($recorded) extends migrator {
-            private array &$log;
+            private $log; // typed reference properties are not valid PHP; type omitted
 
             public function __construct(array &$log) {
                 parent::__construct();
@@ -172,7 +172,7 @@ final class migrator_path_test extends \advanced_testcase {
 
         $recorded = [];
         $spy = new class($recorded) extends migrator {
-            private array &$log;
+            private $log; // typed reference properties are not valid PHP; type omitted
 
             public function __construct(array &$log) {
                 parent::__construct();

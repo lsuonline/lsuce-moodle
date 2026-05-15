@@ -140,7 +140,7 @@ final class reclassifier_test extends \advanced_testcase {
         $this->resetAfterTest(true);
 
         $dir = make_temp_directory('block_backadel_recls_' . uniqid('', true));
-        $basename = '2024SpringMATH12010011700000000.zip';
+        $basename = '2024SpringMATH1201001_1700000000.zip';
         $path = $dir . '/' . $basename;
         touch($path);
 
@@ -169,7 +169,8 @@ final class reclassifier_test extends \advanced_testcase {
         $this->resetAfterTest(true);
 
         $dir = make_temp_directory('block_backadel_reclt_' . uniqid('', true));
-        $basename1 = 'backadel-ENGL-4001_jsmith.zip';
+        // Prefix starts with digit so parsed_backadel() won't mistake it for a username segment.
+        $basename1 = 'backadel-2024-engl4001_jsmith.zip';
         $path1 = $dir . '/' . $basename1;
         touch($path1);
 
@@ -189,7 +190,7 @@ final class reclassifier_test extends \advanced_testcase {
         $this->assertSame(2, $DB->count_records('block_backadel_teachers', ['coursesid' => $course->id]));
 
         @unlink($path1);
-        $basename2 = 'backadel-ENGL-4001_tbrown.zip';
+        $basename2 = 'backadel-2024-engl4001_tbrown.zip';
         $path2 = $dir . '/' . $basename2;
         touch($path2);
 

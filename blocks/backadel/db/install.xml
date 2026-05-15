@@ -69,7 +69,7 @@
         <FIELD NAME="courseidnumber" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Snapshot; used for teaching detection"/>
         <FIELD NAME="status" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="available" COMMENT="available, missing, pending_delete"/>
         <FIELD NAME="filepath" TYPE="text" NOTNULL="true" COMMENT="Full absolute path on disk"/>
-        <FIELD NAME="filepath_hash" TYPE="char" LENGTH="40" NOTNULL="true" DEFAULT="" COMMENT="bug-044: sha1(filepath) — unique discriminator for TEXT filepath column"/>
+        <FIELD NAME="filepath_hash" TYPE="char" LENGTH="40" NOTNULL="true" COMMENT="bug-044: sha1(filepath) — unique discriminator for TEXT filepath column"/>
         <FIELD NAME="filename" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Denormalised basename"/>
         <FIELD NAME="filesize" TYPE="int" LENGTH="18" NOTNULL="false" COMMENT="Bytes from filesize() at insert time"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Row created (migration or new backup)"/>
