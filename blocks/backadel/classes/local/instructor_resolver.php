@@ -129,7 +129,8 @@ class instructor_resolver {
             if ($users) {
                 // Use the first label of the domain as the resolvedvia value:
                 // "lsu" from "lsu.edu", "agcenter" from "agcenter.lsu.edu".
-                $via = explode('.', $domain)[0];
+                // Truncate to 32 chars to match the resolvedvia column (bug-068).
+                $via = substr(explode('.', $domain)[0], 0, 32);
                 return ['user' => reset($users), 'via' => $via];
             }
         }

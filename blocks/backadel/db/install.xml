@@ -100,7 +100,7 @@
         <FIELD NAME="username" TYPE="char" LENGTH="100" NOTNULL="true" COMMENT="Raw token or mdl_user.username"/>
         <FIELD NAME="email" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Email used during resolution"/>
         <FIELD NAME="resolved" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="1 if userid found"/>
-        <FIELD NAME="resolvedvia" TYPE="char" LENGTH="16" NOTNULL="false" COMMENT="username, lsu, agcenter, none"/>
+        <FIELD NAME="resolvedvia" TYPE="char" LENGTH="32" NOTNULL="false" COMMENT="username, email, lsu, agcenter, none, or first domain label"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
       </FIELDS>
       <KEYS>

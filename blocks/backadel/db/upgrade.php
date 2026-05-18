@@ -442,5 +442,17 @@ function xmldb_block_backadel_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026051600, 'backadel');
     }
 
+    if ($oldversion < 2026051700) {
+        // Bug-068: widen resolvedvia from char(16) to char(32) so that long domain
+        // first-labels (e.g. 'internationalcenter' from 'internationalcenter.lsu.edu')
+        // can be stored without a dml_write_exception that silently drops teacher rows.
+        $table = new xmldb_table('block_backadel_teachers');
+        $field = new xmldb_field('resolvedvia', XMLDB_TYPE_CHAR, '32', null, false, null, null, 'resolved');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->change_field_precision($table, $field);
+        }
+        upgrade_block_savepoint(true, 2026051700, 'backadel');
+    }
+
     return true;
 }

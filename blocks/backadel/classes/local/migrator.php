@@ -366,9 +366,9 @@ class migrator {
             'semester_legacy_intl',
             'backadel_modern',
             'backadel_instructor',
-            'storage_course',      // Storage_Course_* / storage_course_* (~211 files; all blueprint)
-            'storage_legacy',      // Blank_Course_*, Master_Course_*, Flagship_*, etc. (~9,735 files)
-            'storagecourse_dept',  // storagecourse_DEPT_NUM_* (~5 files; may classify as teaching)
+            'storage_course',      // Storage_Course_* / storage_course_* (~211 files; all blueprint).
+            'storage_legacy',      // Blank_Course_*, Master_Course_*, Flagship_*, etc. (~9,735 files).
+            'storagecourse_dept',  // Storagecourse_DEPT_NUM_* (~5 files; may classify as teaching).
         ], true)) {
             return 0;
         }
@@ -416,9 +416,9 @@ class migrator {
         $row->coursetype = course_type_resolver::resolve($parsed);
         $row->statusid = null;
 
-        // bug-044: lookup by filepath_hash (indexed CHAR(40)) instead of TEXT filepath LIKE.
-        // The new UNIQUE KEY filepath_hash_uk on block_backadel_courses also guarantees this
-        // returns at most one row even under concurrent insert races.
+        // Bug-044: lookup by filepath_hash (indexed CHAR(40)) instead of TEXT filepath LIKE.
+        // The UNIQUE KEY filepath_hash_uk on block_backadel_courses guarantees at most one
+        // row even under concurrent insert races.
         $existing = $DB->get_record('block_backadel_courses', ['filepath_hash' => $filepathhash]);
         $wasinsert = false;
         if ($existing !== false) {
@@ -622,7 +622,7 @@ class migrator {
                 ? explode('@', $rawtoken)[0]
                 : $rawtoken;
 
-            // bug-058: reject slug-shaped tokens that slipped through parsing.
+            // Bug-058: reject slug-shaped tokens that slipped through parsing.
             if (!preg_match('/^[a-z][a-z0-9._-]{1,30}$/', $storeusername) || strlen($storeusername) > 32) {
                 continue;
             }
@@ -656,7 +656,7 @@ class migrator {
             }
             $teacher->timecreated = time();
 
-            // bug-044: UNIQUE KEY (coursesid, username) makes inserts idempotent.
+            // Bug-044: UNIQUE KEY (coursesid, username) makes inserts idempotent.
             // Catch the duplicate-key exception from a TOCTOU race to keep the loop running.
             try {
                 $DB->insert_record('block_backadel_teachers', $teacher);

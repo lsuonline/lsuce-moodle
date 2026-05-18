@@ -113,7 +113,7 @@ if ($ADMIN->fulltree) {
         get_string('instructor_email_domain', $pluginname),
         get_string('instructor_email_domain_desc', $pluginname),
         'lsu.edu',
-        PARAM_TEXT
+        PARAM_HOST
     ));
 
     $settings->add(new admin_setting_heading('block_backadel/sched_options', '', $schedulelink));

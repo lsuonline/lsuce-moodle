@@ -49,7 +49,16 @@ class reresolve_teachers extends \core\task\scheduled_task {
         $skipped = 0;
 
         foreach ($rows as $row) {
-            $user = $resolver->resolve((string) $row->username);
+            // Bug-059/bug-064: prefer the raw email token stored in the email column (set when
+            // the original parse produced an @-containing token that couldn't be resolved at
+            // import time). Falling back to username gives the domain-fallback leg a second
+            // chance for plain-username rows.
+            $token = (!empty($row->email) && strpos((string) $row->email, '@') !== false)
+                ? (string) $row->email
+                : (string) $row->username;
+
+            $result = $resolver->resolve_token($token);
+            $user = $result['user'];
             if ($user === null) {
                 $skipped++;
                 continue;
@@ -58,8 +67,9 @@ class reresolve_teachers extends \core\task\scheduled_task {
             $update = new stdClass();
             $update->id = $row->id;
             $update->userid = (int) $user->id;
+            $update->email = $user->email ?? null;
             $update->resolved = 1;
-            $update->resolvedvia = 'username';
+            $update->resolvedvia = $result['via'];
 
             $DB->update_record('block_backadel_teachers', $update);
             $resolvedcount++;

@@ -45,9 +45,7 @@ final class instructor_resolver_test extends \advanced_testcase {
         $prop->setValue(null, []);
     }
 
-    // -----------------------------------------------------------------------
     // Empty / blank token guard.
-    // -----------------------------------------------------------------------
 
     public function test_empty_token_returns_none(): void {
         $r = new instructor_resolver();
@@ -63,9 +61,7 @@ final class instructor_resolver_test extends \advanced_testcase {
         $this->assertSame('none', $result['via']);
     }
 
-    // -----------------------------------------------------------------------
     // Plain-username resolution.
-    // -----------------------------------------------------------------------
 
     public function test_plain_username_found_by_exact_match(): void {
         $user = $this->getDataGenerator()->create_user(['username' => 'wjian15']);
@@ -83,9 +79,7 @@ final class instructor_resolver_test extends \advanced_testcase {
         $this->assertSame('none', $result['via']);
     }
 
-    // -----------------------------------------------------------------------
     // Email-token resolution.
-    // -----------------------------------------------------------------------
 
     public function test_email_token_found_by_email(): void {
         $user = $this->getDataGenerator()->create_user([
@@ -119,9 +113,7 @@ final class instructor_resolver_test extends \advanced_testcase {
         $this->assertSame('none', $result['via']);
     }
 
-    // -----------------------------------------------------------------------
     // Configured email-domain fallback for plain tokens.
-    // -----------------------------------------------------------------------
 
     public function test_plain_username_resolved_via_configured_domain(): void {
         set_config('instructor_email_domain', 'lsu.edu', 'block_backadel');
@@ -162,9 +154,7 @@ final class instructor_resolver_test extends \advanced_testcase {
         $this->assertSame('agcenter', $result['via'], 'first domain label must be "agcenter"');
     }
 
-    // -----------------------------------------------------------------------
     // Backward-compat: resolve() still works.
-    // -----------------------------------------------------------------------
 
     public function test_resolve_compat_returns_user_object(): void {
         $user = $this->getDataGenerator()->create_user(['username' => 'backcompat1']);
@@ -179,9 +169,7 @@ final class instructor_resolver_test extends \advanced_testcase {
         $this->assertNull($r->resolve('nouser_xyz'));
     }
 
-    // -----------------------------------------------------------------------
     // Cache: second call must not re-query the DB.
-    // -----------------------------------------------------------------------
 
     public function test_resolve_token_reuses_cache_on_second_call(): void {
         $user = $this->getDataGenerator()->create_user(['username' => 'cacheduser1']);
@@ -200,9 +188,7 @@ final class instructor_resolver_test extends \advanced_testcase {
         $this->assertSame($first['user']->id, $second['user']->id);
     }
 
-    // -----------------------------------------------------------------------
     // Filename-parser integration: email token preserved from openlms filenames.
-    // -----------------------------------------------------------------------
 
     public function test_backadel_instructor_pattern_preserves_email_token(): void {
         $parsed = filename_pattern_library::parse(
