@@ -108,6 +108,13 @@ if ($ADMIN->fulltree) {
         '15',
         PARAM_INT
     ));
+    $settings->add(new admin_setting_configtext(
+        'block_backadel/instructor_email_domain',
+        get_string('instructor_email_domain', $pluginname),
+        get_string('instructor_email_domain_desc', $pluginname),
+        'lsu.edu',
+        PARAM_TEXT
+    ));
 
     $settings->add(new admin_setting_heading('block_backadel/sched_options', '', $schedulelink));
 }

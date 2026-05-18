@@ -432,15 +432,8 @@ final class filename_pattern_library {
                 if ($token === '') {
                     continue;
                 }
-                if (strpos($token, '@') !== false) {
-                    // Email form: keep only the local part for consistency with other patterns.
-                    $local = explode('@', $token)[0];
-                    if ($local !== '') {
-                        $instructors[] = $local;
-                    }
-                    continue;
-                }
-                // Bare-username form: store as-is (lowercased).
+                // Preserve full email tokens — instructor_resolver performs email-first lookup.
+                // Plain username tokens stored lowercased.
                 $instructors[] = strtolower($token);
             }
         }

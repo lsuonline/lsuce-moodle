@@ -247,6 +247,8 @@ $string['catalogue_path_prefix_desc'] = 'Format: old_prefix=new_prefix. Applied 
 $string['task_migrate_filesystem_adhoc'] = 'Backadel: Migrate filesystem backups to catalogue (on-demand)';
 $string['migrate_chunk_timeout_minutes'] = 'Migration chunk timeout (minutes)';
 $string['migrate_chunk_timeout_minutes_desc'] = 'Maximum wall-clock minutes a single migration adhoc task instance will run before pausing and queueing a successor task to continue the scan. Default 15. Lower this if cron runs are short; raise it if the queue backlog is a concern.';
+$string['instructor_email_domain'] = 'Instructor email domain fallback';
+$string['instructor_email_domain_desc'] = 'When a plain username token (e.g. "wjian15") cannot be matched to a Moodle account by username, try looking up the user by email as "username@domain". For example, entering "lsu.edu" means "wjian15" is tried as "wjian15@lsu.edu". Leave empty to disable. Filenames that already embed a full email address (e.g. wjian15@lsu.edu) always use direct email lookup and do not use this setting.';
 $string['migrate_pagetitle'] = 'Backadel — Run Migration';
 $string['migrate_heading'] = 'Backadel Migration';
 $string['migrate_run_button'] = 'Run migration scan now';

@@ -362,7 +362,8 @@ class filename_parser_test extends \advanced_testcase {
         $this->assertSame('SpringInt', $r['semester']);
         $this->assertSame('SPAN', $r['dept']);
         $this->assertSame('1001', $r['course_num']);
-        $this->assertContains('jdoe', $r['instructors']);
+        // Full email preserved — instructor_resolver handles email-first lookup (bug-059).
+        $this->assertContains('jdoe@lsu.edu', $r['instructors']);
     }
 
     /**

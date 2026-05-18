@@ -607,53 +607,61 @@ class migrator {
             return;
         }
 
-        foreach ($usernames as $username) {
-            if (!is_string($username)) {
+        foreach ($usernames as $rawtoken) {
+            if (!is_string($rawtoken)) {
                 continue;
             }
-            $username = trim($username);
-            if ($username === '') {
+            $rawtoken = trim($rawtoken);
+            if ($rawtoken === '') {
                 continue;
             }
 
-            if (strlen($username) > 32 || !preg_match('/^[a-z][a-z0-9._-]{1,30}$/', $username)) {
-                continue; // bug-058: skip slug-shaped tokens
+            // The DB unique key uses the local part for email tokens (wjian15@lsu.edu → wjian15)
+            // so that username-format and email-format duplicates for the same person collapse.
+            $storeusername = strpos($rawtoken, '@') !== false
+                ? explode('@', $rawtoken)[0]
+                : $rawtoken;
+
+            // bug-058: reject slug-shaped tokens that slipped through parsing.
+            if (!preg_match('/^[a-z][a-z0-9._-]{1,30}$/', $storeusername) || strlen($storeusername) > 32) {
+                continue;
             }
 
             $exists = $DB->get_record('block_backadel_teachers', [
                 'coursesid' => $coursesid,
-                'username' => $username,
+                'username' => $storeusername,
             ]);
             if ($exists !== false) {
                 continue;
             }
 
-            $user = $this->instructorresolver->resolve($username);
+            $result = $this->instructorresolver->resolve_token($rawtoken);
+            $user = $result['user'];
+            $via = $result['via'];
 
             $teacher = new stdClass();
             $teacher->coursesid = $coursesid;
-            $teacher->username = $username;
+            $teacher->username = $storeusername;
             if ($user !== null) {
                 $teacher->userid = (int) $user->id;
                 $teacher->email = $user->email ?? null;
                 $teacher->resolved = 1;
-                $teacher->resolvedvia = 'username';
+                $teacher->resolvedvia = $via;
             } else {
                 $teacher->userid = null;
-                $teacher->email = null;
+                // Preserve raw email token in email column for audit / future re-resolution.
+                $teacher->email = strpos($rawtoken, '@') !== false ? $rawtoken : null;
                 $teacher->resolved = 0;
                 $teacher->resolvedvia = 'none';
             }
             $teacher->timecreated = time();
 
-            // bug-044: the new UNIQUE KEY (coursesid, username) makes the insert idempotent
-            // at the DB level. Catch the duplicate-key exception that a TOCTOU race could
-            // produce so the surrounding migrate_file() loop is not aborted.
+            // bug-044: UNIQUE KEY (coursesid, username) makes inserts idempotent.
+            // Catch the duplicate-key exception from a TOCTOU race to keep the loop running.
             try {
                 $DB->insert_record('block_backadel_teachers', $teacher);
                 $this->resolveinstructorsinserted++;
             } catch (dml_write_exception $e) {
-                // Another concurrent migrate_file() inserted the same row; safe to ignore.
                 continue;
             }
         }
