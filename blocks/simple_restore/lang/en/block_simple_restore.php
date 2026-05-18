@@ -65,7 +65,7 @@ $string['filter_clear'] = 'Clear filters';
 $string['filter_search_placeholder'] = 'Search by filename...';
 $string['filter_backuptype'] = 'Backup type';
 $string['filter_type_teaching'] = 'Live course backup';
-$string['filter_type_blueprint'] = 'Template (Blueprint) backup';
+$string['filter_type_blueprint'] = 'Blueprint backup';
 $string['filter_type_other'] = 'Other backup';
 
 $string['toggle_recent_show'] = 'Show most recent backup only';
@@ -84,11 +84,11 @@ $string['table_col_modified']  = 'Modified';
 $string['table_col_action']    = 'Action';
 
 // Bug-050: collapsible blueprint / other sections rendered above & below year buckets.
-$string['blueprints_section_heading'] = 'Blueprints (template courses)';
-$string['blueprints_section_help']    = 'Template (blueprint) courses without a specific term — expand to view.';
-$string['blueprints_section_empty']   = 'No template backups available for this course.';
+$string['blueprints_section_heading'] = 'Blueprint Courses';
+$string['blueprints_section_help']    = 'Blueprint courses without a specific term — expand to view.';
+$string['blueprints_section_empty']   = 'No blueprint backups available for this course.';
 $string['other_section_heading']      = 'Other backups';
-$string['other_section_help']         = 'Backups that are neither live-course nor template — expand to view.';
+$string['other_section_help']         = 'Backups that are neither live-course nor blueprints — expand to view.';
 $string['other_section_empty']        = 'No other backups available for this course.';
 $string['restore_action']      = 'Restore';
 $string['download_action']     = 'Download';

@@ -74,3 +74,8 @@
 #page-blocks-simple_restore-list table.generaltable tbody tr:hover {
     background-color: var(--bs-table-hover-bg, rgba(0, 0, 0, 0.04));
 }
+
+#page-blocks-simple_restore-list span.badge.ms-2 {
+    background-color: #fdd023 !important;
+    border-radius: .2em;
+}
