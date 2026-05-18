@@ -1217,7 +1217,6 @@ class simple_restore {
             // Create adhoc task for restore.
             $restoreid = $restore->get_restoreid();
             $asynctask = new \core\task\asynchronous_restore_task();
-            $asynctask->set_blocking(false);
             $asynctask->set_userid($this->userid);
             $asynctask->set_custom_data(array('backupid' => $restoreid));
             \core\task\manager::queue_adhoc_task($asynctask);

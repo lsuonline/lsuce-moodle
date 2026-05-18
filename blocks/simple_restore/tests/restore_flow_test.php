@@ -406,4 +406,21 @@ final class restore_flow_test extends \advanced_testcase {
             );
         }
     }
+
+    /**
+     * Bug-056 regression guard: set_blocking() is deprecated since Moodle 4.4
+     * and must not be called on asynchronous_restore_task (or any adhoc task).
+     *
+     * This is a static code assertion — it reads lib.php and fails the suite
+     * immediately if set_blocking( reappears, catching the regression before
+     * it reaches a server.
+     */
+    public function test_lib_does_not_call_set_blocking(): void {
+        $lib = file_get_contents(__DIR__ . '/../lib.php');
+        $this->assertStringNotContainsString(
+            'set_blocking(',
+            $lib,
+            'set_blocking() is deprecated since Moodle 4.4 — do not call it on adhoc tasks (bug-056)'
+        );
+    }
 }
