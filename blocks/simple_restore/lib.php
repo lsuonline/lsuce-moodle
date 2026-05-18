@@ -800,7 +800,7 @@ abstract class simple_restore_utils {
     }
 
     public static function prep_restore($fileid, $name, $courseid) {
-        global $USER, $CFG;
+        global $USER;
 
         // Get the includes.
         self::includes();
@@ -810,9 +810,10 @@ abstract class simple_restore_utils {
         }
 
         $filename = restore_controller::get_tempdir_name($courseid, $USER->id);
-        $tempdir = isset($CFG->backuptempdir) ? $CFG->backuptempdir : $CFG->tempdir;
-        $tempdir = substr($tempdir, -1) === '/' ? $tempdir : $tempdir . '/';
-        $pathname = $tempdir . $filename;
+        // Must match backup/util/ui/restore_ui_stage.class.php (CONFIRM stage), which
+        // resolves archives via make_backup_temp_directory(''), not raw $CFG->tempdir.
+        $backuptempdir = make_backup_temp_directory('');
+        $pathname = $backuptempdir . '/' . $filename;
 
         $data = new stdClass;
         $data->userid = $USER->id;
@@ -1392,6 +1393,14 @@ class simple_restore_selected_user {
 
     private static function selected($data) {
         global $DB, $CFG;
+        // Catalogue / Backadel restores already copied the archive onto $data->to_path in
+        // selected_backadel(). $data->fileid there is a catalogue PK or backadel basename —
+        // not an mdl_files.id — and colliding with an unrelated files row can overwrite or
+        // wipe the staged copy, yielding restore_ui_exception invalidrestorefile on CONFIRM.
+        if (isset($data->name) && ($data->name === 'catalogue' || $data->name === 'backadel')) {
+            return true;
+        }
+
         $backup = $DB->get_record('files', array('id' => $data->fileid));
         if (empty($backup)) {
             return true;

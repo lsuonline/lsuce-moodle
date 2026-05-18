@@ -117,9 +117,8 @@ if ($confirm and ($useasync or data_submitted())) {
         // handing it to the restore engine. A 0-byte backup can otherwise
         // produce a broken course shell that crashes the Snap renderer with
         // "Call to a member function get_filename() on null".
-        $tempdir = isset($CFG->backuptempdir) ? $CFG->backuptempdir : $CFG->tempdir;
-        $tempdir = substr($tempdir, -1) === '/' ? $tempdir : $tempdir . '/';
-        $stagedpath = $tempdir . $filename;
+        // Same directory core restore_ui_stage_confirm uses (make_backup_temp_directory('')).
+        $stagedpath = make_backup_temp_directory('') . '/' . $filename;
         if (file_exists($stagedpath) && @filesize($stagedpath) === 0) {
             @unlink($stagedpath);
             throw new moodle_exception(
@@ -130,7 +129,21 @@ if ($confirm and ($useasync or data_submitted())) {
             );
         }
 
-        $restore->execute();
+        // Mirror sync mode (restore_confirm_form.php): CONFIRM stage reads optional_param('filename')
+        // with POST preferred over GET. Async lands via GET only; set POST so the staged name
+        // cannot diverge and matches what simple_restore already validated above.
+        $asyncpostedfilename = false;
+        if ($useasync) {
+            $_POST['filename'] = $filename;
+            $asyncpostedfilename = true;
+        }
+        try {
+            $restore->execute();
+        } finally {
+            if ($asyncpostedfilename) {
+                unset($_POST['filename']);
+            }
+        }
         if (!$useasync) {
             echo $OUTPUT->notification(
                 get_string('restoreexecutionsuccess', 'backup'), 'notifysuccess'
