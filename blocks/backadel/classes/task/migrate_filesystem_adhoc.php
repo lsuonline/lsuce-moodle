@@ -241,7 +241,7 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
     private function count_remaining(array $runs, int $dirindex, int $fileindex): int {
         $remaining = 0;
         for ($i = $dirindex; $i < count($runs); $i++) {
-            $count = count(\block_backadel\local\migrator::list_archives((string) ($runs[$i]['dir'] ?? '')));
+            $count = count(\block_backadel\local\migrator::list_all_archives((string) ($runs[$i]['dir'] ?? '')));
             $remaining += max(0, $count - ($i === $dirindex ? $fileindex : 0));
         }
         return $remaining;

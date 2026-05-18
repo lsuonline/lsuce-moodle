@@ -399,4 +399,86 @@ class filename_parser_test extends \advanced_testcase {
         $r = $this->parse('2012SpringINTL200020207_nicklen_1338842283.zip');
         $this->assertNotSame('INTL', $r['dept']);
     }
+
+    // -----------------------------------------------------------------------
+    // bug-058 — slug-shaped tokens must not be classified as usernames
+    // -----------------------------------------------------------------------
+
+    /**
+     * parsed_backadel() must reject a course-name slug (no underscores) as an
+     * instructor token even though it is one big alphanumeric blob. Previously
+     * the case-insensitive USERNAME_SEGMENT regex accepted the whole slug.
+     *
+     * @covers \block_backadel\local\filename_pattern_library::parsed_backadel
+     */
+    public function test_parsed_backadel_rejects_slug_as_username(): void {
+        $r1 = $this->parse('backadel-Backup-Master-Course-FIN-7400-for-Don-Chance_1700000000.zip');
+        $this->assertSame('backadel_modern', $r1['pattern']);
+        $this->assertSame([], $r1['instructors'],
+            'A course-name slug must NOT be stored as an instructor username');
+
+        $r2 = $this->parse('backadel-LSU-Online-Master-Course-Training-for-Dagoberto-Diaz.zip');
+        $this->assertSame('backadel_modern', $r2['pattern']);
+        $this->assertSame([], $r2['instructors']);
+    }
+
+    /**
+     * body_instructors() (private — accessed via reflection) must reject the
+     * same slug-shaped tokens that parsed_backadel() rejects, because the
+     * storage_course patterns share the same hazard.
+     */
+    public function test_body_instructors_rejects_slug_tokens(): void {
+        $method = new \ReflectionMethod(filename_pattern_library::class, 'body_instructors');
+        $method->setAccessible(true);
+
+        $cases = [
+            'Backup-Master-Course-FIN-7400-for-Don-Chance',
+            'LSU-Online-Master-Course-Training-for-Dagoberto-Diaz',
+            'alt2020-Second-Summer-CM-2112-for-Carol-Friedland',
+        ];
+        foreach ($cases as $slug) {
+            $result = $method->invoke(null, $slug);
+            $this->assertSame([], $result,
+                'body_instructors must reject slug-shaped token: ' . $slug);
+        }
+    }
+
+    /**
+     * body_instructors() must continue to accept underscore-separated valid
+     * username tokens — regression guard for the username-extraction path.
+     */
+    public function test_body_instructors_accepts_valid_username_tokens(): void {
+        $method = new \ReflectionMethod(filename_pattern_library::class, 'body_instructors');
+        $method->setAccessible(true);
+
+        $this->assertSame(['tsimpson', 'jdoe'], $method->invoke(null, 'tsimpson_jdoe'));
+        $this->assertSame(['jdoe12'], $method->invoke(null, 'jdoe12'));
+        $this->assertSame(['ab.cd', 'ef-gh'], $method->invoke(null, 'ab.cd_ef-gh'));
+    }
+
+    /**
+     * looks_like_username() (private — accessed via reflection) gate decisions
+     * verified directly so future regressions are easy to localise.
+     */
+    public function test_looks_like_username_rejects_for_pattern(): void {
+        $method = new \ReflectionMethod(filename_pattern_library::class, 'looks_like_username');
+        $method->setAccessible(true);
+
+        // Negative: course-name slug with -for-
+        $this->assertFalse($method->invoke(null, 'Backup-Master-Course-FIN-7400-for-Don-Chance'));
+        // Negative: too long (33+ chars)
+        $this->assertFalse($method->invoke(null, 'a-very-long-username-that-exceeds-thirty-two-characters'));
+        // Negative: starts with uppercase
+        $this->assertFalse($method->invoke(null, 'Tsimpson'));
+        // Negative: empty
+        $this->assertFalse($method->invoke(null, ''));
+        // Negative: starts with digit
+        $this->assertFalse($method->invoke(null, '1tsimpson'));
+
+        // Positive: typical usernames
+        $this->assertTrue($method->invoke(null, 'tsimpson'));
+        $this->assertTrue($method->invoke(null, 'jdoe12'));
+        $this->assertTrue($method->invoke(null, 'dcastr10'));
+        $this->assertTrue($method->invoke(null, 'a.b-c_d'));
+    }
 }

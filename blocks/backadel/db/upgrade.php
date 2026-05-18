@@ -426,5 +426,21 @@ function xmldb_block_backadel_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026051400, 'block', 'backadel');
     }
 
+    if ($oldversion < 2026051600) {
+        // bug-058: remove teacher rows where username is clearly a backup-filename
+        // slug. These rows have userid IS NULL (unresolved) and username either
+        // exceeds 32 chars or contains '-for-' — the hallmark of a course-name slug.
+        // MariaDB LIKE is case-insensitive on utf8mb4_unicode_ci, no BINARY needed.
+        if ($dbman->table_exists(new xmldb_table('block_backadel_teachers'))) {
+            $DB->execute(
+                "DELETE FROM {block_backadel_teachers}
+                  WHERE userid IS NULL
+                    AND (CHAR_LENGTH(username) > 32
+                      OR username LIKE '%-for-%')"
+            );
+        }
+        upgrade_block_savepoint(true, 2026051600, 'backadel');
+    }
+
     return true;
 }

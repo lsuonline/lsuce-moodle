@@ -105,6 +105,134 @@ final class migrator_path_test extends \advanced_testcase {
     }
 
     // -------------------------------------------------------------------------
+    // list_all_archives() — recursive walker (bug-057)
+    // -------------------------------------------------------------------------
+
+    /**
+     * list_all_archives() must descend into subdirectories and return relative
+     * paths (not basenames) for every .mbz/.zip file found.
+     *
+     * @covers \block_backadel\local\migrator::list_all_archives
+     */
+    public function test_list_all_archives_finds_files_in_subdirectories(): void {
+        $tmpdir = make_temp_directory('block_backadel_test_' . uniqid('', true));
+        mkdir($tmpdir . '/depth1', 0777, true);
+        mkdir($tmpdir . '/depth1/depth2', 0777, true);
+
+        file_put_contents($tmpdir . '/root.mbz', 'data');
+        file_put_contents($tmpdir . '/depth1/one.zip', 'data');
+        file_put_contents($tmpdir . '/depth1/depth2/two.mbz', 'data');
+
+        $result = migrator::list_all_archives($tmpdir);
+
+        $this->assertContains('root.mbz', $result);
+        $this->assertContains('depth1/one.zip', $result);
+        $this->assertContains('depth1/depth2/two.mbz', $result);
+        $this->assertCount(3, $result);
+    }
+
+    /**
+     * list_all_archives() with a missing directory returns an empty array.
+     *
+     * @covers \block_backadel\local\migrator::list_all_archives
+     */
+    public function test_list_all_archives_missing_dir_returns_empty(): void {
+        $this->assertSame([], migrator::list_all_archives('/this/path/does/not/exist/'));
+        $this->assertSame([], migrator::list_all_archives(''));
+    }
+
+    /**
+     * list_all_archives() must exclude non-archive files such as .txt and .php.
+     *
+     * @covers \block_backadel\local\migrator::list_all_archives
+     */
+    public function test_list_all_archives_ignores_non_archive_files(): void {
+        $tmpdir = make_temp_directory('block_backadel_test_' . uniqid('', true));
+        mkdir($tmpdir . '/sub', 0777, true);
+
+        file_put_contents($tmpdir . '/good.zip', 'data');
+        file_put_contents($tmpdir . '/readme.txt', 'data');
+        file_put_contents($tmpdir . '/script.php', '<?php');
+        file_put_contents($tmpdir . '/sub/notes.md', 'data');
+        file_put_contents($tmpdir . '/sub/keep.mbz', 'data');
+
+        $result = migrator::list_all_archives($tmpdir);
+
+        sort($result);
+        $this->assertSame(['good.zip', 'sub/keep.mbz'], $result);
+        foreach ($result as $r) {
+            $this->assertDoesNotMatchRegularExpression('/\.(txt|php|md)$/', $r);
+        }
+    }
+
+    /**
+     * list_all_archives() must return relative paths that include the subdir
+     * prefix, not the basename only. Regression guard against accidentally
+     * regressing to scandir() / basename() semantics.
+     *
+     * @covers \block_backadel\local\migrator::list_all_archives
+     */
+    public function test_list_all_archives_returns_relative_paths_not_basenames(): void {
+        $tmpdir = make_temp_directory('block_backadel_test_' . uniqid('', true));
+        mkdir($tmpdir . '/2024/spring', 0777, true);
+
+        file_put_contents($tmpdir . '/2024/spring/course.zip', 'data');
+
+        $result = migrator::list_all_archives($tmpdir);
+
+        $this->assertCount(1, $result);
+        $this->assertSame('2024/spring/course.zip', $result[0]);
+        // Reject basename-only result.
+        $this->assertNotSame('course.zip', $result[0]);
+        $this->assertStringContainsString('2024/spring/', $result[0]);
+    }
+
+    /**
+     * migrate_directory() must recurse into subdirectories so files in nested
+     * folders are catalogued. Uses the same spy pattern as the trailing-slash
+     * test — we only verify the recorded file paths.
+     *
+     * @covers \block_backadel\local\migrator::migrate_directory
+     */
+    public function test_migrate_directory_recurses_into_subdirectories(): void {
+        $this->resetAfterTest(true);
+
+        $tmpdir = make_temp_directory('block_backadel_test_' . uniqid('', true));
+        mkdir($tmpdir . '/nested', 0777, true);
+
+        $root = 'FA2023_CSC1010_jdoe.mbz';
+        $nested = 'SP2024_ENGL1001_smith.zip';
+        file_put_contents($tmpdir . '/' . $root, 'fake-mbz');
+        file_put_contents($tmpdir . '/nested/' . $nested, 'fake-zip');
+
+        $recorded = [];
+        $spy = new class($recorded) extends migrator {
+            private $log;
+
+            public function __construct(array &$log) {
+                parent::__construct();
+                $this->log = &$log;
+            }
+
+            public function migrate_file(string $filepathfull, string $source): int {
+                $this->log[] = $filepathfull;
+                return 0;
+            }
+        };
+
+        $spy->migrate_directory($tmpdir, 'backadel_current');
+
+        $this->assertCount(2, $recorded,
+            'migrate_directory must recurse so both root and nested archive get processed');
+        $joined = implode("\n", $recorded);
+        $this->assertStringContainsString('/' . $root, $joined);
+        $this->assertStringContainsString('/nested/' . $nested, $joined);
+        foreach ($recorded as $r) {
+            $this->assertStringNotContainsString('//', $r);
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // migrate_directory() — no // in stored filepath
     // -------------------------------------------------------------------------
 

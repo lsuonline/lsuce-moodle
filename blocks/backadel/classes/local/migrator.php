@@ -259,14 +259,14 @@ class migrator {
      * @return int Count of rows inserted (catalogue + courses + teachers); updates excluded.
      */
     public function migrate_directory(string $dirpath, string $source): int {
-        $basenames = self::list_archives($dirpath);
+        $relpaths = self::list_all_archives($dirpath);
 
-        $total = count($basenames);
+        $total = count($relpaths);
         $done = 0;
         $insertedtotal = 0;
 
-        foreach ($basenames as $basename) {
-            $insertedtotal += $this->migrate_file(rtrim($dirpath, '/') . '/' . $basename, $source);
+        foreach ($relpaths as $relpath) {
+            $insertedtotal += $this->migrate_file(rtrim($dirpath, '/') . '/' . $relpath, $source);
             $done++;
             $this->maybe_track_progress($done, $total);
         }
@@ -614,6 +614,10 @@ class migrator {
             $username = trim($username);
             if ($username === '') {
                 continue;
+            }
+
+            if (strlen($username) > 32 || !preg_match('/^[a-z][a-z0-9._-]{1,30}$/', $username)) {
+                continue; // bug-058: skip slug-shaped tokens
             }
 
             $exists = $DB->get_record('block_backadel_teachers', [

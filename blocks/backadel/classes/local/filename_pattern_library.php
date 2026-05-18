@@ -108,6 +108,28 @@ final class filename_pattern_library {
     private const USERNAME_SEGMENT = '/^[a-z][a-z0-9._-]{2,}$/i';
 
     /**
+     * Stricter shape test for a single underscore-separated token that could be a
+     * Moodle username (bug-058). Rejects course-name slugs like
+     * `Backup-Master-Course-FIN-7400-for-Don-Chance` that would otherwise sneak
+     * past the case-insensitive USERNAME_SEGMENT regex and end up stored as a
+     * teacher row.
+     *
+     * @param string $token Candidate token (underscore-stripped).
+     * @return bool True when the token looks like a real Moodle username.
+     */
+    private static function looks_like_username(string $token): bool {
+        // Real Moodle usernames: lowercase-only start, short, no -for- / course-name fragments.
+        if (!preg_match('/^[a-z][a-z0-9._-]{1,30}$/', $token)) {
+            return false;
+        }
+        // Reject tokens that are clearly backup-filename slugs.
+        if (strlen($token) > 32 || strpos($token, '-for-') !== false) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Parse a backup filename (basename preferred; directories are tolerated) into catalogue-oriented fields.
      *
      * @param string $filename Archive name or path; {@see basename()} used for regex matching only.
@@ -446,7 +468,7 @@ final class filename_pattern_library {
         $slug = $m['slug'];
         $parts = explode('_', $slug);
         $instructors = [];
-        while ($parts !== [] && preg_match(self::USERNAME_SEGMENT, (string) end($parts))) {
+        while ($parts !== [] && self::looks_like_username((string) end($parts))) {
             array_unshift($instructors, array_pop($parts));
         }
         $core = implode('_', $parts);
@@ -536,7 +558,8 @@ final class filename_pattern_library {
         if ($body === '') {
             return [];
         }
-        return array_values(array_filter(explode('_', $body), static fn(string $t) => $t !== ''));
+        $tokens = array_filter(explode('_', $body), static fn(string $t) => $t !== '');
+        return array_values(array_filter($tokens, static fn(string $t) => self::looks_like_username($t)));
     }
 
     /**
