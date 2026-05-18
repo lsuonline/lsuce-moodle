@@ -574,4 +574,103 @@ final class lib_test extends \advanced_testcase {
         $this->assertSame([2023], $opts['years'], 'teaching row contributes year even when blueprint rows share instructor');
         $this->assertSame(['Spring'], $opts['semesters']);
     }
+
+    // -----------------------------------------------------------------------
+    // Bug-055: prep_restore() must stage under make_backup_temp_directory('')
+    // — the same path restore_ui_stage_confirm::process() reads. If staging
+    // diverges from CONFIRM's lookup directory, the restore engine throws
+    // restore_ui_exception('invalidrestorefile') and the user sees a blank
+    // failure page.
+    // -----------------------------------------------------------------------
+
+    /**
+     * The staged copy created by prep_restore() must land at
+     * `make_backup_temp_directory('') . '/' . $returnvalue`. Previously
+     * prep_restore() used `$CFG->backuptempdir` directly, which can diverge
+     * from `make_backup_temp_directory('')` when the dataroot/backuptempdir
+     * config has been overridden (rrusso prod-style setup).
+     *
+     * Drives the legacy backadel branch of selected_backadel() — the simplest
+     * code path that exercises prep_restore() end-to-end without needing the
+     * full backup_controller. We stash a fake .mbz under
+     * `$CFG->dataroot . '/temp/bug055/'`, point `block_backadel.path` at it,
+     * and call prep_restore('bug055_fake.mbz', 'backadel', $courseid).
+     *
+     * @covers \simple_restore_utils::prep_restore
+     */
+    public function test_prep_restore_stages_under_make_backup_temp_directory(): void {
+        global $CFG;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+
+        // Create the legacy Backadel source directory under dataroot and drop
+        // a small fake .mbz there. selected_backadel() (legacy path) reads
+        // `$CFG->dataroot . get_config('block_backadel','path') . $fileid`.
+        $backadelreldir = '/temp/bug055/';
+        $backadelabsdir = $CFG->dataroot . $backadelreldir;
+        if (!is_dir($backadelabsdir)) {
+            mkdir($backadelabsdir, 0777, true);
+        }
+        $fakemb = $backadelabsdir . 'bug055_fake.mbz';
+        file_put_contents($fakemb, 'MBZ-CONTENT-bug055');
+        set_config('path', $backadelreldir, 'block_backadel');
+
+        $stagedname = simple_restore_utils::prep_restore('bug055_fake.mbz', 'backadel', (int) $course->id);
+
+        $this->assertNotEmpty($stagedname, 'prep_restore must return the staged tempdir filename');
+
+        $expectedpath = make_backup_temp_directory('') . '/' . $stagedname;
+        $this->assertTrue(
+            file_exists($expectedpath),
+            "staged file must exist at make_backup_temp_directory('')/{$stagedname} "
+            . '— restore_ui_stage_confirm::process() reads this exact directory'
+        );
+        $this->assertGreaterThan(
+            0,
+            filesize($expectedpath),
+            'staged file must be non-empty (bug-055 added a 0-byte guard)'
+        );
+
+        // Source content must match — copy(), not move/truncate.
+        $this->assertSame(
+            'MBZ-CONTENT-bug055',
+            file_get_contents($expectedpath),
+            'staged file content must match the source backadel archive verbatim'
+        );
+
+        // Cleanup the fixture file (resetAfterTest does not touch dataroot).
+        @unlink($fakemb);
+        @unlink($expectedpath);
+    }
+
+    /**
+     * Empty fileid must throw a moodle_exception (no_arguments).
+     *
+     * @covers \simple_restore_utils::prep_restore
+     */
+    public function test_prep_restore_throws_on_empty_fileid(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+
+        $this->expectException(\Exception::class);
+        simple_restore_utils::prep_restore('', 'backadel', (int) $course->id);
+    }
+
+    /**
+     * Empty / zero courseid must throw a moodle_exception (no_arguments).
+     *
+     * @covers \simple_restore_utils::prep_restore
+     */
+    public function test_prep_restore_throws_on_empty_courseid(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $this->expectException(\Exception::class);
+        simple_restore_utils::prep_restore('anything.mbz', 'backadel', 0);
+    }
 }
