@@ -36,11 +36,45 @@ use stdClass;
 class instructor_resolver {
 
     /**
-     * In-process cache keyed by raw token string.
+     * In-process cache keyed by the raw token string as passed by the caller.
+     *
+     * Known miss (bug-062): aliases for the same user are not deduplicated.
+     * For example, "wjian15" and "wjian15@lsu.edu" produce two separate cache
+     * entries and two DB round-trips. A partial mitigation lives in
+     * {@see self::resolve_by_email_token()}, which back-fills the local-part
+     * key after a successful username fallback so a later plain-username call
+     * hits the cache. Full alias dedup is blocked on the bug-061 value object.
      *
      * @var array<string, array{user: stdClass|null, via: string}>
      */
     private static array $cache = [];
+
+    /**
+     * Configured instructor email domain fallback (e.g. "lsu.edu"), pre-loaded
+     * once in the constructor to avoid a get_config() call per token resolution
+     * (bug-066). Empty string when unset/disabled.
+     *
+     * @var string
+     */
+    private string $instructoremaildomain;
+
+    /**
+     * Constructor: pre-load configuration values used during resolution.
+     */
+    public function __construct() {
+        $this->instructoremaildomain = trim((string) get_config('block_backadel', 'instructor_email_domain'));
+    }
+
+    /**
+     * Reset the in-process token cache.
+     *
+     * Intended for long-running callers (CLI sweeps such as
+     * `cli/migrate_filesystem.php`) and for tests that need a clean slate
+     * without resorting to Reflection (bug-065).
+     */
+    public static function reset_cache(): void {
+        self::$cache = [];
+    }
 
     /**
      * Resolve a raw instructor token from a filename to a Moodle user.
@@ -84,11 +118,18 @@ class instructor_resolver {
             return ['user' => reset($users), 'via' => 'email'];
         }
 
-        $local = explode('@', $email)[0];
+        $local = self::extract_local_part($email);
         if ($local !== '') {
             $user = $DB->get_record('user', ['username' => $local, 'deleted' => 0]);
             if ($user !== false) {
-                return ['user' => $user, 'via' => 'username'];
+                $result = ['user' => $user, 'via' => 'username'];
+                // Back-fill the cache under the local-part key so a subsequent
+                // plain-username call for the same user hits the cache instead
+                // of repeating the DB lookup (partial mitigation for bug-062).
+                if (!array_key_exists($local, self::$cache)) {
+                    self::$cache[$local] = $result;
+                }
+                return $result;
             }
         }
 
@@ -120,8 +161,9 @@ class instructor_resolver {
             return ['user' => $user, 'via' => 'username'];
         }
 
-        // Configurable domain fallback (e.g. "lsu.edu").
-        $domain = trim((string) get_config('block_backadel', 'instructor_email_domain'));
+        // Configurable domain fallback (e.g. "lsu.edu"), pre-loaded in the
+        // constructor to avoid a get_config() round-trip per token (bug-066).
+        $domain = $this->instructoremaildomain;
         if ($domain !== '') {
             $domain = ltrim($domain, '@');
             $email = $username . '@' . $domain;
@@ -163,5 +205,21 @@ class instructor_resolver {
             $out[$username] = $this->resolve($username);
         }
         return $out;
+    }
+
+    /**
+     * Return the local part of an email-shaped token, or the token itself when no `@` is present.
+     *
+     * Centralises the "strip @domain when present" pattern shared by the migrator's
+     * teacher-row upsert and {@see self::resolve_by_email_token()}'s local-part fallback
+     * (bug-061). Keeping the logic here means callers do not need to know how email
+     * parsing works.
+     *
+     * @param string $token Raw token (plain username or full email).
+     * @return string Local part before `@`, or the original token when `@` is absent.
+     */
+    public static function extract_local_part(string $token): string {
+        $at = strpos($token, '@');
+        return $at !== false ? substr($token, 0, $at) : $token;
     }
 }

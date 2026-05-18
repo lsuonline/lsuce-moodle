@@ -117,7 +117,7 @@ final class filename_pattern_library {
      * @param string $token Candidate token (underscore-stripped).
      * @return bool True when the token looks like a real Moodle username.
      */
-    private static function looks_like_username(string $token): bool {
+    public static function looks_like_username(string $token): bool {
         // Real Moodle usernames: lowercase-only start, short, no -for- / course-name fragments.
         if (!preg_match('/^[a-z][a-z0-9._-]{1,30}$/', $token)) {
             return false;

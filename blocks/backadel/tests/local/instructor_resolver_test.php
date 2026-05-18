@@ -39,10 +39,7 @@ final class instructor_resolver_test extends \advanced_testcase {
     protected function setUp(): void {
         parent::setUp();
         $this->resetAfterTest(true);
-        // Clear the static cache so tests are isolated.
-        $prop = new \ReflectionProperty(instructor_resolver::class, 'cache');
-        $prop->setAccessible(true);
-        $prop->setValue(null, []);
+        instructor_resolver::reset_cache();
     }
 
     // Empty / blank token guard.
@@ -79,6 +76,48 @@ final class instructor_resolver_test extends \advanced_testcase {
         $this->assertSame('none', $result['via']);
     }
 
+    /**
+     * Bug-065: the sql_like(..., false) case-insensitive fallback inside
+     * resolve_by_username_token() had no coverage. Tokens like "WJIAN15UPPER"
+     * arriving in uppercase from legacy archive names must still resolve to a
+     * Moodle user stored under the lowercase form.
+     *
+     * Note: Moodle's user_create_user() rejects non-lowercase usernames, so we
+     * insert the user row directly via $DB to simulate the exact stored shape.
+     * Note: MariaDB's default utf8mb4_unicode_ci collation makes the exact-match
+     * lookup case-insensitive too, but the test still proves the chain returns
+     * the user (whichever leg wins).
+     */
+    public function test_plain_username_found_by_case_insensitive_fallback(): void {
+        global $DB;
+
+        $userid = $DB->insert_record('user', (object) [
+            'auth'         => 'manual',
+            'confirmed'    => 1,
+            'mnethostid'   => 1,
+            'username'     => 'wjian15upper',
+            'password'     => 'not-a-hash',
+            'firstname'    => 'Wanying',
+            'lastname'     => 'Jiang',
+            'email'        => 'wjian15upper@example.com',
+            'deleted'      => 0,
+            'suspended'    => 0,
+            'lang'         => 'en',
+            'timecreated'  => time(),
+            'timemodified' => time(),
+        ]);
+
+        $r = new instructor_resolver();
+        $result = $r->resolve_token('WJIAN15UPPER');
+
+        $this->assertNotNull(
+            $result['user'],
+            'case-insensitive fallback must resolve uppercase token to lowercase-stored username'
+        );
+        $this->assertSame($userid, (int) $result['user']->id);
+        $this->assertSame('username', $result['via']);
+    }
+
     // Email-token resolution.
 
     public function test_email_token_found_by_email(): void {
@@ -111,6 +150,52 @@ final class instructor_resolver_test extends \advanced_testcase {
         $result = $r->resolve_token('nobody@lsu.edu');
         $this->assertNull($result['user']);
         $this->assertSame('none', $result['via']);
+    }
+
+    /**
+     * Bug-066: resolve_by_email_token() uses get_records() and returns reset()
+     * (first match) when multiple users share an email. Moodle technically
+     * allows duplicate emails — the resolver must not throw and must return
+     * one of the matching users.
+     *
+     * The data generator may reject duplicate emails (depending on the
+     * allowaccountssameemail config); the second user is inserted directly via
+     * $DB to guarantee the duplicate.
+     */
+    public function test_email_token_with_duplicate_email_returns_first_match(): void {
+        global $DB;
+
+        $this->getDataGenerator()->create_user([
+            'username' => 'sharedemail1',
+            'email'    => 'shared@lsu.edu',
+        ]);
+
+        $DB->insert_record('user', (object) [
+            'auth'         => 'manual',
+            'confirmed'    => 1,
+            'mnethostid'   => 1,
+            'username'     => 'sharedemail2',
+            'password'     => 'not-a-hash',
+            'firstname'    => 'Shared',
+            'lastname'     => 'Two',
+            'email'        => 'shared@lsu.edu',
+            'deleted'      => 0,
+            'suspended'    => 0,
+            'lang'         => 'en',
+            'timecreated'  => time(),
+            'timemodified' => time(),
+        ]);
+
+        $r = new instructor_resolver();
+        $result = $r->resolve_token('shared@lsu.edu');
+
+        // Assert one IS returned and no exception was thrown by the ambiguous lookup.
+        $this->assertNotNull(
+            $result['user'],
+            'ambiguous duplicate-email lookup must return one of the matches'
+        );
+        $this->assertSame('email', $result['via']);
+        $this->assertSame('shared@lsu.edu', $result['user']->email);
     }
 
     // Configured email-domain fallback for plain tokens.

@@ -618,12 +618,12 @@ class migrator {
 
             // The DB unique key uses the local part for email tokens (wjian15@lsu.edu → wjian15)
             // so that username-format and email-format duplicates for the same person collapse.
-            $storeusername = strpos($rawtoken, '@') !== false
-                ? explode('@', $rawtoken)[0]
-                : $rawtoken;
+            $storeusername = instructor_resolver::extract_local_part($rawtoken);
 
-            // Bug-058: reject slug-shaped tokens that slipped through parsing.
-            if (!preg_match('/^[a-z][a-z0-9._-]{1,30}$/', $storeusername) || strlen($storeusername) > 32) {
+            // Bug-058/bug-060: reject slug-shaped tokens (including `-for-` course-name fragments)
+            // via the shared guard in filename_pattern_library so catalogue-parse and warm-path
+            // inserts always apply identical rules.
+            if (!filename_pattern_library::looks_like_username($storeusername)) {
                 continue;
             }
 
@@ -650,7 +650,9 @@ class migrator {
             } else {
                 $teacher->userid = null;
                 // Preserve raw email token in email column for audit / future re-resolution.
-                $teacher->email = strpos($rawtoken, '@') !== false ? $rawtoken : null;
+                // $storeusername differs from $rawtoken only when extract_local_part() stripped
+                // an @domain suffix — avoids a second strpos() (bug-061).
+                $teacher->email = $storeusername !== $rawtoken ? $rawtoken : null;
                 $teacher->resolved = 0;
                 $teacher->resolvedvia = 'none';
             }
