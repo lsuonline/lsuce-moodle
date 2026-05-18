@@ -123,7 +123,7 @@ class migrate_filesystem_adhoc extends \core\task\adhoc_task {
             $dir    = (string) ($run['dir'] ?? '');
             $source = (string) ($run['source'] ?? 'backadel_current');
 
-            $basenames = \block_backadel\local\migrator::list_archives($dir);
+            $basenames = \block_backadel\local\migrator::list_all_archives($dir);
             $dirtotal  = count($basenames);
 
             if ($fileindex >= $dirtotal) {

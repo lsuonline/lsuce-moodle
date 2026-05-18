@@ -95,6 +95,83 @@ class migrator {
     }
 
     /**
+     * Return sorted .mbz/.zip files found inside $dirpath recursively.
+     * Returns relative paths from $dirpath.
+     *
+     * [
+     *     'course1.mbz',
+     *     '2024/course2.zip',
+     *     '2025/spring/course3.mbz'
+     * ]
+     *
+     * Returns an empty array if the directory is missing or unreadable.
+     *
+     * @param string $dirpath Absolute path to the directory to scan.
+     * @return string[] Sorted list of archive relative paths.
+     */
+    public static function list_all_archives(string $dirpath): array {
+        $dirpath = rtrim($dirpath, "/\\");
+
+        if ($dirpath === '' || !is_dir($dirpath)) {
+            return [];
+        }
+
+        $out = [];
+
+        try {
+            // Create a recursive filesystem walker.
+            $iterator = new \RecursiveIteratorIterator(
+
+                // Traverses the directory tree beginning at $dirpath.
+                new \RecursiveDirectoryIterator(
+                    $dirpath,
+
+                    // Skips itself and it's parent.
+                    \FilesystemIterator::SKIP_DOTS
+                ),
+
+                // LEAVES_ONLY means we only receive files, not directories.
+                \RecursiveIteratorIterator::LEAVES_ONLY
+            );
+
+            // Iterate over every discovered filesystem object.
+            foreach ($iterator as $fileinfo) {
+
+                // If we don't have a file, move on.
+                if (!$fileinfo->isFile()) {
+                    continue;
+                }
+
+                // Get the full path.
+                $filepathfull = $fileinfo->getPathname();
+
+                // Get the extension.
+                $ext = strtolower(pathinfo($filepathfull, PATHINFO_EXTENSION));
+
+                // If it's not a file we want, skip it.
+                if (!in_array($ext, ['zip', 'mbz'], true)) {
+                    continue;
+                }
+
+                // Convert to path relative to the root directory.
+                $relativepath = substr($filepathfull, strlen($dirpath) + 1);
+
+                // Normalize slashes for consistency.
+                $relativepath = str_replace('\\', '/', $relativepath);
+
+                $out[] = $relativepath;
+            }
+        } catch (\Exception $e) {
+            return [];
+        }
+
+        // I truly don't know if I should be sorting, but I am for now.
+        sort($out, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $out;
+    }
+
+    /**
      * Process a single backup file: parse name, upsert catalogue, optionally upsert
      * warm-path course + teacher rows. Stateless w.r.t. the directory iteration.
      *
