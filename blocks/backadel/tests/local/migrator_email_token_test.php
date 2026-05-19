@@ -21,14 +21,18 @@ namespace block_backadel\local;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * End-to-end coverage for {@see migrator::resolve_instructors()} with an
- * email-shaped token — bug-067.
+ * End-to-end coverage for {@see migrator::resolve_instructors()} and
+ * {@see migrator::upsert_catalogue()} with email-shaped instructor tokens
+ * — bug-067, bug-070.
  *
- * The dedup test suite only exercises plain-username tokens. This test proves
- * that when the parsed instructor array contains "wjian15@lsu.edu":
+ * Bug-067: proves that when the parsed instructor array contains "wjian15@lsu.edu":
  *   - the local-part ("wjian15") is what gets written to the username column,
  *   - the resolved Moodle user's email is written to the email column,
  *   - resolved = 1 and resolvedvia = 'email'.
+ *
+ * Bug-070: proves that block_backadel_catalogue.instructors stores the local-part
+ * ("wjian15") not the full email ("wjian15@lsu.edu"), so simple_restore's
+ * LIKE predicate '"%wjian15%"' still matches after the bug-059 parser change.
  *
  * @package    block_backadel
  * @copyright  2026 Louisiana State University
@@ -99,5 +103,62 @@ final class migrator_email_token_test extends \advanced_testcase {
         $this->assertSame((int) $user->id, (int) $row->userid, 'userid must point at the resolved Moodle user');
         $this->assertSame(1, (int) $row->resolved, 'resolved flag must be 1 for a successful email match');
         $this->assertSame('email', $row->resolvedvia, 'resolvedvia must be "email" for an email-token hit');
+    }
+
+    /**
+     * Bug-070: upsert_catalogue() must store the local-part in the instructors
+     * JSON column even when the parsed instructor token is a full email address.
+     *
+     * simple_restore's LIKE predicate is '"%wjian15%"' (local-part surrounded by
+     * double quotes). If the catalogue stores '["wjian15@lsu.edu"]' the match
+     * fails because the closing '"' is not immediately after 'wjian15'.
+     *
+     * @covers \block_backadel\local\migrator::upsert_catalogue
+     */
+    public function test_upsert_catalogue_stores_local_part_not_full_email(): void {
+        global $DB;
+
+        // Use a real temp file so filesize() succeeds inside upsert_catalogue().
+        $tmpfile = tempnam(sys_get_temp_dir(), 'backadel_test_');
+        file_put_contents($tmpfile, 'dummy');
+
+        $migrator = new migrator();
+        $method = new \ReflectionMethod(migrator::class, 'upsert_catalogue');
+        $method->setAccessible(true);
+
+        $parsed = [
+            'instructors'   => ['wjian15@lsu.edu', 'pfsouth@lsu.edu'],
+            'year'          => 2020,
+            'semester'      => 'Fall',
+            'dept'          => 'ACCT',
+            'course_num'    => '2101',
+            'shortname_hint' => 'ACCT-2101',
+            'pattern'       => 'backadel_instructor',
+            'backup_ts'     => 0,
+        ];
+
+        $method->invoke($migrator, 'ftp', $tmpfile, $parsed);
+        @unlink($tmpfile);
+
+        $row = $DB->get_record('block_backadel_catalogue', ['filepath_hash' => sha1($tmpfile)]);
+        $this->assertNotFalse($row, 'catalogue row must be inserted');
+
+        $stored = json_decode($row->instructors, true);
+        $this->assertIsArray($stored);
+        $this->assertContains(
+            'wjian15',
+            $stored,
+            'catalogue instructors must contain local-part "wjian15", not full email'
+        );
+        $this->assertContains(
+            'pfsouth',
+            $stored,
+            'catalogue instructors must contain local-part "pfsouth", not full email'
+        );
+        $this->assertNotContains(
+            'wjian15@lsu.edu',
+            $stored,
+            'catalogue instructors must NOT contain the full email token'
+        );
     }
 }

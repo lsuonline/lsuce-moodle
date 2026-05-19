@@ -306,6 +306,14 @@ class migrator {
         if (!is_array($instructors)) {
             $instructors = [];
         }
+        // Bug-070: catalogue instructors column stores local-parts only (e.g. "wjian15"),
+        // never full email tokens ("wjian15@lsu.edu"). simple_restore's LIKE predicate
+        // matches '"%local_part%"' against this JSON column; including @domain breaks
+        // the match. extract_local_part() is a no-op on plain usernames.
+        $catalogueinstructors = array_values(array_unique(array_map(
+            [instructor_resolver::class, 'extract_local_part'],
+            $instructors
+        )));
 
         $row = new stdClass();
         $row->filename = core_text::substr($basename, 0, 255);
@@ -327,7 +335,7 @@ class migrator {
         $row->shortname = isset($parsed['shortname_hint']) && $parsed['shortname_hint'] !== null
             ? core_text::substr((string) $parsed['shortname_hint'], 0, 255)
             : null;
-        $row->instructors = json_encode(array_values($instructors));
+        $row->instructors = json_encode($catalogueinstructors);
         $row->pattern = (string) ($parsed['pattern'] ?? 'unknown');
         $row->backup_ts = (int) ($parsed['backup_ts'] ?? 0);
         $row->file_size = $filesizenull;
