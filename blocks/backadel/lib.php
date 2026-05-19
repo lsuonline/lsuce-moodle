@@ -274,7 +274,9 @@ function backadel_catalogue_to_where(array $filters): array {
     if ($status !== '') {
         if ($status === 'none') {
             $clauses[] = 'c.status IS NULL';
-        } else if (in_array($status, ['available', 'missing', 'archived'], true)) {
+        } else {
+            // Pass status value through unconditionally so unknown values produce 0 rows
+            // rather than silently dropping the clause and returning all rows (bug-071).
             $pk = 'bcst' . $pidx++;
             $clauses[] = 'c.status = :' . $pk;
             $params[$pk] = $status;
