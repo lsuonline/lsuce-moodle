@@ -149,14 +149,20 @@ function core_myprofile_navigation(core_user\output\myprofile\tree $tree, $user,
     // Set this for later.
     $uidvalue = null;
 
-    // We are who we say we are and we have a standard idnumber.
-    if ($iscurrentuser && isset($USER->idnumber) && $USER->idnumber != '') {
+    // We are who we say we are and we have a standard non-89 idnumber.
+    if ($iscurrentuser &&
+        isset($USER->idnumber) &&
+        $USER->idnumber != '' &&
+        !preg_match('/^89\d{7}$/', $USER->idnumber)
+    ) {
 
         // Set this.
         $uidvalue = $USER->idnumber;
 
     // We are still a real person but we don't have an idnumber.
-    } else if ($iscurrentuser && $USER->idnumber == '') {
+    } else if ($iscurrentuser &&
+        ($USER->idnumber == '' || preg_match('/^89\d{7}$/', $USER->idnumber))
+    ) {
 
         // Instantiate the DB manager.
         $dbman = $DB->get_manager();
