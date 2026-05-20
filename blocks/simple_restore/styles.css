@@ -39,11 +39,10 @@
     border: none;
 }
 
-/* core_form/modalform sets tabindex="0" on .modal-dialog; Snap's .theme-snap div[tabindex]:focus
-   (specificity 0,3,1) overrides our 0,3,0 rule. Use !important to win. */
-.modal.moodle-has-zindex:focus,
-.modal-dialog.block_simple_restore-modal-dialog:focus {
-    outline: none !important;
+/* Bug-078: hide outline only for non-keyboard focus (:focus-visible still shows ring). */
+.modal.moodle-has-zindex:focus:not(:focus-visible),
+.modal-dialog.block_simple_restore-modal-dialog:focus:not(:focus-visible) {
+    outline: none;
 }
 
 /* ---- Undo Snap's .modal-content overrides ---- */
@@ -77,5 +76,26 @@
 
 #page-blocks-simple_restore-list span.badge.ms-2 {
     background-color: #fdd023 !important;
+    color: #1a1a1a !important;
     border-radius: .2em;
+}
+
+/* Accordion: custom chevron (d-flex on summary hides native disclosure triangle). */
+.sr-collapsible > summary {
+    cursor: pointer;
+    list-style: none; /* suppress any remaining default marker */
+}
+.sr-collapsible > summary::-webkit-details-marker {
+    display: none;
+}
+.sr-collapsible > summary::before {
+    content: "\25B6"; /* ▶ right-pointing triangle */
+    display: inline-block;
+    font-size: 0.75em;
+    margin-right: 0.5em;
+    transition: transform 0.2s ease;
+    color: #461D7C; /* LSU Purple */
+}
+.sr-collapsible[open] > summary::before {
+    transform: rotate(90deg);
 }

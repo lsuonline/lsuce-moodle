@@ -169,7 +169,7 @@ foreach ($rows as $row) {
         );
     } else {
         $badge = html_writer::span(
-            get_string('coursetype_other', 'block_backadel'), 'badge bg-secondary'
+            get_string('coursetype_other', 'block_backadel'), 'badge bg-secondary text-dark'
         );
     }
 

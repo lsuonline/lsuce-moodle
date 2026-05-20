@@ -31,13 +31,13 @@ const escapeHtml = (value) => {
 const badgeClassForType = (type) => {
     switch (type) {
         case 'blueprint':
-            return 'badge bg-info text-white coursetype-badge';
+            return 'badge bg-info text-dark coursetype-badge';
         case 'teaching':
-            return 'badge bg-secondary text-white coursetype-badge';
+            return 'badge bg-secondary text-dark coursetype-badge';
         case 'other':
             return 'badge bg-light text-dark border coursetype-badge';
         default:
-            return 'badge bg-secondary text-white coursetype-badge';
+            return 'badge bg-secondary text-dark coursetype-badge';
     }
 };
 
