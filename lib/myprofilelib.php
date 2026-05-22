@@ -218,24 +218,24 @@ function core_myprofile_navigation(core_user\output\myprofile\tree $tree, $user,
     }
 
     // BEGIN LSU MD-1761 Adding idnumber to profile.
-    if (isset($identityfields['idnumber']) && $user->idnumber) {
+    if (isset($identityfields['idnumber'])) {
 
         // Set this for later.
         $uidvalue = null;
 
         // We are who we say we are and we have a standard non-89 idnumber.
         if ($iscurrentuser &&
-            isset($USER->idnumber) &&
-            $USER->idnumber != '' &&
-            !preg_match('/^89\d{7}$/', $USER->idnumber)
+            isset($user->idnumber) &&
+            $user->idnumber != '' &&
+            !preg_match('/^89\d{7}$/', $user->idnumber)
         ) {
 
             // Set this.
-            $uidvalue = $USER->idnumber;
+            $uidvalue = $user->idnumber;
 
         // We are still a real person but we don't have an idnumber.
         } else if ($iscurrentuser &&
-            ($USER->idnumber == '' || preg_match('/^89\d{7}$/', $USER->idnumber))
+            ($user->idnumber == '' || preg_match('/^89\d{7}$/', $user->idnumber))
         ) {
 
             // Instantiate the DB manager.
