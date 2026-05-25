@@ -39,11 +39,6 @@ const applyUpdate = (data) => {
     const pendingEl = widget.querySelector('[data-backadel-pending]');
     const failedEl  = widget.querySelector('[data-backadel-failed]');
     const statusEl  = widget.querySelector('[data-backadel-status]');
-    const spinner   = widget.querySelector('[data-backadel-spinner]');
-
-    if (spinner) {
-        spinner.hidden = true;
-    }
 
     if (pendingEl) {
         const n = Number(data.pending_count) || 0;
@@ -79,11 +74,6 @@ const poll = () => {
         return;
     }
 
-    const spinner = widget.querySelector('[data-backadel-spinner]');
-    if (spinner) {
-        spinner.hidden = false;
-    }
-
     Ajax.call([{
         methodname: 'block_backadel_get_migration_status',
         args: {},
@@ -92,9 +82,6 @@ const poll = () => {
             setTimeout(poll, POLL_MS);
         },
         fail: () => {
-            if (spinner) {
-                spinner.hidden = true;
-            }
             setTimeout(poll, POLL_MS);
         },
     }]);
