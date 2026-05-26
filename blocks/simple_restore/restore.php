@@ -23,7 +23,6 @@
 
 require_once('../../config.php');
 require_once($CFG->dirroot . '/blocks/simple_restore/lib.php');
-require_once($CFG->dirroot . '/backup/util/helper/async_helper.class.php');
 
 // Semester backup shortcut: copy Backadel file into restore temp, then continue as usual.
 $precourseid = optional_param('id', 0, PARAM_INT);
@@ -104,7 +103,7 @@ if (!$confirm) {
     echo $OUTPUT->footer();
 }
 
-$useasync = async_helper::is_async_enabled();
+$useasync = (bool)get_config('simple_restore', 'async_toggle');
 
 // This conditional returns html content for the ajax reponse.
 // Bug-054: async mode redirects here via GET (confirm=1); data_submitted() is

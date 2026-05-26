@@ -137,6 +137,11 @@ $string['archive_restore'] = 'Restore Archived Course';
 $string['simple_restore:myaddinstance'] = 'Add Simple restore block to My page';
 $string['simple_restore:addinstance'] = 'Add Simple restore block to Site page';
 
+// Async Settings.
+$string['async_title'] = 'Async Restore Settings';
+$string['async_toggle_title'] = 'Async Restore';
+$string['async_toggle_desc'] = 'Make course restores asyncronous.';
+
 // Admin navigation labels (used by the admin sidebar / externalpage display names).
 $string['nav_settings'] = 'Global settings';
 $string['nav_list']     = 'Restore Courses';
