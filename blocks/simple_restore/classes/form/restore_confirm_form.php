@@ -41,11 +41,12 @@ class restore_confirm_form extends dynamic_form {
      */
     #[\Override]
     protected function definition(): void {
-        global $DB;
+        global $CFG, $DB;
         $mform = $this->_form;
 
         $courseid = $this->optional_param('courseid', 0, PARAM_INT);
         $filename = clean_param($this->optional_param('filename', '', PARAM_FILE), PARAM_FILE);
+        $catalogueid = (int) $this->optional_param('catalogue_id', 0, PARAM_INT);
         $restoreto = (int) $this->optional_param('restore_to', 0, PARAM_INT);
         $confirmbodykey = ($restoreto === 1)
             ? 'restore_confirm_body_import'
@@ -71,6 +72,32 @@ class restore_confirm_form extends dynamic_form {
         );
         $html .= \html_writer::end_div();
         $mform->addElement('html', $html);
+
+        // File size display + sync/async explanation (Bug-079).
+        $useasync = (bool) get_config('simple_restore', 'async_toggle');
+
+        $sizebytes = 0;
+        require_once($CFG->dirroot . '/blocks/simple_restore/lib.php');
+        $sourcepath = \block_simple_restore\local\catalogue_staging_service::resolve_source_path($catalogueid, $filename);
+        if ($sourcepath !== '') {
+            $sizebytes = (int) (@filesize($sourcepath) ?: 0);
+        }
+
+        $infohtml = \html_writer::start_div('mt-3');
+        if ($sizebytes > 0) {
+            $infohtml .= \html_writer::tag('p',
+                \html_writer::tag('strong', get_string('restore_filesize_label', 'block_simple_restore') . ': ') .
+                display_size($sizebytes)
+            );
+        }
+
+        $modekey = $useasync ? 'restore_mode_async' : 'restore_mode_sync';
+        $infohtml .= \html_writer::div(
+            get_string($modekey, 'block_simple_restore'),
+            'alert ' . ($useasync ? 'alert-warning' : 'alert-info') . ' mb-0'
+        );
+        $infohtml .= \html_writer::end_div();
+        $mform->addElement('html', $infohtml);
 
         $mform->addElement('hidden', 'courseid');
         $mform->setType('courseid', PARAM_INT);
@@ -122,23 +149,21 @@ class restore_confirm_form extends dynamic_form {
     /**
      * Prepare the backup file and run the same restore pipeline as {@see restore.php}.
      *
-     * Bug-042A: previously the entire restore was wrapped in
-     * ob_start()/ob_end_clean() which discarded the async progress UI
-     * (`core/async_backup_status`) emitted by {@see \simple_restore::execute()}
-     * — leaving the modal "hanging" indefinitely on large backups. Now:
-     *   - async mode: stage the file and redirect to restore.php?confirm=1, which
-     *     renders the async progress page server-side. The browser navigates
-     *     out of the modal AJAX call immediately.
-     *   - sync mode: execute inline as before, but for backups >= 100 MB raise
-     *     the PHP time limit and release the session write-lock so other tabs
-     *     don't hang waiting on the same session, and drop the ob_*() wrap so
-     *     errors / progress are not silently swallowed.
+     * Bug-079: when Async Restore is enabled and {@code restore_to} is overwrite or merge,
+     * the catalogue/legacy staging copy and restore run inside the
+     * {@see \block_simple_restore\task\stage_catalogue_restore_task adhoc task} so the modal
+     * returns immediately.
+     *
+     * Bug-042A: sync mode executes inline without ob_* wrapping; backups >= 100 MB raise PHP
+     * time limits and release the session write-lock before running the restore_ui pipeline.
+     * When Async Restore is on and archive mode ({@code restore_to} = 2) is requested, staging
+     * still occurs here and redirect to {@see restore.php} behaves as before.
      *
      * @return array{success: bool, message: string, redirecturl: string}
      */
     #[\Override]
     public function process_dynamic_submission(): array {
-        global $CFG;
+        global $CFG, $USER;
 
         require_once($CFG->dirroot . '/blocks/simple_restore/lib.php');
 
@@ -155,7 +180,47 @@ class restore_confirm_form extends dynamic_form {
             throw new \moodle_exception('invalidcourseid', 'error');
         }
 
-        $course = get_course($courseid);
+        $course      = get_course($courseid);
+        $useasync    = (bool) get_config('simple_restore', 'async_toggle');
+
+        if ($useasync && $restoreto !== 2) {
+            // Bug-079: catalogue / legacy restores — validate only, queue staging + restore.
+            if ($catalogueid === 0) {
+                $backadelpath = (string) get_config('block_backadel', 'path');
+                if ($backadelpath === '') {
+                    throw new \moodle_exception('error', 'webservice', '', get_string(
+                        'empty_backups',
+                        'block_simple_restore'
+                    ));
+                }
+            }
+
+            $safefile = basename(str_replace('\\', '/', clean_param((string) ($data->filename ?? ''), PARAM_FILE)));
+            $sourcepath = \block_simple_restore\local\catalogue_staging_service::resolve_source_path(
+                $catalogueid,
+                $safefile
+            );
+            \block_simple_restore\local\catalogue_staging_service::validate_source($sourcepath);
+
+            $filenameforqueue = ($catalogueid > 0) ? '' : $safefile;
+
+            $task = new \block_simple_restore\task\stage_catalogue_restore_task();
+            $task->set_userid((int) $USER->id);
+            $task->set_custom_data([
+                'courseid'    => $courseid,
+                'catalogueid' => $catalogueid,
+                'filename'    => $filenameforqueue,
+                'restore_to'  => $restoreto,
+                'userid'      => (int) $USER->id,
+            ]);
+            \core\task\manager::queue_adhoc_task($task);
+
+            return [
+                'success'     => true,
+                'message'     => get_string('restore_queued_message', 'block_simple_restore'),
+                'redirecturl' => (new moodle_url('/course/view.php', ['id' => $courseid]))->out(false),
+            ];
+        }
 
         if ($catalogueid > 0) {
             // Catalogue path: resolve absolute path via backadel_resolve_path().
@@ -173,7 +238,12 @@ class restore_confirm_form extends dynamic_form {
             $filename = basename(str_replace('\\', '/', clean_param((string) $data->filename, PARAM_FILE)));
             $backadelpath = (string) get_config('block_backadel', 'path');
             if ($backadelpath === '') {
-                throw new \moodle_exception('error', 'webservice', '', get_string('empty_backups', 'block_simple_restore'));
+                throw new \moodle_exception(
+                    'error',
+                    'webservice',
+                    '',
+                    get_string('empty_backups', 'block_simple_restore')
+                );
             }
             $fullpath = rtrim($CFG->dataroot, '/') . '/' . trim($backadelpath, '/') . '/' . $filename;
             if (!is_readable($fullpath)) {
@@ -186,17 +256,12 @@ class restore_confirm_form extends dynamic_form {
             }
         }
 
-        $useasync = (bool) get_config('simple_restore', 'async_toggle');
         $contextid = ($restoreto === 2)
             ? \context_system::instance()->id
             : \context_course::instance($courseid)->id;
 
         if ($useasync) {
-            // Async mode: don't run the restore inline (its async progress
-            // template would be discarded by the modal's AJAX response).
-            // Hand off to restore.php which renders the standard
-            // core/async_backup_status progress page server-side. The modal's
-            // redirecturl tells the browser to navigate there immediately.
+            // Async mode (archive / edge cases): render progress on restore.php server-side.
             $progressurl = new moodle_url('/blocks/simple_restore/restore.php', [
                 'contextid'  => $contextid,
                 'filename'   => $tempfilename,

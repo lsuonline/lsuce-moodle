@@ -149,3 +149,14 @@ $string['nav_list']     = 'Restore Courses';
 // Tab strip labels (rendered by amd/src/admin-tabs-lazy.js across admin pages).
 $string['tab_settings'] = 'Global settings';
 $string['tab_list']     = 'Restore Courses';
+
+// Bug-079: Async staging task strings.
+$string['restore_filesize_label'] = 'Backup size';
+$string['restore_mode_sync'] = 'Restore begins immediately after you confirm.';
+$string['restore_mode_async'] = 'Your restore will be processed in the background. You will receive a Moodle notification when it is complete.';
+$string['restore_queued_message'] = 'Your restore has been queued and will be processed in the background. You will receive a notification when it is complete.';
+$string['notify_restore_complete_subject'] = 'Restore complete: {$a}';
+$string['notify_restore_complete_body'] = 'Your course restore for "{$a}" has completed successfully.';
+$string['notify_restore_complete_body_html'] = 'Your course restore for "<a href="{$a->courseurl}">{$a->coursename}</a>" has completed successfully.';
+$string['notify_restore_failed_subject'] = 'Restore failed: {$a}';
+$string['notify_restore_failed_body'] = 'Your course restore for "{$a->coursename}" failed. Please contact your administrator. (Details: {$a->error})';
