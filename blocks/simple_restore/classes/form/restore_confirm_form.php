@@ -141,6 +141,7 @@ class restore_confirm_form extends dynamic_form {
         global $CFG;
 
         require_once($CFG->dirroot . '/blocks/simple_restore/lib.php');
+        require_once($CFG->dirroot . '/backup/util/helper/async_helper.class.php');
 
         $data = $this->get_data();
         if ($data === null) {
@@ -186,7 +187,7 @@ class restore_confirm_form extends dynamic_form {
             }
         }
 
-        $useasync = (bool) get_config('simple_restore', 'async_toggle');
+        $useasync = \async_helper::is_async_enabled();
         $contextid = ($restoreto === 2)
             ? \context_system::instance()->id
             : \context_course::instance($courseid)->id;

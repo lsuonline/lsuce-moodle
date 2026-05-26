@@ -1136,7 +1136,7 @@ class simple_restore {
 
         simple_restore_utils::includes();
 
-        $useasync = (bool)get_config('simple_restore', 'async_toggle');
+        $useasync = async_helper::is_async_enabled();
 
         if ($useasync) {
             // Prepare a progress bar which can display optionally during long-running
