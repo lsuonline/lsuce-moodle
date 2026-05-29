@@ -20,101 +20,48 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
-require_once('lib.php');
+require_once(__DIR__ . '/../../config.php');
+require_once($CFG->libdir . '/adminlib.php');
+require_once(__DIR__ . '/lib.php');
 
-// Require login.
-require_login();
+admin_externalpage_setup('block_backadel_failed');
+$context = context_system::instance();
+require_capability('block/backadel:viewresults', $context);
 
-// Ensure the site admin is the page user.
-if (!is_siteadmin($USER->id)) {
-    moodle_exception('need_permission', 'block_backadel');
-}
+$PAGE->requires->js_call_amd('block_backadel/help', 'init');
+$PAGE->requires->js_call_amd('block_backadel/crud_actions', 'init');
 
-// Page Setup.
 $blockname = get_string('pluginname', 'block_backadel');
 $header = get_string('failed_header', 'block_backadel');
 
-$context = context_system::instance();
-$PAGE->set_context($context);
+$failedids = $DB->get_fieldset_select(
+    'block_backadel_statuses',
+    'coursesid',
+    'status = :st',
+    ['st' => 'FAIL']
+);
 
-$PAGE->navbar->add($header);
-$PAGE->set_title($blockname);
-$PAGE->set_heading($SITE->shortname . ': ' . $blockname);
-$PAGE->set_url('/blocks/backadel/failed.php');
-
-$PAGE->requires->js('/blocks/backadel/js/jquery.js');
-$PAGE->requires->js('/blocks/backadel/js/toggle.js');
-
-// Output the page.
 echo $OUTPUT->header();
+echo html_writer::div(
+    html_writer::tag('button', '?', [
+        'type' => 'button',
+        'class' => 'btn btn-sm btn-outline-secondary float-end mb-2',
+        'data-action' => 'show-help',
+        'data-help-topic' => 'failed',
+        'data-help-title' => get_string('failed_header', 'block_backadel'),
+        'aria-label' => get_string('help_button_label', 'block_backadel'),
+    ]),
+    'position-relative'
+);
 echo $OUTPUT->heading($header);
 
-$cleandata = array();
-
-// Reschedule selected courses.
-if ($data = data_submitted()) {
-    foreach ($data as $key => $value) {
-        $cleandata[$key] = clean_param_array($value, PARAM_CLEAN);
-    }
-
-    // Loop through the selected courses and update the backadel status.
-    foreach ($cleandata['failed'] as $id) {
-        $status = $DB->get_record('block_backadel_statuses',
-            array('coursesid' => $id));
-
-        // Set the status as 'BACKUP' to reschedule.
-        $status->status = 'BACKUP';
-        $DB->update_record('block_backadel_statuses', $status);
-        mtrace('<br />');
-    }
-    echo '<div>' . get_string('statuses_updated', 'block_backadel') . '</div>';
-}
-
-// List failed backups.
-$failedids = $DB->get_fieldset_select('block_backadel_statuses',
-    'coursesid', 'status = "FAIL"');
-
-// If we don't have nay failed backups.
 if (!$failedids) {
-    echo '<div>' . get_string('none_failed', 'block_backadel') . '</div>';
-
-    // Output the footer.
+    echo html_writer::div(get_string('none_failed', 'block_backadel'));
     echo $OUTPUT->footer();
-    return true;
+    exit;
 }
 
-// Set the limits on the query.
-$where = 'id IN (' . implode(', ', $failedids) . ')';
+$table = new \block_backadel\local\table\failed_table('backadel-failed');
+$table->out(30, true);
 
-// Grab the list of failed courses.
-$courses = $DB->get_records_select('course', $where);
-
-// Set up a new table.
-$table = new html_table();
-$table->head = array(get_string('shortname'), get_string('fullname'), get_string('failed', 'block_backadel'));
-$table->data = array();
-
-// Loop through the list of courses.
-foreach ($courses as $c) {
-
-    // Build links.
-    $url = new moodle_url('/course/view.php?id=' . $c->id);
-    $link = html_writer::link($url, $c->shortname);
-
-    // Add checkboxes.
-    $checkbox = html_writer::checkbox('failed[]', $c->id);
-
-    // Populate the table with links and checkboxes.
-    $table->data[] = array($link, $c->fullname, $checkbox);
-}
-
-// Output the form.
-echo '<form action = "failed.php" method = "POST">';
-echo html_writer::table($table);
-echo html_writer::link('#', get_string('toggle_all', 'block_backadel'), array('class' => 'toggle_link'));
-echo '    <input type = "submit" value = "' . get_string('failed_button', 'block_backadel') . '"/>';
-echo '</form>';
-
-// Output the footer.
 echo $OUTPUT->footer();

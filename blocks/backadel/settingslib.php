@@ -50,7 +50,7 @@ class backadel_path_setting extends admin_setting_configtext {
 
         $chars = str_split($data);
         // Make sure the path begins and ends with /.
-        if (current($chars) != '/' and end($chars) != '/') {
+        if (current($chars) != '/' && end($chars) != '/') {
             return get_string('config_path_surround', 'block_backadel');
         }
 

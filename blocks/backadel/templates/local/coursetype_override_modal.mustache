@@ -1,0 +1,95 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_backadel/local/coursetype_override_modal
+
+    Modal body form for manually overriding catalogue course type.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-field="clear-override" on the clear checkbox
+    * data-field="override-note" on the note textarea
+    * data-action="save-coursetype-override" on the save button
+
+    Context variables required for this template:
+    * rname - string, HTML name / id prefix for the radio group (e.g. cowtype_123)
+    * clearId - string, HTML id for the clear-override checkbox
+    * noteId - string, HTML id for the note textarea
+    * currentNote - string, initial note text (escaped)
+    * teachingChecked - boolean, teaching radio selected
+    * blueprintChecked - boolean, blueprint radio selected
+    * otherChecked - boolean, other radio selected
+    * strings - object of pre-escaped UI labels from AMD init
+    * strings.labelType - string, course type section label
+    * strings.typeTeaching - string, teaching radio label
+    * strings.typeBlueprint - string, blueprint radio label
+    * strings.typeOther - string, other radio label
+    * strings.clearLabel - string, clear override checkbox label
+    * strings.labelNote - string, note field label
+    * strings.save - string, save button label
+
+    Example context (json):
+    {
+        "rname": "cowtype_1",
+        "clearId": "cow-clear-1",
+        "noteId": "cowtype_1-note",
+        "currentNote": "Example note",
+        "teachingChecked": true,
+        "blueprintChecked": false,
+        "otherChecked": false,
+        "strings": {
+            "labelType": "Course type",
+            "typeTeaching": "Teaching",
+            "typeBlueprint": "Blueprint",
+            "typeOther": "Other",
+            "clearLabel": "Clear override",
+            "labelNote": "Note",
+            "save": "Save"
+        }
+    }
+}}
+<div class="block_backadel-modal-body">
+    <div class="mb-3">
+        <div class="fw-semibold mb-2">{{strings.labelType}}</div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="{{rname}}" id="{{rname}}-teaching" value="teaching" {{#teachingChecked}}checked{{/teachingChecked}}/>
+            <label class="form-check-label" for="{{rname}}-teaching">{{strings.typeTeaching}}</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="{{rname}}" id="{{rname}}-blueprint" value="blueprint" {{#blueprintChecked}}checked{{/blueprintChecked}}/>
+            <label class="form-check-label" for="{{rname}}-blueprint">{{strings.typeBlueprint}}</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="{{rname}}" id="{{rname}}-other" value="other" {{#otherChecked}}checked{{/otherChecked}}/>
+            <label class="form-check-label" for="{{rname}}-other">{{strings.typeOther}}</label>
+        </div>
+    </div>
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" value="1" id="{{clearId}}" data-field="clear-override" />
+        <label class="form-check-label" for="{{clearId}}">{{strings.clearLabel}}</label>
+    </div>
+    <div class="mb-3">
+        <label class="form-label" for="{{noteId}}">{{strings.labelNote}}</label>
+        <textarea class="form-control" id="{{noteId}}" data-field="override-note"
+                  rows="3" maxlength="1024">{{currentNote}}</textarea>
+    </div>
+    <div>
+        <button type="button" class="btn btn-primary" data-action="save-coursetype-override">{{strings.save}}</button>
+    </div>
+</div>

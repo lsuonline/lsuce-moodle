@@ -20,36 +20,82 @@
 }
 
 #page-blocks-simple_restore-list #region-main table.generaltable {
-  table-layout: fixed !important;
+  table-layout: auto;
   width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-#page-blocks-simple_restore-list #region-main table.generaltable .c0 {
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis;
-  width: auto;
-}
-
-#page-blocks-simple_restore-list #region-main table.generaltable .c1 {
-  width: 6em;
-}
-
-#page-blocks-simple_restore-list #region-main table.generaltable .c2 {
-  width: 15em;
-}
-
-#page-blocks-simple_restore-list #region-main table.generaltable tr:hover .c0 {
-  overflow: visible !important;
-}
-
-#page-blocks-simple_restore-list #region-main table.generaltable tr:hover .c1, #page-blocks-simple_restore-list #region-main table.generaltable tr:hover .c2 {
-  color: transparent !important;
-}
-
-
 .restore_template_progress_hider div.backup_progress.clearfix {
   visibility: hidden;
+}
+
+/* ---- Restore confirm modal: dialog wrapper ---- */
+/* Snap applies rogue rules to .modal-content (max-width: 500px, text-align: center)
+   and a purple border to .modal-dialog. Scope overrides to our dialog class. */
+.modal.moodle-has-zindex .modal-dialog.block_simple_restore-modal-dialog,
+.modal-dialog.block_simple_restore-modal-dialog {
+    max-width: min(640px, 92vw);
+    border: none;
+}
+
+/* Bug-078: hide outline only for non-keyboard focus (:focus-visible still shows ring). */
+.modal.moodle-has-zindex:focus:not(:focus-visible),
+.modal-dialog.block_simple_restore-modal-dialog:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ---- Undo Snap's .modal-content overrides ---- */
+.modal-dialog.block_simple_restore-modal-dialog .modal-content {
+    max-width: none;
+    text-align: start;
+}
+
+#page-blocks-simple_restore-list table.generaltable th.lastcol,
+#page-blocks-simple_restore-list table.generaltable td.lastcol {
+    position: sticky;
+    right: 0;
+    background: var(--bs-table-bg, #fff);
+    z-index: 1;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.08);
+}
+
+/* Row hover: only apply to body rows, never to <thead>.
+   Bootstrap's .table-hover and a number of Snap rules cascade onto every
+   <tr>, which leaves the header row with an unintended highlight on mouseover.
+   Re-scope the hover to tbody and cancel it on thead at higher specificity. */
+#page-blocks-simple_restore-list table.generaltable thead tr:hover,
+#page-blocks-simple_restore-list table.generaltable thead tr:hover th {
+    background-color: inherit;
+    background: inherit;
+    cursor: default;
+}
+#page-blocks-simple_restore-list table.generaltable tbody tr:hover {
+    background-color: var(--bs-table-hover-bg, rgba(0, 0, 0, 0.04));
+}
+
+#page-blocks-simple_restore-list span.badge.ms-2 {
+    background-color: #fdd023 !important;
+    color: #1a1a1a !important;
+    border-radius: .2em;
+}
+
+/* Accordion: custom chevron (d-flex on summary hides native disclosure triangle). */
+.sr-collapsible > summary {
+    cursor: pointer;
+    list-style: none; /* suppress any remaining default marker */
+}
+.sr-collapsible > summary::-webkit-details-marker {
+    display: none;
+}
+.sr-collapsible > summary::before {
+    content: "\25B6"; /* ▶ right-pointing triangle */
+    display: inline-block;
+    font-size: 0.75em;
+    margin-right: 0.5em;
+    transition: transform 0.2s ease;
+    color: #461D7C; /* LSU Purple */
+}
+.sr-collapsible[open] > summary::before {
+    transform: rotate(90deg);
 }
