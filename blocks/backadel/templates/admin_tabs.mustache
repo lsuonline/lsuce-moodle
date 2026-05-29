@@ -1,0 +1,27 @@
+{{!
+    @template block_backadel/admin_tabs
+
+    Tab strip rendered across local_dbfix admin pages.
+
+    Context schema:
+    {
+      "nav": [
+        { "link": "https://...", "string": "Tables & Indexes", "activeClass": "active" },
+        { "link": "https://...", "string": "Job Queue", "activeClass": "" },
+        { "link": "https://...", "string": "Settings", "activeClass": "" }
+      ]
+    }
+
+    @copyright 2008 onwards Louisiana State University
+    @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+<ul class="nav nav-tabs block-backadel-admin-tabs mb-3" role="tablist">
+    {{#nav}}
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {{activeClass}}" href="{{link}}" role="tab"
+               {{#activeClass}}aria-current="page"{{/activeClass}}>
+                {{string}}
+            </a>
+        </li>
+    {{/nav}}
+</ul>

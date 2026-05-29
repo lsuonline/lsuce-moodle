@@ -1,14 +1,127 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="blocks/backadel/db" VERSION="20080403" COMMENT="XMLDB file for Moodle blocks/backadel"
+<XMLDB PATH="blocks/backadel/db" VERSION="20260515" COMMENT="XMLDB file for Moodle blocks/backadel"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
 >
   <TABLES>
     <TABLE NAME="block_backadel_statuses" COMMENT="Stores the status of pending operations">
       <FIELDS>
-        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="true" ENUM="false" NEXT="coursesid"/>
-        <FIELD NAME="coursesid" TYPE="int" LENGTH="10" NOTNULL="true" UNSIGNED="true" SEQUENCE="false" ENUM="false" COMMENT="mdl_course id" PREVIOUS="id" NEXT="status"/>
-        <FIELD NAME="status" TYPE="char" LENGTH="8" NOTNULL="true" DEFAULT="BACKUP" SEQUENCE="false" ENUM="true" ENUMVALUES="'BACKUP', 'SUCCESS', 'FAIL'" COMMENT="status of operation" PREVIOUS="coursesid"/>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="coursesid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="mdl_course id"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="BACKUP" COMMENT="status of operation"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="When the row was queued"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Last status update"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="block_backadel_catalogue" COMMENT="Backadel backup file catalogue (FTP + current)">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="filename" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Basename only"/>
+        <FIELD NAME="filepath" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Full path string from FTP listing (truncated for index compat; full string in filepath_full)"/>
+        <FIELD NAME="filepath_full" TYPE="text" NOTNULL="false" COMMENT="Untruncated full path; used when filepath was truncated at 255"/>
+        <FIELD NAME="filepath_hash" TYPE="char" LENGTH="40" NOTNULL="true" COMMENT="sha1(filepath_full ?? filepath) — stable unique discriminator independent of length"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" COMMENT="legacy_moodleus | legacy_openlms | backadel_current"/>
+        <FIELD NAME="year" TYPE="int" LENGTH="4" NOTNULL="false"/>
+        <FIELD NAME="semester" TYPE="char" LENGTH="20" NOTNULL="false" COMMENT="Spring, Summer, Fall, Winter, SecondFall, SecondSummer"/>
+        <FIELD NAME="dept" TYPE="char" LENGTH="20" NOTNULL="false"/>
+        <FIELD NAME="course_num" TYPE="char" LENGTH="20" NOTNULL="false"/>
+        <FIELD NAME="course_idnumber" TYPE="char" LENGTH="50" NOTNULL="false"/>
+        <FIELD NAME="shortname" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Resolved via mdl_course after parse"/>
+        <FIELD NAME="instructors" TYPE="text" NOTNULL="false" COMMENT="JSON array of Moodle usernames"/>
+        <FIELD NAME="pattern" TYPE="char" LENGTH="32" NOTNULL="true" DEFAULT="unknown" COMMENT="Which §1.7 regex matched: semester_legacy | semester_legacy_lc | storage_course | storagecourse_dept | backadel_modern | moodle_native | unknown"/>
+        <FIELD NAME="coursetype_override" TYPE="char" LENGTH="16" NOTNULL="false" COMMENT="Manual override: teaching | blueprint | other; NULL = use auto-detected"/>
+        <FIELD NAME="coursetype_override_note" TYPE="text" NOTNULL="false" COMMENT="Admin free-text reason for the override; plain text, max 1 024 chars enforced in PHP"/>
+        <FIELD NAME="coursetype_override_by" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="mdl_user.id of the user who last set the override"/>
+        <FIELD NAME="coursetype_override_ts" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="Unix timestamp of the most recent override write"/>
+        <FIELD NAME="backup_ts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Unix timestamp from filename"/>
+        <FIELD NAME="file_size" TYPE="int" LENGTH="18" NOTNULL="false" COMMENT="Bytes if known (Moodle XMLDB int max LENGTH is 18; fits ~10^17 i.e. 100 PB)"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="available" COMMENT="available | missing | archived"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="source_hash_uk" TYPE="unique" FIELDS="source, filepath_hash"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="shortname_ix" UNIQUE="false" FIELDS="shortname"/>
+        <INDEX NAME="backup_ts_ix" UNIQUE="false" FIELDS="backup_ts"/>
+        <INDEX NAME="dept_cn_ix" UNIQUE="false" FIELDS="dept, course_num"/>
+        <INDEX NAME="source_ix" UNIQUE="false" FIELDS="source"/>
+        <INDEX NAME="status_ix" UNIQUE="false" FIELDS="status"/>
+        <INDEX NAME="filename_ix" UNIQUE="false" FIELDS="filename"/>
+        <INDEX NAME="status_year_sem_ts_ix" UNIQUE="false" FIELDS="status, year, semester, backup_ts" COMMENT="bug-045: primary admin filter path"/>
+        <INDEX NAME="year_sem_ts_ix" UNIQUE="false" FIELDS="year, semester, backup_ts" COMMENT="bug-045: year/semester filter without status, also serves COUNT(*)"/>
+        <INDEX NAME="shortname_year_ix" UNIQUE="false" FIELDS="shortname, year" COMMENT="bug-045: covers DISTINCT year by shortname"/>
+        <INDEX NAME="status_ts_ix" UNIQUE="false" FIELDS="status, backup_ts" COMMENT="bug-045: status filter with backup_ts ORDER BY"/>
+        <INDEX NAME="pattern_ts_ix" UNIQUE="false" FIELDS="pattern, backup_ts" COMMENT="bug-045: pattern filter with backup_ts ORDER BY"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="block_backadel_courses" COMMENT="One row per backup file on disk (warm path / restore UX)">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="mdl_course id; null if course deleted"/>
+        <FIELD NAME="coursefullname" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Snapshot at backup time"/>
+        <FIELD NAME="courseshortname" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Snapshot at backup time"/>
+        <FIELD NAME="courseidnumber" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Snapshot; used for teaching detection"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="available" COMMENT="available, missing, pending_delete"/>
+        <FIELD NAME="filepath" TYPE="text" NOTNULL="true" COMMENT="Full absolute path on disk"/>
+        <FIELD NAME="filepath_hash" TYPE="char" LENGTH="40" NOTNULL="true" COMMENT="bug-044: sha1(filepath) — unique discriminator for TEXT filepath column"/>
+        <FIELD NAME="filename" TYPE="char" LENGTH="255" NOTNULL="true" COMMENT="Denormalised basename"/>
+        <FIELD NAME="filesize" TYPE="int" LENGTH="18" NOTNULL="false" COMMENT="Bytes from filesize() at insert time"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="Row created (migration or new backup)"/>
+        <FIELD NAME="backupcreated" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="File mtime from filemtime(); null if unknown"/>
+        <FIELD NAME="semester" TYPE="char" LENGTH="64" NOTNULL="false" COMMENT="e.g. LSU_AM_spring_2026, Blueprints, Other"/>
+        <FIELD NAME="academicperiodid" TYPE="char" LENGTH="32" NOTNULL="false" COMMENT="Raw period ID e.g. 2245"/>
+        <FIELD NAME="coursetype" TYPE="char" LENGTH="16" NOTNULL="true" DEFAULT="other" COMMENT="teaching, blueprint, other"/>
+        <FIELD NAME="statusid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="block_backadel_statuses.id"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="filepath_hash_uk" TYPE="unique" FIELDS="filepath_hash" COMMENT="bug-044: prevent duplicate warm-path rows under concurrent migrate_file()"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="courseid_ix" UNIQUE="false" FIELDS="courseid"/>
+        <INDEX NAME="semester_ix" UNIQUE="false" FIELDS="semester"/>
+        <INDEX NAME="coursetype_ix" UNIQUE="false" FIELDS="coursetype"/>
+        <INDEX NAME="statusid_ix" UNIQUE="false" FIELDS="statusid"/>
+        <INDEX NAME="filename_ix" UNIQUE="false" FIELDS="filename"/>
+        <INDEX NAME="filename_courseid_ix" UNIQUE="false" FIELDS="filename, courseid" COMMENT="bug-045: covering for catalogue_table correlated subquery"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="block_backadel_teachers" COMMENT="Instructors associated with a backup row">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="coursesid" TYPE="int" LENGTH="10" NOTNULL="true" COMMENT="block_backadel_courses.id"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" COMMENT="mdl_user.id; null if unresolved"/>
+        <FIELD NAME="username" TYPE="char" LENGTH="100" NOTNULL="true" COMMENT="Raw token or mdl_user.username"/>
+        <FIELD NAME="email" TYPE="char" LENGTH="255" NOTNULL="false" COMMENT="Email used during resolution"/>
+        <FIELD NAME="resolved" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" COMMENT="1 if userid found"/>
+        <FIELD NAME="resolvedvia" TYPE="char" LENGTH="32" NOTNULL="false" COMMENT="username, email, lsu, agcenter, none, or first domain label"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="coursesid_username_uk" TYPE="unique" FIELDS="coursesid, username" COMMENT="bug-044: prevent duplicate teacher rows per (coursesid, username)"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="coursesid_ix" UNIQUE="false" FIELDS="coursesid"/>
+        <INDEX NAME="userid_ix" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="username_ix" UNIQUE="false" FIELDS="username"/>
+        <INDEX NAME="resolved_ix" UNIQUE="false" FIELDS="resolved"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="block_backadel_periods" COMMENT="Admin-managed period ID to semester folder mapping">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="periodid" TYPE="char" LENGTH="32" NOTNULL="true" COMMENT="e.g. 2245"/>
+        <FIELD NAME="folder" TYPE="char" LENGTH="64" NOTNULL="true" COMMENT="e.g. LSU_AM_spring_2025"/>
+        <FIELD NAME="label" TYPE="char" LENGTH="128" NOTNULL="true" COMMENT="Human-readable label e.g. Spring 2025"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>

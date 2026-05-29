@@ -34,6 +34,9 @@ $string['no_file'] = 'Empty file: A restore object must be given a file.';
 $string['no_filter'] = 'Enter a valid course shortname.';
 $string['no_arguments'] = $string['pluginname'] . ' error: Invalid arguments were passed to prep restore.';
 $string['no_restore'] = 'The restore was unable to complete due to the following error: {$a}';
+$string['no_restore_friendly'] = 'The restore of "{$a->filename}" could not be completed. The backup file may be corrupted or incomplete. Please contact your administrator. (Details: {$a->message})';
+$string['error_backup_empty'] = 'The backup file "{$a}" is empty (0 bytes) and cannot be restored. Please choose a different backup or contact your administrator.';
+$string['error_backup_missing'] = 'The backup file "{$a}" could not be found on disk. Please contact your administrator.';
 $string['empty_backups'] = 'No course backups found.';
 $string['have_grades'] = 'This course cannot use Simple Restore now that there are grades in the gradebook. Selective Import is available.';
 
@@ -47,6 +50,60 @@ $string['equals'] = 'equals';
 $string['adminfilter'] = 'Filter Courses';
 
 $string['semester_backups'] = 'Semester Backups';
+
+$string['filter_search'] = 'Search';
+$string['filter_apply'] = 'Filter';
+$string['filter_year'] = 'Year';
+$string['filter_semester'] = 'Semester';
+$string['filter_coursetype'] = 'Course type';
+$string['filter_status'] = 'Status';
+$string['filter_all_years'] = 'All years';
+$string['filter_all_semesters'] = 'All semesters';
+$string['filter_status_available'] = 'Available only';
+$string['filter_status_all'] = 'All (including unavailable)';
+$string['filter_clear'] = 'Clear filters';
+$string['filter_search_placeholder'] = 'Search by filename...';
+$string['filter_backuptype'] = 'Backup type';
+$string['filter_type_teaching'] = 'Live course backup';
+$string['filter_type_blueprint'] = 'Blueprint backup';
+$string['filter_type_other'] = 'Other backup';
+
+$string['toggle_recent_show'] = 'Show most recent backup only';
+$string['toggle_recent_all'] = 'Show all backups';
+
+$string['year_bucket_unknown'] = 'Other backups';
+$string['table_col_year']      = 'Year';
+$string['table_col_semester']  = 'Semester';
+$string['table_col_dept']      = 'Department';
+$string['table_col_coursecode'] = 'Course code';
+$string['table_col_coursetype'] = 'Course type';
+$string['table_col_status']    = 'Status';
+$string['table_col_filename']  = 'Filename';
+$string['table_col_filesize']  = 'Size';
+$string['table_col_modified']  = 'Modified';
+$string['table_col_action']    = 'Action';
+
+// Bug-050: collapsible blueprint / other sections rendered above & below year buckets.
+$string['blueprints_section_heading'] = 'Blueprint Courses';
+$string['blueprints_section_help']    = 'Blueprint courses without a specific term — expand to view.';
+$string['blueprints_section_empty']   = 'No blueprint backups available for this course.';
+$string['other_section_heading']      = 'Other backups';
+$string['other_section_help']         = 'Backups that are neither live-course nor blueprints — expand to view.';
+$string['other_section_empty']        = 'No other backups available for this course.';
+$string['restore_action']      = 'Restore';
+$string['download_action']     = 'Download';
+$string['status_available']    = 'Available';
+$string['status_missing']      = 'Missing';
+$string['status_archived']     = 'Archived';
+
+$string['restore_success'] = 'The course was successfully restored.';
+$string['restore_confirm_title'] = 'Confirm Restore';
+$string['restore_confirm_body'] = 'You are about to overwrite this course with the selected backup. Proceed?';
+$string['restore_confirm_body_overwrite'] = 'This will replace the course content (activities, resources, and sections) with content from the selected backup. Student enrollments and grades will not be affected. This action cannot be undone.';
+$string['restore_confirm_body_import'] = 'This will add activities, resources, and sections from the selected backup into this course without removing existing content. Student enrollments and grades will not be affected.';
+$string['restore_confirm_save'] = 'Restore';
+$string['restore_confirm_course_label'] = 'Course';
+$string['restore_confirm_file_label'] = 'File';
 
 $string['confirm_message'] = 'You are about to {$a}. Proceed?';
 $string['general'] = 'General Restore Settings';
@@ -64,7 +121,7 @@ $string['comments'] = 'Restore comments';
 $string['userscompletion'] = 'Restore user completions';
 $string['logs'] = 'Restore course logs';
 $string['grade_histories'] = 'Restore grade histories';
-$string['keep_roles_and_enrolments'] = 'Keep current roles and enrolments';
+$string['keep_roles_and_enrolments'] = 'Keep current roles and enrollments';
 $string['keep_groups_and_groupings'] = 'Keep current groups and groupings';
 $string['overwrite_conf'] = 'Overwrite course configuration';
 
@@ -84,3 +141,22 @@ $string['simple_restore:addinstance'] = 'Add Simple restore block to Site page';
 $string['async_title'] = 'Async Restore Settings';
 $string['async_toggle_title'] = 'Async Restore';
 $string['async_toggle_desc'] = 'Make course restores asyncronous.';
+
+// Admin navigation labels (used by the admin sidebar / externalpage display names).
+$string['nav_settings'] = 'Global settings';
+$string['nav_list']     = 'Restore Courses';
+
+// Tab strip labels (rendered by amd/src/admin-tabs-lazy.js across admin pages).
+$string['tab_settings'] = 'Global settings';
+$string['tab_list']     = 'Restore Courses';
+
+// Bug-079: Async staging task strings.
+$string['restore_filesize_label'] = 'Backup size';
+$string['restore_mode_sync'] = 'Restore begins immediately after you confirm.';
+$string['restore_mode_async'] = 'Your restore will be processed in the background. You will receive a Moodle notification when it is complete.';
+$string['restore_queued_message'] = 'Your restore has been queued and will be processed in the background. You will receive a notification when it is complete.';
+$string['notify_restore_complete_subject'] = 'Restore complete: {$a}';
+$string['notify_restore_complete_body'] = 'Your course restore for "{$a}" has completed successfully.';
+$string['notify_restore_complete_body_html'] = 'Your course restore for "<a href="{$a->courseurl}">{$a->coursename}</a>" has completed successfully.';
+$string['notify_restore_failed_subject'] = 'Restore failed: {$a}';
+$string['notify_restore_failed_body'] = 'Your course restore for "{$a->coursename}" failed. Please contact your administrator. (Details: {$a->error})';

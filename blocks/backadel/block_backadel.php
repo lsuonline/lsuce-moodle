@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Definition of block_backadel tasks.
+ * Block sidebar widget for the Backadel admin plugin.
  *
  * @package    block_backadel
  * @category   block
@@ -23,154 +23,132 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+declare(strict_types=1);
+
 defined('MOODLE_INTERNAL') || die();
 
-// Get the requisite dependencies.
-require_once($CFG->dirroot . '/blocks/backadel/lib.php');
-require_once($CFG->dirroot . '/blocks/moodleblock.class.php');
-
 /**
- * Main class for setting up the block.
- * @uses block_list
+ * Backadel admin block sidebar widget.
+ *
  * @package block_backadel
  */
-class block_backadel extends block_list {
+class block_backadel extends block_base {
 
     /**
-     * Init.
+     * Sets the block title.
      */
-    public function init() {
+    public function init(): void {
         $this->title = get_string('pluginname', 'block_backadel');
     }
 
-    /**
-     * Locations where block can be displayed.
-     *
-     * @return array
-     */
-    public function applicable_formats() {
-        return array('site' => true, 'my' => false, 'course' => false);
+    #[\Override]
+    public function applicable_formats(): array {
+        return ['site' => true, 'my' => false, 'course' => false];
     }
 
-    /**
-     * Block has configuration.
-     *
-     * @return true
-     */
-    public function has_config() {
+    #[\Override]
+    public function has_config(): bool {
         return true;
     }
 
     /**
-     * Returns the time running.
+     * Formats a number of seconds as a human-readable elapsed-time string.
      *
-     * @return time running
+     * @param int $secondsrun Elapsed seconds.
+     * @return string Human-readable duration (e.g. "2 hours, 5 minutes, 30 seconds").
      */
-    public function seconds2human($secondsrun) {
-        $s = $secondsrun%60 . ' seconds';
-        $m = floor(($secondsrun%3600)/60) . ' minutes,';
-        $h = floor(($secondsrun%86400)/3600) . ' hours,';
-        $d = floor(($secondsrun%2592000)/86400) . ' days,';
-        $M = floor($secondsrun/2592000) . ' months,';
+    public static function seconds2human(int $secondsrun): string {
+        $months = (int) floor($secondsrun / 2592000);
+        $days   = (int) floor(($secondsrun % 2592000) / 86400);
+        $hours  = (int) floor(($secondsrun % 86400) / 3600);
+        $mins   = (int) floor(($secondsrun % 3600) / 60);
+        $secs   = $secondsrun % 60;
 
-        if ($M == '0 months,' || $d == '0 days,' || $h == '0 hours,' || $m == '0 minutes,') {
-            $es = 'and ' . $s;
-        } else {
-            $es = $s;
+        $parts = [];
+        if ($months > 0) {
+            $parts[] = $months . ' months';
         }
+        if ($days > 0) {
+            $parts[] = $days . ' days';
+        }
+        if ($hours > 0) {
+            $parts[] = $hours . ' hours';
+        }
+        if ($mins > 0) {
+            $parts[] = $mins . ' minutes';
+        }
+        $parts[] = $secs . ' seconds';
 
-        $em = $m == '0 minutes,' ? '' : $m;
-        $eh = $h == '0 hours,' ? '' : $h;
-        $ed = $d == '0 days,' ? '' : $d;
-        $eM = $M == '0 months,' ? '' : $M;
-
-        return "$eM $ed $eh $em $es";
+        return implode(', ', $parts);
     }
 
-    /**
-     * Returns the contents.
-     *
-     * @return stdClass contents of block
-     */
-    public function get_content() {
-        // Set up the globals we need.
-        global $DB, $CFG, $USER, $OUTPUT;
+    #[\Override]
+    public function get_content(): stdClass {
+        global $DB, $OUTPUT, $PAGE, $USER;
 
-        // Check to make sure the Admin is using the block.
-        if (!is_siteadmin($USER->id)) {
-            return $this->content;
-        }
-
-        // Return the content if there is any.
         if ($this->content !== null) {
             return $this->content;
         }
 
-        // Set up the table.
-        $table = 'block_backadel_statuses';
+        if (!is_siteadmin($USER->id)) {
+            $this->content = new stdClass();
+            $this->content->items = [];
+            $this->content->icons = [];
+            $this->content->footer = '';
+            return $this->content;
+        }
 
-        // Get the number of pending and failed backups.
-        $numpending = $DB->count_records_select($table, "status='SUCCESS'");
-        $numfailed = $DB->count_records_select($table, "status='FAIL'");
+        $this->content = new stdClass();
+        $this->content->text = '';
+        $this->content->footer = '';
 
-        // Set the $running varuable to the backup status.
+        $numpending = $DB->count_records_select('block_backadel_statuses', "status='SUCCESS'");
+        $numfailed  = $DB->count_records_select('block_backadel_statuses', "status='FAIL'");
+
         $running = get_config('block_backadel', 'running');
-
-        // Give the admin the running / not status.
         if (!$running) {
             $statustext = get_string('status_not_running', 'block_backadel');
         } else {
-            $secondsrun = round(time() - $running);
-            $timerunning = self::seconds2human($secondsrun);
-            $statustext = get_string('status_running', 'block_backadel', $timerunning);
+            $secondsrun = (int) round(time() - (int) $running);
+            $statustext = get_string('status_running', 'block_backadel', self::seconds2human($secondsrun));
         }
 
-        // Build the block itself.
-        $icons = array();
-        $items = array();
-        $params = array('class' => 'icon');
+        $iconparams = ['class' => 'icon'];
+        $data = [
+            'links' => [
+                [
+                    'iconhtml' => $OUTPUT->pix_icon('i/backup', '', 'moodle', $iconparams),
+                    'url'      => (new moodle_url('/blocks/backadel/search.php'))->out(false),
+                    'label'    => get_string('block_index', 'block_backadel'),
+                    'count'    => null,
+                    'countkey' => '',
+                ],
+                [
+                    'iconhtml' => $OUTPUT->pix_icon('i/delete', '', 'moodle', $iconparams),
+                    'url'      => (new moodle_url('/blocks/backadel/delete.php'))->out(false),
+                    'label'    => get_string('block_delete', 'block_backadel'),
+                    'count'    => $numpending > 0 ? $numpending : null,
+                    'countkey' => 'pending',
+                ],
+                [
+                    'iconhtml' => $OUTPUT->pix_icon('i/risk_xss', '', 'moodle', $iconparams),
+                    'url'      => (new moodle_url('/blocks/backadel/failed.php'))->out(false),
+                    'label'    => get_string('block_failed', 'block_backadel'),
+                    'count'    => $numfailed > 0 ? $numfailed : null,
+                    'countkey' => 'failed',
+                ],
+            ],
+            'statustext'     => $statustext,
+            'statusiconhtml' => $OUTPUT->pix_icon('i/calendareventtime', '', 'moodle', $iconparams),
+        ];
 
-/*
-        // Build the icon list.
-        $icons[] = $OUTPUT->pix_icon('i/backup', '', 'moodle', $params);
-        $icons[] = $OUTPUT->pix_icon('i/delete', '', 'moodle', $params);
-        $icons[] = $OUTPUT->pix_icon('i/risk_xss', '', 'moodle', $params);
-        $icons[] = $OUTPUT->pix_icon('i/calendareventtime', '', 'moodle', $params);
+        $this->content->text = $OUTPUT->render_from_template('block_backadel/block_widget', $data);
 
-        // Build the list of items.
-        $items[] = $this->build_link('index');
-        $items[] = $this->build_link('delete') . "($numpending)";
-        $items[] = $this->build_link('failed') . "($numfailed)";
-        $items[] = $statustext;
-*/
+        // Boot the live-polling AMD module so the widget refreshes every 10 s.
+        $PAGE->requires->string_for_js('status_running', 'block_backadel');
+        $PAGE->requires->string_for_js('status_not_running', 'block_backadel');
+        $PAGE->requires->js_call_amd('block_backadel/migration_status_poll', 'init');
 
-        // Build the list of items with icons and links on the same line.
-        $items[] = $OUTPUT->pix_icon('i/backup', '', 'moodle', $params) .
-            '' . $this->build_link('index');
-        $items[] = $OUTPUT->pix_icon('i/delete', '', 'moodle', $params) .
-            '' . $this->build_link('delete') . " ($numpending)";
-        $items[] = $OUTPUT->pix_icon('i/risk_xss', '', 'moodle', $params) .
-            '' . $this->build_link('failed') . " ($numfailed)";
-        $items[] = $OUTPUT->pix_icon('i/calendareventtime', '', 'moodle', $params) .
-            '' . $statustext;
-
-        // Bring it all together.
-        $this->content = new stdClass;
-        $this->content->icons = $icons;
-        $this->content->items = $items;
-        $this->content->footer = '';
-
-        // Return the block.
         return $this->content;
-    }
-
-    /**
-     * Set up the page link
-     *
-     * @return link
-     */
-    public function build_link($page) {
-        $url = new moodle_url("/blocks/backadel/$page.php");
-        return html_writer::link($url, get_string("block_$page", 'block_backadel'));
     }
 }

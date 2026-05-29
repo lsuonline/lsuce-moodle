@@ -24,6 +24,50 @@
 // Be sure no one accesses the page directly.
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * Resolve a block_backadel_catalogue row to an absolute backup file path (MD-2189 §3.3).
+ *
+ * If filepath is absolute (starts with /) it is returned directly. Otherwise it is
+ * resolved relative to $CFG->dataroot. A catalogue_path_prefix setting (format old=new)
+ * is applied when configured.
+ *
+ * @param int $catalogue_id Primary key in block_backadel_catalogue.
+ * @return string Absolute path on disk.
+ */
+function backadel_resolve_path(int $catalogueid): string {
+    global $DB, $CFG;
+
+    $rec = $DB->get_record(
+        'block_backadel_catalogue',
+        ['id' => $catalogueid],
+        'filepath, filepath_full, filename',
+        IGNORE_MISSING
+    );
+    if (!$rec) {
+        return '';
+    }
+    // Filepath_full (TEXT) is preferred; filepath (char 255) may be truncated for index compat.
+    $path = (!empty($rec->filepath_full)) ? (string) $rec->filepath_full : (string) $rec->filepath;
+
+    $resolved = (strncmp($path, '/', 1) === 0)
+        ? $path
+        : $CFG->dataroot . '/' . ltrim($path, '/');
+
+    // Defensive: collapse any double-slashes that crept in from stale DB data written before bug-039 was
+    // fixed. These are always absolute filesystem paths, so replacing // with / is always safe here.
+    $resolved = str_replace('//', '/', $resolved);
+
+    $prefix = (string) get_config('block_backadel', 'catalogue_path_prefix');
+    if ($prefix !== '' && strpos($prefix, '=') !== false) {
+        [$old, $new] = explode('=', $prefix, 2);
+        if ($old !== '') {
+            $resolved = str_replace($old, $new, $resolved);
+        }
+    }
+
+    return $resolved;
+}
+
 abstract class simple_restore_utils {
     // We don't need the includes on every request.
     public static function includes() {
@@ -42,12 +86,40 @@ abstract class simple_restore_utils {
     public static function selected_backadel($data) {
         global $CFG;
 
-        $backadelpath = get_config('block_backadel', 'path');
+        // Catalogue path: keyed on explicit name='catalogue' marker (MD-2189 §3.3).
+        // Numeric-fileid fallback kept for safety but explicit name is preferred to avoid
+        // mis-routing legacy files with numeric basenames (e.g. 12345.zip).
+        $iscatalogue = (isset($data->name) && $data->name === 'catalogue')
+                    || (!isset($data->name) && is_numeric($data->fileid));
+        if ($iscatalogue) {
+            $realpath = backadel_resolve_path((int) $data->fileid);
+            if (!file_exists($realpath)) {
+                return true;
+            }
+            copy($realpath, $data->to_path);
+            $data->filename = basename($realpath);
+            return true;
+        }
 
+        // Legacy: fileid is a relative filename appended to the configured backadel path.
+        $backadelpath = get_config('block_backadel', 'path');
         $realpath = $CFG->dataroot . $backadelpath . $data->fileid;
 
         if (!file_exists($realpath)) {
             return true;
+        }
+
+        // Validate the source backup is not empty. A 0-byte ZIP cannot produce
+        // a working course and may still create a broken shell that breaks the
+        // Snap renderer (Call to a member function get_filename() on null).
+        $sourcesize = @filesize($realpath);
+        if ($sourcesize === 0) {
+            throw new moodle_exception(
+                'error_backup_empty',
+                'block_simple_restore',
+                '',
+                $data->fileid
+            );
         }
 
         copy($realpath, $data->to_path);
@@ -62,6 +134,7 @@ abstract class simple_restore_utils {
             return array();
         }
         $backadelpath = $CFG->dataroot . $backadelpath;
+
         $bysearch = function ($file) use ($search) {
             return preg_match("/{$search}/i", $file);
         };
@@ -69,8 +142,10 @@ abstract class simple_restore_utils {
             $backadel = new stdClass;
             $backadel->id = $file;
             $backadel->filename = $file;
+            $backadel->filepath = $backadelpath . $file;
             $backadel->filesize = filesize($backadelpath . $file);
             $backadel->timemodified = filemtime($backadelpath . $file);
+
             return $backadel;
         };
         $potentials = array_filter(scandir($backadelpath), $bysearch);
@@ -83,48 +158,506 @@ abstract class simple_restore_utils {
         if (empty($crit)) {
             return "";
         }
-        $search = $crit == 'username' ? '_' . $USER->username : $course->{$crit};
+        if ($crit == 'username') {
+            // Backadel filenames embed only the bare local-part of the username
+            // (e.g. "_lafry_" / "_lafry."), NOT the full email-style username
+            // ("_lafry@lsu.edu_") that LSU adopted later. Strip the @domain so
+            // the regex matches both legacy bare usernames and new email-style
+            // ones. preg_quote() guards against regex metacharacters in usernames.
+            // Bug-040: was previously emitting "_lafry@lsu.edu[_\.]" which never matched.
+            $local = self::username_local_part((string) $USER->username);
+            $search = '_' . preg_quote($local, '/');
+        } else {
+            $search = preg_quote((string) $course->{$crit}, '/');
+        }
         return "{$search}[_\.]";
     }
 
-    public static function backup_list($data) {
-        global $DB, $OUTPUT;
-        if (isset($data->shortname)) {
-            $search = self::backadel_shortname($data->shortname);
-        } else {
-            $course = $DB->get_record('course', array('id' => $data->courseid));
-            $search = self::backadel_criterion($course);
+    /**
+     * Strip @domain from an email-style username, preserving non-email usernames as-is.
+     *
+     * Both Backadel filenames and the catalogue's instructors JSON store the
+     * bare local-part (e.g. "lafry"), so any code path that compares a
+     * Moodle $USER->username against either source must normalise first.
+     *
+     * @param string $username Raw username (may or may not contain '@').
+     * @return string Local-part (substring before first '@') or original string if no '@'.
+     */
+    public static function username_local_part(string $username): string {
+        $local = strstr($username, '@', true);
+        return $local !== false ? $local : $username;
+    }
+
+    /**
+     * Lookup distinct catalogue years / semesters matching a Moodle course shortname
+     * and/or an instructor username.
+     *
+     * Bug-049: when a user's catalogue rows are predominantly blueprint files
+     * (shortname is empty / does not match the Moodle course shortname), the
+     * shortname-only predicate yielded 0 rows and the Year / Semester filter
+     * dropdowns came up empty. Mirror the OR-shortname-OR-instructor pattern
+     * used by {@see query_catalogue_rows()} so the filter options reflect the
+     * same row-set the list will actually display.
+     *
+     * Rows where year IS NULL (blueprint rows) are correctly excluded from
+     * the Year fieldset — blueprints have no academic year. If a user has
+     * ONLY blueprints, the Year filter will (correctly) remain empty; the
+     * teaching-course rows surfaced via instructor match still contribute
+     * their years.
+     *
+     * @param string $shortname Course shortname (LIKE predicate on `shortname`). Empty = skip.
+     * @param string $instructorusername Optional username for instructors-JSON LIKE match.
+     * @return array{years: int[], semesters: string[]}
+     */
+    private static function get_catalogue_filter_options(
+        string $shortname,
+        string $instructorusername = ''
+    ): array {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+            return ['years' => [], 'semesters' => []];
         }
+
+        $where = [];
+        $params = [];
+
+        if ($shortname !== '') {
+            $where[] = $DB->sql_like('shortname', ':sn', false, true, false);
+            $params['sn'] = $DB->sql_like_escape($shortname);
+        }
+
+        if ($instructorusername !== '') {
+            // Match a JSON array literal entry: instructors stores ["lafry"], so
+            // search for the quoted local-part. LIKE keeps this DB-portable
+            // (avoids JSON_CONTAINS / JSON_QUOTE which differ between PG and MariaDB).
+            $local = self::username_local_part($instructorusername);
+            if ($local !== '') {
+                $where[] = $DB->sql_like('instructors', ':instr', false, true, false);
+                $params['instr'] = '%"' . $DB->sql_like_escape($local) . '"%';
+            }
+        }
+
+        // Refuse to run an unbounded scan: at least one predicate must be present.
+        if (empty($where)) {
+            return ['years' => [], 'semesters' => []];
+        }
+
+        $wheresql = '(' . implode(' OR ', $where) . ')';
+
+        $years = $DB->get_fieldset_sql(
+            "SELECT DISTINCT year
+               FROM {block_backadel_catalogue}
+              WHERE {$wheresql}
+                AND year IS NOT NULL
+           ORDER BY year DESC",
+            $params
+        );
+        if (!$years) {
+            $years = [];
+        }
+        $semesters = $DB->get_fieldset_sql(
+            "SELECT DISTINCT semester
+               FROM {block_backadel_catalogue}
+              WHERE {$wheresql}
+                AND semester IS NOT NULL
+                AND semester <> ''
+           ORDER BY semester ASC",
+            $params
+        );
+        if (!$semesters) {
+            $semesters = [];
+        }
+
+        return [
+            'years' => array_map('intval', $years),
+            'semesters' => array_values(array_map(static fn($s): string => (string) $s, $semesters)),
+        ];
+    }
+
+    /**
+     * Query the block_backadel_catalogue table for backups matching a course shortname (optionally filtered).
+     *
+     * Returns an empty array if the table does not exist or no rows match.
+     *
+     * Bug-040: when $instructorusername is provided AND the shortname predicate
+     * yields no rows, retries the same query OR-matching against the instructors
+     * JSON column (e.g. `["lafry"]`). The instructor match uses LIKE on a
+     * quoted local-part of the username for DB portability (PG / MariaDB).
+     *
+     * @param string $shortname Course shortname to look up. Empty string skips the shortname predicate.
+     * @param array $filters Optional keys: q, year (int), semester, coursetype, status ('' = any status).
+     * @param string $instructorusername Current user's username — falls back to instructor-match when shortname yields 0 rows.
+     * @return array Normalised backup objects with id, filename, filesize, timemodified, year, coursetype.
+     */
+    private static function backups_from_catalogue(
+        string $shortname,
+        array $filters = [],
+        string $instructorusername = ''
+    ): array {
+        global $DB;
+        if (!$DB->get_manager()->table_exists('block_backadel_catalogue')) {
+            return [];
+        }
+        // Need at least one identifier to find rows: either a shortname or a username.
+        if ($shortname === '' && $instructorusername === '') {
+            return [];
+        }
+        $rows = self::query_catalogue_rows($shortname, $filters);
+
+        // Fallback: catalogue rows for this instructor regardless of course shortname.
+        // The catalogue's `instructors` column is a JSON array of bare local-parts
+        // (`["lafry"]`). When a teacher's course has no shortname-matching catalogue
+        // rows (the common case — teacher course "2024 Fall LA 1203 for Charles
+        // Fryling" never matches catalogue shortname "LA-1203"), surface their files
+        // by matching the instructor field instead. Catalogue shortname is the
+        // preferred predicate; instructor match supplements it.
+        if (empty($rows) && $instructorusername !== '') {
+            $rows = self::query_catalogue_rows('', $filters, $instructorusername);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Internal: build & run the catalogue SQL with the given predicates.
+     *
+     * Either $shortname or $instructorusername must be non-empty; the caller
+     * (backups_from_catalogue) is responsible for choosing which to pass.
+     *
+     * @param string $shortname Course shortname (LIKE predicate on cat.shortname). Empty = skip.
+     * @param array $filters Same shape as {@see backups_from_catalogue}.
+     * @param string $instructorusername Optional username for instructors-JSON LIKE match.
+     * @return array Normalised backup objects (see backups_from_catalogue).
+     */
+    private static function query_catalogue_rows(
+        string $shortname,
+        array $filters = [],
+        string $instructorusername = ''
+    ): array {
+        global $DB;
+
+        $where = [];
+        $params = [];
+
+        if ($shortname !== '') {
+            $where[] = $DB->sql_like('cat.shortname', ':sn', false, true, false);
+            $params['sn'] = $DB->sql_like_escape($shortname);
+        }
+
+        if ($instructorusername !== '') {
+            // Match a JSON array literal entry: instructors stores ["lafry"], so
+            // search for the quoted local-part. LIKE keeps this DB-portable
+            // (avoids JSON_CONTAINS / JSON_QUOTE which differ between PG and MariaDB).
+            //
+            // Bug-047: blueprint catalogue rows (pattern=storage_legacy, e.g.
+            // `MaterialsCourse_AAAS_2000_tsimpson_<ts>.zip`) embed the instructor's
+            // username in the slug/shortname/filename rather than in the
+            // instructors JSON (which is `[]` for that pattern). Also OR-match
+            // shortname and filename so an instructor sees their own blueprint
+            // backups in the catalogue path (and therefore gets the catalogue id
+            // needed for the Download button).
+            $local = self::username_local_part($instructorusername);
+            if ($local !== '') {
+                $instrlike = $DB->sql_like('cat.instructors', ':instrjson',  false, true, false);
+                $shortlike = $DB->sql_like('cat.shortname',   ':instrshort', false, true, false);
+                $filelike  = $DB->sql_like('cat.filename',    ':instrfile',  false, true, false);
+                $where[] = "({$instrlike} OR {$shortlike} OR {$filelike})";
+                $escaped = $DB->sql_like_escape($local);
+                $params['instrjson']  = '%"' . $escaped . '"%';
+                // Word-boundary on the slug / filename: leading `_` is a literal
+                // underscore (not a LIKE single-char wildcard), so escape it with
+                // the default backslash escape char that sql_like() emits.
+                // shortname end form: `_tsimpson` at end of slug.
+                $params['instrshort'] = '%\\_' . $escaped;
+                // filename form: `_tsimpson_<ts>.zip` (underscore on both sides).
+                $params['instrfile']  = '%\\_' . $escaped . '\\_%';
+            }
+        }
+
+        // Refuse to run an unbounded scan: at least one predicate must be present.
+        if (empty($where)) {
+            return [];
+        }
+
+        $statusflt = isset($filters['status']) ? (string) $filters['status'] : 'available';
+        if ($statusflt !== '') {
+            $where[] = 'cat.status = :st';
+            $params['st'] = $statusflt;
+        }
+
+        $yearflt = isset($filters['year']) ? (int) $filters['year'] : 0;
+        if ($yearflt > 0) {
+            $where[] = 'cat.year = :year';
+            $params['year'] = $yearflt;
+        }
+
+        $semflt = isset($filters['semester']) ? trim((string) $filters['semester']) : '';
+        if ($semflt !== '') {
+            $where[] = 'cat.semester = :semester';
+            $params['semester'] = $semflt;
+        }
+
+        $effectivecoursetype = \block_backadel\local\sql_helpers::effective_coursetype_sql('cat');
+
+        $ctype = isset($filters['coursetype']) ? (string) $filters['coursetype'] : '';
+        if (in_array($ctype, ['teaching', 'blueprint', 'other'], true)) {
+            $where[] = "{$effectivecoursetype} = :coursetype";
+            $params['coursetype'] = $ctype;
+        }
+
+        $needle = isset($filters['q']) ? trim((string) $filters['q']) : '';
+        if ($needle !== '') {
+            $likeescaped = '%' . $DB->sql_like_escape($needle) . '%';
+            $likefn = $DB->sql_like('cat.filename', ':qf', false, true, false);
+            $liked = $DB->sql_like('COALESCE(cat.dept, \'\')', ':qd', false, true, false);
+            $likec = $DB->sql_like('COALESCE(cat.course_num, \'\')', ':qc', false, true, false);
+            $where[] = "({$likefn} OR {$liked} OR {$likec})";
+            $params['qf'] = $likeescaped;
+            $params['qd'] = $likeescaped;
+            $params['qc'] = $likeescaped;
+        }
+
+        $wheresql = implode(' AND ', $where);
+
+        $sql = "SELECT cat.id, cat.filename, cat.file_size, cat.backup_ts, cat.year,
+                       cat.semester, cat.dept, cat.course_num, cat.pattern, cat.status,
+                       COALESCE({$effectivecoursetype}, 'other') AS coursetype
+                  FROM {block_backadel_catalogue} cat
+                 WHERE {$wheresql}
+              ORDER BY CASE COALESCE({$effectivecoursetype}, 'other')
+                           WHEN 'blueprint' THEN 0
+                           WHEN 'teaching' THEN 1
+                           ELSE 2
+                       END ASC,
+                       cat.backup_ts DESC";
+
+        $rows = $DB->get_records_sql($sql, $params);
+
+        return array_values(array_map(static function ($row) {
+            // Bug-048: when both the stored year column and the parsed
+            // backup_ts are empty we leave year as '' rather than fall back
+            // to date('Y', 0) which would produce "1969"/"1970" depending
+            // on server timezone. Downstream rendering treats '' as the
+            // "Other backups" bucket / em-dash in the Year column.
+            $backupts = (int) ($row->backup_ts ?? 0);
+            $year = isset($row->year) && (string) $row->year !== ''
+                ? (string) $row->year
+                : ($backupts > 0 ? (string) date('Y', $backupts) : '');
+            return (object)[
+                'id'           => (int) $row->id,
+                'filename'     => (string) ($row->filename ?? ''),
+                'filesize'     => (int) ($row->file_size ?? 0),
+                'timemodified' => $backupts,
+                'year'         => $year,
+                'semester'     => (string) ($row->semester ?? ''),
+                'dept'         => (string) ($row->dept ?? ''),
+                'course_num'   => (string) ($row->course_num ?? ''),
+                'pattern'      => (string) ($row->pattern ?? ''),
+                'status'       => (string) ($row->status ?? 'available'),
+                'coursetype'   => (string) ($row->coursetype ?? 'other'),
+            ];
+        }, $rows ?: []));
+    }
+
+    /**
+     * Bug-050: Partition catalogue/backup rows by their {@code coursetype} into the three
+     * sections rendered on the Restore Courses page.
+     *
+     * - 'blueprint' — Master/template courses (no academic year/semester).
+     * - 'teaching'  — Live-course backups that fit into year buckets.
+     * - 'other'     — Anything else (including unknown/missing coursetype, archived stubs, etc.).
+     *
+     * Match is case-insensitive on the coursetype field. Within each bucket the input order
+     * is preserved (the caller controls overall ordering via the SQL ORDER BY clause).
+     *
+     * @param array $rows Rows from {@see backups_from_catalogue()} / {@see merge_backup_rows()}.
+     * @return array{blueprint: array, teaching: array, other: array}
+     */
+    public static function partition_by_coursetype(array $rows): array {
+        $result = ['blueprint' => [], 'teaching' => [], 'other' => []];
+        foreach ($rows as $row) {
+            $ctype = strtolower((string) ($row->coursetype ?? ''));
+            if ($ctype === 'blueprint') {
+                $result['blueprint'][] = $row;
+            } else if ($ctype === 'teaching') {
+                $result['teaching'][] = $row;
+            } else {
+                $result['other'][] = $row;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Bug-050: Build the opening HTML for a {@code <details>}/{@code <summary>} collapsible
+     * section used by the Blueprints / Other backup groups. Native HTML — no JavaScript
+     * required to open/close. The caller is responsible for closing the wrapper with a
+     * matching {@code </details>}.
+     *
+     * Moodle's {@see html_writer::start_tag()} treats every attribute value as a string and
+     * therefore can't cleanly emit a bare boolean attribute like {@code <details open>}; we
+     * hand-roll the opening tag for that reason. id/class/title/helptext are escaped via
+     * {@see s()} for safety.
+     *
+     * @param string $id          DOM id for the {@code <details>} element.
+     * @param string $title       Human-readable section title.
+     * @param string $helptext    Short inline help text. Empty string suppresses.
+     * @param int    $count       Item count rendered as a Bootstrap badge.
+     * @param bool   $open        When true, emit {@code <details open>} (initially expanded).
+     * @return string Opening markup (caller must append rows and close with </details>).
+     */
+    public static function render_collapsible_section_open(
+        string $id,
+        string $title,
+        string $helptext,
+        int $count,
+        bool $open
+    ): string {
+        $openattr = $open ? ' open' : '';
+        $badge = html_writer::tag(
+            'span',
+            (string) $count,
+            ['class' => 'badge bg-secondary ms-2']
+        );
+        $help = $helptext !== ''
+            ? html_writer::tag('small', s($helptext), ['class' => 'text-muted ms-2 fw-normal'])
+            : '';
+        $summary = html_writer::tag(
+            'summary',
+            html_writer::tag('span', s($title)) . $badge . $help,
+            ['class' => 'h4 d-flex align-items-center py-2']
+        );
+        return '<details id="' . s($id) . '" class="sr-collapsible mt-3"' . $openattr . '>' . $summary;
+    }
+
+    /**
+     * Merge catalogue + filesystem result sets, deduping by basename.
+     *
+     * Catalogue rows are richer (year, semester, dept, coursetype, status, file
+     * id) and win on collision; filesystem rows only fill in basenames that the
+     * catalogue does not yet cover (e.g. files not yet ingested by migration).
+     * Result preserves catalogue ordering first, then any extra filesystem rows.
+     *
+     * @param array $catalogue Rows from {@see backups_from_catalogue}.
+     * @param array $filesystem Rows from {@see backadel_backups}.
+     * @return array Merged unique-by-basename row list.
+     */
+    public static function merge_backup_rows(array $catalogue, array $filesystem): array {
+        $seen = [];
+        $merged = [];
+        foreach ($catalogue as $row) {
+            $base = basename((string) ($row->filename ?? ''));
+            if ($base === '' || isset($seen[$base])) {
+                continue;
+            }
+            $seen[$base] = true;
+            $merged[] = $row;
+        }
+        foreach ($filesystem as $row) {
+            $base = basename((string) ($row->filename ?? ''));
+            if ($base === '' || isset($seen[$base])) {
+                continue;
+            }
+            $seen[$base] = true;
+            $merged[] = $row;
+        }
+        return $merged;
+    }
+
+    public static function backup_list($data) {
+        global $DB, $USER;
+        $course = isset($data->shortname)
+            ? (object)['shortname' => $data->shortname]
+            : $DB->get_record('course', ['id' => $data->courseid]);
+
+        $filters = [
+            'q' => optional_param('q', '', PARAM_TEXT),
+            'year' => optional_param('year', 0, PARAM_INT),
+            'semester' => optional_param('semester', '', PARAM_TEXT),
+            'coursetype' => optional_param('coursetype', '', PARAM_ALPHA),
+            'status' => optional_param('status', 'available', PARAM_ALPHA),
+        ];
+        $data->catalogue_filters = $filters;
+
+        // In admin mode $data->shortname is the course code entered in the search form;
+        // $course is the site course (id=SITEID) whose shortname is irrelevant for catalogue lookup.
+        $catalogueshort = (isset($data->shortname) && (string) $data->shortname !== '')
+            ? (string) $data->shortname
+            : (string) ($course->shortname ?? '');
+        // Bug-040: in teacher mode (no admin shortname filter) also OR-match the
+        // catalogue against the current user's username, so instructors find
+        // their own historical backups even when no catalogue row's shortname
+        // matches their Moodle course shortname. Admin mode keeps shortname-only.
+        $instructorusername = isset($data->shortname) ? '' : (string) $USER->username;
+        // Bug-049: pass the instructor username so the Year/Semester filter
+        // dropdowns match the same OR-shortname-OR-instructor row-set the list
+        // body queries. Without this, teachers with mostly-blueprint backups
+        // see "All years / All semesters" with no actual options.
+        $catopts = self::get_catalogue_filter_options($catalogueshort, $instructorusername);
+
+        $yearopts = [
+            0 => get_string('filter_all_years', 'block_simple_restore'),
+        ];
+        foreach ($catopts['years'] as $y) {
+            $iy = (int) $y;
+            $yearopts[$iy] = (string) $iy;
+        }
+        $data->catalogue_years = $yearopts;
+
+        $semopts = [
+            '' => get_string('filter_all_semesters', 'block_simple_restore'),
+        ];
+        foreach ($catopts['semesters'] as $sem) {
+            $semopts[$sem] = $sem;
+        }
+        $data->catalogue_semesters = $semopts;
+
         $list = new stdClass;
         $list->header = get_string('semester_backups', 'block_simple_restore');
-        $list->backups = self::backadel_backups($search);
-        $list->order = 10;
-        $list->html = '';
-        if (!empty($list->backups)) {
-            $list->html = $OUTPUT->heading($list->header);
-            $list->html .= self::build_table(
-                $list->backups,
-                'backadel',
-                $data->courseid,
-                $data->restore_to
-            );
+        $list->order  = 10;
+        $list->html   = '';
+
+        // Bug-040: merge catalogue rows + filesystem rows instead of either/or.
+        // Catalogue rows (richer metadata: year/semester/dept/coursetype/status)
+        // win on key collisions; filesystem rows fill in any gaps for files that
+        // haven't been ingested yet. Dedupe by basename so a file present on
+        // both sides shows once. The list is tagged as "catalogue" if any
+        // catalogue row participates so the UI gets the catalogue render path.
+        $cataloguerows = self::backups_from_catalogue($catalogueshort, $filters, $instructorusername);
+
+        $search = isset($data->shortname)
+            ? self::backadel_shortname($data->shortname)
+            : self::backadel_criterion($course);
+        $fsrows = ($search !== '') ? self::backadel_backups($search) : [];
+
+        $merged = self::merge_backup_rows($cataloguerows, $fsrows);
+
+        if (!empty($merged)) {
+            $list->backups = $merged;
+            // Tag as catalogue when catalogue rows were involved so the UI uses
+            // the year-bucketed render path; otherwise it's a pure filesystem list.
+            $list->source = !empty($cataloguerows) ? 'catalogue' : 'semester_backadel';
+        } else {
+            $list->backups = [];
+            $list->source = 'semester_backadel';
         }
+
         $data->lists[] = $list;
 
         return (
-            self::course_backups($data) and
+            self::course_backups($data) &&
             self::user_backups($data)
         );
     }
 
     public static function course_backups($data) {
         if (isset($data->shortname)) {
-            $courses = simple_restore_utils::filter_courses($data->shortname);
+            $courses = self::filter_courses($data->shortname);
         } else {
             $courses = enrol_get_my_courses();
         }
 
-        $to_html = function($in, $course) use ($data) {
+        $tohtml = function($in, $course) use ($data) {
             global $DB, $OUTPUT;
 
             $ctx = context_course::instance($course->id);
@@ -136,7 +669,9 @@ abstract class simple_restore_utils {
                 'mimetype' => 'application/vnd.moodle.backup'
             ), 'timemodified DESC');
 
-            if (empty($backups)) return $in;
+            if (empty($backups)) {
+                return $in;
+            }
 
             return $in . (
                 $OUTPUT->heading($course->shortname) .
@@ -150,7 +685,7 @@ abstract class simple_restore_utils {
         };
 
         $list = new stdClass;
-        $list->html = array_reduce($courses, $to_html, '');
+        $list->html = array_reduce($courses, $tohtml, '');
         $list->backups = !empty($list->html);
         $list->order = 100;
 
@@ -162,19 +697,20 @@ abstract class simple_restore_utils {
     public static function user_backups($data) {
         global $USER, $DB, $PAGE, $OUTPUT;
 
-        $user_context = context_user::instance($USER->id);
+        $usercontext = context_user::instance($USER->id);
         $context = context_course::instance($data->courseid);
 
         $params = array(
             'component' => 'user',
             'filearea' => 'backup',
-            'contextid' => $user_context->id,
+            'contextid' => $usercontext->id,
         );
-        $correct_files = function($file) { return $file->filename != '.'; };
-        $backup_files = $DB->get_records('files', $params);
+        $correctfiles = function($file) { return $file->filename != '.';
+        };
+        $backupfiles = $DB->get_records('files', $params);
 
         $params = array(
-            'contextid' => $user_context->id,
+            'contextid' => $usercontext->id,
             'currentcontext' => $context->id,
             'filearea' => 'backup',
             'component' => 'user',
@@ -186,7 +722,7 @@ abstract class simple_restore_utils {
 
         $list = new stdClass;
         $list->header = get_string('choosefilefromuserbackup', 'backup');
-        $list->backups = array_filter($backup_files, $correct_files);
+        $list->backups = array_filter($backupfiles, $correctfiles);
         $list->order = 200;
 
         $list->html = (
@@ -195,7 +731,7 @@ abstract class simple_restore_utils {
         );
 
         if ($list->backups) {
-            $list->html .= simple_restore_utils::build_table(
+            $list->html .= self::build_table(
                 $list->backups,
                 'user',
                 $data->courseid,
@@ -213,6 +749,7 @@ abstract class simple_restore_utils {
         return has_capability("block/simple_restore:{$cap}", $context);
     }
 
+    // phpcs:ignore PSR2.Methods.MethodDeclaration.Underscore -- legacy public API, renaming would break 18+ call sites.
     public static function _s($name, $a=null) {
         return get_string($name, 'block_simple_restore', $a);
     }
@@ -246,9 +783,9 @@ abstract class simple_restore_utils {
 
     public static function filter_courses($shortname) {
         global $DB;
-        $safeshortname = addslashes($shortname);
-        $select = "shortname LIKE '%{$safeshortname}%'";
-        return $DB->get_records_select('course', $select);
+        $likesql = $DB->sql_like('shortname', ':sn', false, true, false);
+        $params = ['sn' => '%' . $DB->sql_like_escape($shortname) . '%'];
+        return $DB->get_records_select('course', $likesql, $params);
     }
 
     public static function heading($restoreto) {
@@ -263,7 +800,7 @@ abstract class simple_restore_utils {
     }
 
     public static function prep_restore($fileid, $name, $courseid) {
-        global $USER, $CFG;
+        global $USER;
 
         // Get the includes.
         self::includes();
@@ -273,14 +810,16 @@ abstract class simple_restore_utils {
         }
 
         $filename = restore_controller::get_tempdir_name($courseid, $USER->id);
-        $tempdir = isset($CFG->backuptempdir) ? $CFG->backuptempdir : $CFG->tempdir;
-        $tempdir = substr($tempdir, -1) === '/' ? $tempdir : $tempdir . '/';
-        $pathname = $tempdir . $filename;
+        // Must match backup/util/ui/restore_ui_stage.class.php (CONFIRM stage), which
+        // resolves archives via make_backup_temp_directory(''), not raw $CFG->tempdir.
+        $backuptempdir = make_backup_temp_directory('');
+        $pathname = $backuptempdir . '/' . $filename;
 
         $data = new stdClass;
         $data->userid = $USER->id;
         $data->courseid = $courseid;
         $data->fileid = $fileid;
+        $data->name = $name;
         $data->to_path = $pathname;
         $data->filename = $filename;
 
@@ -290,6 +829,19 @@ abstract class simple_restore_utils {
 
         if (empty($data->filename)) {
             throw new Exception(self::_s('no_file'));
+        }
+
+        // Final size check on the staged temp copy — covers user-area backups
+        // and catches a corrupted copy that may have ended up zero bytes.
+        if (file_exists($data->to_path) && @filesize($data->to_path) === 0) {
+            // Clean up the empty temp copy so it doesn't linger.
+            @unlink($data->to_path);
+            throw new moodle_exception(
+                'error_backup_empty',
+                'block_simple_restore',
+                '',
+                $data->fileid
+            );
         }
 
         return $filename;
@@ -366,7 +918,7 @@ abstract class simple_restore_utils {
             $keepgroups = (bool) get_config('simple_restore', 'keep_groups_and_groupings');
 
             // No need to re-enroll.
-            if ($keepgroups and $keepenrollments) {
+            if ($keepgroups && $keepenrollments) {
                 $enrolinstances = $DB->get_records('enrol', array(
                     'courseid' => $oldcourse->id,
                     'enrol' => 'ues'
@@ -401,29 +953,59 @@ abstract class simple_restore_utils {
 
 class archive_restore_utils extends simple_restore_utils {
     /**
-     * Get course name and category from filename.
+     * Get course display name and category name from a backup archive filename.
      *
-     * NB: this function expects files from backadel whose names
-     * begin as 'backadel-', for example:
-     * backup-moodle2-course-2-2014_spring_tst2_2011_for_instructor_four-20140407-1539.mbz
+     * Legacy names prefixed with backadel- use the original underscore/hyphen heuristic.
+     * Other names are resolved via {@see \block_backadel\local\filename_parser::parse()}.
+     * Unknown or unparseable names return [null, null]; callers should substitute defaults.
      *
-     * @param string $filename
+     * @param string $filename Archive basename or path
+     * @return array{0: ?string, 1: ?string} Fullname and Moodle course category name
      */
     public static function coursedata_from_filename($filename) {
         $prefix = 'backadel';
         if (substr($filename, 0, strlen($prefix)) == $prefix) {
-            $filename = substr($filename, strlen($prefix) + 1);
-        } else {
-            // TODO - do something better than throw an error if it isn't a backadel file.
-            // Consider restricting the choice of files in the first place!
-            throw new exception("Archive Restore does not support filenames other than 'backadel-*'");
+            $stripped = substr($filename, strlen($prefix) + 1);
+            $chunks     = explode('_', $stripped);
+            $meta       = $chunks[0];
+            $metachunks = explode('-', $meta);
+            $fullname   = implode(' ', $metachunks);
+            $category   = $metachunks[2];
+
+            return array($fullname, $category);
         }
 
-        $chunks     = explode('_', $filename);
-        $meta       = $chunks[0];
-        $metachunks = explode('-', $meta);
-        $fullname   = implode(' ', $metachunks);
-        $category   = $metachunks[2];
+        $parsed = \block_backadel\local\filename_parser::parse($filename);
+        if ($parsed === null || ($parsed['pattern'] ?? '') === 'unknown') {
+            return array(null, null);
+        }
+
+        $shortnamehint = $parsed['shortname_hint'] ?? null;
+        $dept = $parsed['dept'] ?? null;
+        $coursenum = $parsed['course_num'] ?? null;
+        $year = $parsed['year'] ?? null;
+        $semester = $parsed['semester'] ?? null;
+
+        $fullname = null;
+        if (is_string($shortnamehint) && $shortnamehint !== '') {
+            $fullname = $shortnamehint;
+        } else if (is_string($dept) && $dept !== '' && is_string($coursenum) && $coursenum !== '') {
+            $fullname = trim($dept . ' ' . $coursenum);
+        }
+        if ($fullname === null || $fullname === '') {
+            $fullname = pathinfo($filename, PATHINFO_FILENAME);
+        }
+
+        $category = null;
+        if ($year !== null && is_string($semester) && $semester !== '') {
+            $category = $semester . ' ' . $year;
+        } else if (is_string($semester) && $semester !== '') {
+            $category = $semester;
+        }
+
+        if ($category === null || $category === '') {
+            $category = 'Archive';
+        }
 
         return array($fullname, $category);
     }
@@ -432,8 +1014,9 @@ class archive_restore_utils extends simple_restore_utils {
 class simple_restore {
     public $userid;
     public $course;
+    public $context;
     public $filename;
-    public $restoreto;
+    public $restore_to;
 
     public function __construct($course, $filename, $restoreto = 0) {
         if (empty($course)) {
@@ -504,7 +1087,7 @@ class simple_restore {
                     continue;
                 }
 
-                if ($adminsetting and isset($filedependencies[$settingname])) {
+                if ($adminsetting && isset($filedependencies[$settingname])) {
                     $basepath = $task->get_taskbasepath();
                     if (!file_exists("$basepath/$settingname.xml")) {
                         continue;
@@ -549,13 +1132,12 @@ class simple_restore {
     }
 
     public function execute() {
-        global $PAGE;
+        global $OUTPUT, $PAGE;
 
         simple_restore_utils::includes();
 
         $useasync = (bool)get_config('simple_restore', 'async_toggle');
 
-        // if (isset($useasync) && $useasync == "1") {
         if ($useasync) {
             // Prepare a progress bar which can display optionally during long-running
             // operations while setting up the UI.
@@ -601,9 +1183,9 @@ class simple_restore {
         if ($useasync) {
 
             // Get the renderer so we can use the backup status template.
-            $renderer = $PAGE->get_renderer('core','backup');
+            $renderer = $PAGE->get_renderer('core', 'backup');
 
-            $restore = new restore_ui($rc, array('contextid'=>$this->context->id));
+            $restore = new restore_ui($rc, array('contextid' => $this->context->id));
             $restore->set_progress_reporter($slowprogress);
 
             if (!$restore->is_independent()) {
@@ -619,7 +1201,7 @@ class simple_restore {
                         $rc->execute_precheck(true);
                     }
                     $precheckresults = $rc->get_precheck_results();
-                    if (!empty($results)) {
+                    if (!empty($precheckresults['errors'] ?? []) || !empty($precheckresults['warnings'] ?? [])) {
                         echo $renderer->precheck_notices($precheckresults);
                         echo $OUTPUT->continue_button(new moodle_url('/course/view.php', array('id' => $this->course->id)));
                         echo $OUTPUT->footer();
@@ -635,7 +1217,6 @@ class simple_restore {
             // Create adhoc task for restore.
             $restoreid = $restore->get_restoreid();
             $asynctask = new \core\task\asynchronous_restore_task();
-            $asynctask->set_blocking(false);
             $asynctask->set_userid($this->userid);
             $asynctask->set_custom_data(array('backupid' => $restoreid));
             \core\task\manager::queue_adhoc_task($asynctask);
@@ -811,6 +1392,14 @@ class simple_restore_selected_user {
 
     private static function selected($data) {
         global $DB, $CFG;
+        // Catalogue / Backadel restores already copied the archive onto $data->to_path in
+        // selected_backadel(). $data->fileid there is a catalogue PK or backadel basename —
+        // not an mdl_files.id — and colliding with an unrelated files row can overwrite or
+        // wipe the staged copy, yielding restore_ui_exception invalidrestorefile on CONFIRM.
+        if (isset($data->name) && ($data->name === 'catalogue' || $data->name === 'backadel')) {
+            return true;
+        }
+
         $backup = $DB->get_record('files', array('id' => $data->fileid));
         if (empty($backup)) {
             return true;
