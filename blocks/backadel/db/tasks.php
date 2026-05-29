@@ -35,5 +35,15 @@ $tasks = array(
         'month' => '*',
         'dayofweek' => '*',
         'disabled' => 0
+    ),
+    array(
+        'classname' => 'block_backadel\task\reresolve_teachers',
+        'blocking' => 0,
+        'minute' => '0',
+        'hour' => '*',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+        'disabled' => 0
     )
 );

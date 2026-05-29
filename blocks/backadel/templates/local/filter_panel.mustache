@@ -1,0 +1,56 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_backadel/local/filter_panel
+
+    Right-side offcanvas filter drawer triggered by a pill button aligned to the
+    top-right of the content area. The button is solid (btn-primary) when one or
+    more filters are active, and outlined (btn-outline-primary) otherwise.
+
+    Context variables:
+    * collapseid  - string, HTML id for the offcanvas element (no leading #)
+    * title       - string, label shown on the trigger button and drawer header
+    * activecount - int, number of active filters (0 = outlined button, no badge)
+    * formhtml    - raw trusted server-rendered moodleform HTML
+}}
+<div class="d-flex justify-content-end align-items-center gap-2 mb-3 block_backadel_filter_panel">
+    <button class="btn {{#activecount}}btn-primary{{/activecount}}{{^activecount}}btn-outline-primary{{/activecount}} d-flex align-items-center gap-2"
+            type="button"
+            data-bs-toggle="offcanvas"
+            data-bs-target="#{{collapseid}}"
+            aria-controls="{{collapseid}}">
+        {{#pix}}i/filter, core, {{title}}{{/pix}}
+        <span>{{title}}{{#activecount}} ({{activecount}}){{/activecount}}</span>
+    </button>
+    {{#extrabuttonshtml}}{{{extrabuttonshtml}}}{{/extrabuttonshtml}}
+</div>
+
+<div class="offcanvas offcanvas-end backadel-offcanvas-panel"
+     tabindex="-1"
+     id="{{collapseid}}"
+     aria-labelledby="{{collapseid}}-label">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title" id="{{collapseid}}-label">{{title}}</h5>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="offcanvas"
+                aria-label="{{#str}}closebuttontitle, core{{/str}}"></button>
+    </div>
+    <div class="offcanvas-body">
+        {{{formhtml}}}
+    </div>
+</div>
