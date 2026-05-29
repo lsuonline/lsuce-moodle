@@ -217,11 +217,60 @@ function core_myprofile_navigation(core_user\output\myprofile\tree $tree, $user,
         $tree->add_node($node);
     }
 
-    if (isset($identityfields['idnumber']) && $user->idnumber) {
-        $node = new core_user\output\myprofile\node('contact', 'idnumber', get_string('idnumber'), null, null,
-            s($user->idnumber));
-        $tree->add_node($node);
+    // BEGIN LSU MD-1761 Adding idnumber to profile.
+
+    // Limit to users who can view user identities.
+    $idnumberaccess = has_capability('moodle/site:viewuseridentity', $courseorsystemcontext);
+
+    // Make sure we can see the user OR we are the user.
+    if ($idnumberaccess || $iscurrentuser) {
+
+        // Set this for later.
+        $uidvalue = null;
+
+        // We are who we say we are and we have a standard non-89 idnumber.
+        if (isset($user->idnumber) &&
+            $user->idnumber != '' &&
+            !preg_match('/^89\d{7}$/', $user->idnumber)
+        ) {
+
+            // Set this.
+            $uidvalue = $user->idnumber;
+
+        // We are still a real person but we don't have an idnumber.
+        } else if ($user->idnumber == '' || preg_match('/^89\d{7}$/', $user->idnumber)) {
+
+            // Instantiate the DB manager.
+            $dbman = $DB->get_manager();
+
+            // Check to see if we have the students table.
+            if ($dbman->table_exists('enrol_wds_students')) {
+
+                // Get the Universal ID from the students table.
+                $uidvalue = $DB->get_field('enrol_wds_students', 'universal_id', ['userid' => $user->id]);
+            }
+
+            // We still don't have a Universal ID. Check to see if we have a teachers table.
+            if (empty($uidvalue) && $dbman->table_exists('enrol_wds_teachers')) {
+
+                // Get the Universal ID from the teachers table.
+                $uidvalue = $DB->get_field('enrol_wds_teachers', 'universal_id', ['userid' => $user->id]);
+            }
+        }
+
+        // Hopefully we now have a value.
+        if (!empty($uidvalue)) {
+
+            // Build the node.
+            $node = new core_user\output\myprofile\node('contact', 'idnumber', get_string('idnumber'),
+                null, null, $uidvalue);
+
+            // Output the node.
+            $tree->add_node($node);
+        }
     }
+
+    // END LSU MD-1761 Adding idnumber to profile.
 
     // Printing tagged interests. We want this only for full profile.
     if (empty($course) && ($interests = core_tag_tag::get_item_tags('core', 'user', $user->id))) {
