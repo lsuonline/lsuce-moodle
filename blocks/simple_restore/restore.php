@@ -24,6 +24,29 @@
 require_once('../../config.php');
 require_once($CFG->dirroot . '/blocks/simple_restore/lib.php');
 
+// Semester backup shortcut: copy Backadel file into restore temp, then continue as usual.
+$precourseid = optional_param('id', 0, PARAM_INT);
+$prefile = optional_param('file', '', PARAM_RAW);
+if ($precourseid > 0 && $prefile !== '') {
+    $precourse = get_course($precourseid);
+    require_login($precourse);
+    $precontext = context_course::instance($precourseid);
+    $prerestoreto = optional_param('restore_to', 0, PARAM_INT);
+    $archiveprecheck = get_config('simple_restore', 'is_archive_server') && $prerestoreto == 2 && $precourseid == SITEID;
+    if ($archiveprecheck) {
+        require_capability('block/simple_restore:canrestorearchive', context_system::instance());
+    } else {
+        require_capability('block/simple_restore:canrestore', $precontext);
+    }
+    $prefile = basename(str_replace('\\', '/', $prefile));
+    $tempfilename = simple_restore_utils::prep_restore($prefile, 'backadel', $precourseid);
+    redirect(new moodle_url('/blocks/simple_restore/restore.php', [
+        'contextid' => $precontext->id,
+        'filename' => $tempfilename,
+        'restore_to' => $prerestoreto,
+    ]));
+}
+
 $contextid = required_param('contextid', PARAM_INT);
 $filename = required_param('filename', PARAM_FILE);
 $restoreto = optional_param('restore_to', 0, PARAM_INT);
@@ -83,20 +106,69 @@ if (!$confirm) {
 $useasync = (bool)get_config('simple_restore', 'async_toggle');
 
 // This conditional returns html content for the ajax reponse.
-if ($confirm and data_submitted()) {
+// Bug-054: async mode redirects here via GET (confirm=1); data_submitted() is
+// false on GET, so we also fire when async is active and confirm is set.
+if ($confirm and ($useasync or data_submitted())) {
     echo $OUTPUT->header();
     echo $OUTPUT->heading($header);
     echo '<span class="restore_template_progress_hider">';
     try {
-        $restore->execute();
+        // Defense-in-depth: validate the staged backup file is non-empty before
+        // handing it to the restore engine. A 0-byte backup can otherwise
+        // produce a broken course shell that crashes the Snap renderer with
+        // "Call to a member function get_filename() on null".
+        // Same directory core restore_ui_stage_confirm uses (make_backup_temp_directory('')).
+        $stagedpath = make_backup_temp_directory('') . '/' . $filename;
+        if (file_exists($stagedpath) && @filesize($stagedpath) === 0) {
+            @unlink($stagedpath);
+            throw new moodle_exception(
+                'error_backup_empty',
+                'block_simple_restore',
+                '',
+                $filename
+            );
+        }
+
+        // Mirror sync mode (restore_confirm_form.php): CONFIRM stage reads optional_param('filename')
+        // with POST preferred over GET. Async lands via GET only; set POST so the staged name
+        // cannot diverge and matches what simple_restore already validated above.
+        $asyncpostedfilename = false;
+        if ($useasync) {
+            $_POST['filename'] = $filename;
+            $asyncpostedfilename = true;
+        }
+        try {
+            $restore->execute();
+        } finally {
+            if ($asyncpostedfilename) {
+                unset($_POST['filename']);
+            }
+        }
         if (!$useasync) {
             echo $OUTPUT->notification(
                 get_string('restoreexecutionsuccess', 'backup'), 'notifysuccess'
             );
         }
     } catch (Exception $e) {
-        $a = $e->getMessage();
-        echo $OUTPUT->notification(simple_restore_utils::_s('no_restore', $a));
+        // Log the full exception (message + stack trace) so admins can
+        // diagnose restore failures from the Moodle debug log. Teachers
+        // see only the friendly notification below.
+        debugging(
+            'block_simple_restore: restore failed for filename "' . $filename . '": '
+            . $e->getMessage() . "\n" . $e->getTraceAsString(),
+            DEBUG_DEVELOPER
+        );
+
+        // Show a friendlier notification that names the backup and points the
+        // user to their administrator. The raw exception message is included
+        // in parentheses for context, but framed by helpful copy.
+        $a = (object) [
+            'filename' => $filename,
+            'message'  => $e->getMessage(),
+        ];
+        echo $OUTPUT->notification(
+            simple_restore_utils::_s('no_restore_friendly', $a)
+        );
 
         // In case of an aborted archive restore, the 'new' course will have been deleted.
         $course->id = $archivemode == 1 ? 1 : $course->id;

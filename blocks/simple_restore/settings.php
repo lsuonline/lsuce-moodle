@@ -23,6 +23,29 @@
 
 defined('MOODLE_INTERNAL') || die;
 
+global $PAGE;
+
+/** @var admin_root $ADMIN */
+/** @var bool $hassiteconfig */
+
+if (!$hassiteconfig) {
+    return;
+}
+
+$pluginname = 'block_simple_restore';
+
+// Plugin-level category under "Block settings".
+$ADMIN->add('blocksettings', new admin_category(
+    'block_simple_restore_category',
+    new lang_string('pluginname', $pluginname)
+));
+
+// Place the pre-created $settings page under our category instead of the default
+// blocksettings root. Override the display name (block loader sets it to the
+// plugin display name "Simple Restore") with a clearer label.
+$settings->visiblename = new lang_string('nav_settings', $pluginname);
+$ADMIN->add('block_simple_restore_category', $settings);
+
 // Restore general settings.
 if ($ADMIN->fulltree) {
 
@@ -153,3 +176,14 @@ if ($ADMIN->fulltree) {
         )
     );
 }
+
+// External page: Restore Courses — Backadel catalogue admin view (MD-2189 wave G).
+$ADMIN->add('block_simple_restore_category', new admin_externalpage(
+    'block_simple_restore_list',
+    new lang_string('nav_list', $pluginname),
+    new moodle_url('/blocks/backadel/catalogue.php'),
+    'block/backadel:viewresults'
+));
+
+// Prevent the block manager from double-registering $settings under 'blocksettings'.
+$settings = null;

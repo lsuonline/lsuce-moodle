@@ -15,14 +15,21 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package   block_simple_restore
- * @copyright Philip Cali, Adam Zapletal, Jason Peak, Robert Russo, Dave Elliott, Chad Mazilly
- * @copyright Louisiana State University
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Message providers for Simple Restore (Bug-079).
+ *
+ * @package    block_simple_restore
+ * @copyright  2026 Louisiana State University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2026051504;
-$plugin->requires = 2018051700;
-$plugin->component = 'block_simple_restore';
+$messageproviders = [
+    'restore_notification' => [
+        'capability' => '',
+        'defaults'   => [
+            'popup' => MESSAGE_PERMITTED + MESSAGE_DEFAULT_ENABLED,
+            'email' => MESSAGE_PERMITTED,
+        ],
+    ],
+];
