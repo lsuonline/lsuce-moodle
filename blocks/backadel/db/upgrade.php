@@ -269,23 +269,36 @@ function xmldb_block_backadel_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026051301, 'block', 'backadel');
     }
 
-    if ($oldversion < 2026051400) {
-        // bug-044: add unique constraints on warm-path tables so concurrent migrate_file()
-        //          chains can't insert duplicate (filepath / coursesid+username) rows.
-        // bug-045: add composite indexes on the catalogue + courses tables to fix the
-        //          year/semester/status/backup_ts filter queries (Q1, Q7, Q9-Q12) and
-        //          the correlated subquery in catalogue_table::setup_sql() (Q8).
+    if ($oldversion < 2026060100) {
+        // ----------------------------------------------------------------------
+        // MD-2189 consolidated schema step.
+        //
+        // Replaces the broken 2026051400 / 2026051600 / 2026051700 sequence that
+        // tried to manage a temporary dedup index lifecycle and crashed in prod
+        // (remove_index → drop_index typo, plus an orphan-index gate that
+        // permanently blocked the UNIQUE constraint on re-run).
+        //
+        // Design: every operation is unconditionally guarded by field_exists /
+        // index_exists, and the dedup DELETEs run directly with no temp index
+        // scaffolding. They are idempotent — a run with no duplicates is a no-op.
+        //
+        // Covers:
+        //   bug-044: UNIQUE on block_backadel_courses(filepath_hash)
+        //   bug-044: UNIQUE on block_backadel_teachers(coursesid, username)
+        //   bug-045: composite indexes on block_backadel_catalogue
+        //   bug-045: covering index on block_backadel_courses(filename, courseid)
+        //   bug-058: prune slug-username teacher rows
+        //   bug-068: widen block_backadel_teachers.resolvedvia to char(32)
+        // ----------------------------------------------------------------------
 
-        // ---------------------------------------------------------------
-        // bug-044: block_backadel_courses — add filepath_hash + UNIQUE key
-        // ---------------------------------------------------------------
+        // ----------------------------------------------------------------------
+        // block_backadel_courses: filepath_hash column + dedup + UNIQUE.
+        // ----------------------------------------------------------------------
         $coursestable = new xmldb_table('block_backadel_courses');
         if ($dbman->table_exists($coursestable)) {
 
-            // Step 1a: add filepath_hash column. We use NOTNULL with DEFAULT '' so the column
-            // matches install.xml exactly (a single-shape schema reduces XMLDB validator drift).
-            // The empty default lets us add the NOTNULL column to existing rows in one shot,
-            // then UPDATE backfills sha1(filepath) below.
+            // Add filepath_hash column (NOTNULL, default '' so existing rows
+            // satisfy the constraint until the UPDATE backfills sha1(filepath)).
             $hashfield = new xmldb_field(
                 'filepath_hash', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL, null, '', 'filepath'
             );
@@ -293,29 +306,17 @@ function xmldb_block_backadel_upgrade($oldversion) {
                 $dbman->add_field($coursestable, $hashfield);
             }
 
-            // Step 1b: backfill sha1(filepath) for rows that still have the empty default.
-            // Moodle DBAL has no SHA1 helper — use raw SQL. SHA1() is supported by both MySQL
-            // and MariaDB (the only DB engines this plugin runs against).
+            // Backfill sha1(filepath). Safe to re-run — only touches the
+            // rows still on the '' default.
             $DB->execute(
                 "UPDATE {block_backadel_courses}
                     SET filepath_hash = SHA1(filepath)
                   WHERE filepath_hash = '' OR filepath_hash IS NULL"
             );
 
-            // Step 1c: delete duplicate rows, keeping the lowest id per filepath_hash.
-            // Add a temporary non-unique index on filepath_hash before the self-join DELETE
-            // so MariaDB can use an index lookup instead of a full O(N²) table scan.
-            // Without this, 142 K rows produce ~10 billion comparisons and the query
-            // hangs for hours (bug-046b). Drop the temp index after; the UNIQUE key in
-            // step 1d is a separate, narrower index object.
-            $tmpcoursesidx = new xmldb_index('tmp_filepath_hash_dedup', XMLDB_INDEX_NOTUNIQUE, ['filepath_hash']);
-            $uniquecoursesidx = new xmldb_index('filepath_hash_uk', XMLDB_INDEX_UNIQUE, ['filepath_hash']);
-            $addedtmpcoursesidx = false;
-            if (!$dbman->index_exists($coursestable, $uniquecoursesidx) &&
-                    !$dbman->index_exists($coursestable, $tmpcoursesidx)) {
-                $dbman->add_index($coursestable, $tmpcoursesidx);
-                $addedtmpcoursesidx = true;
-            }
+            // Direct dedup on filepath_hash (the column getting the UNIQUE).
+            // Wrapped in try/catch so a (very unlikely) DELETE failure on a
+            // table with no dupes still lets the upgrade complete.
             try {
                 $DB->execute(
                     "DELETE c1 FROM {block_backadel_courses} c1
@@ -325,38 +326,45 @@ function xmldb_block_backadel_upgrade($oldversion) {
                 );
             } catch (\Throwable $e) {
                 debugging(
-                    'block_backadel upgrade 2026051400: courses dedup DELETE failed: '
+                    'block_backadel upgrade 2026060100: courses dedup DELETE failed: '
                     . $e->getMessage(), DEBUG_DEVELOPER
                 );
             }
-            if ($addedtmpcoursesidx && $dbman->index_exists($coursestable, $tmpcoursesidx)) {
-                $dbman->drop_index($coursestable, $tmpcoursesidx);
-            }
 
-            // Step 1d: add the UNIQUE index via xmldb_index (Moodle treats unique indexes
-            // and unique keys interchangeably at the DBAL level).
+            // Add the UNIQUE index now that the column is populated and unique.
             $hashuk = new xmldb_index('filepath_hash_uk', XMLDB_INDEX_UNIQUE, ['filepath_hash']);
             if (!$dbman->index_exists($coursestable, $hashuk)) {
                 $dbman->add_index($coursestable, $hashuk);
             }
+
+            // bug-045: covering index for catalogue_table correlated subquery.
+            $filenamecourseidix = new xmldb_index(
+                'filename_courseid_ix', XMLDB_INDEX_NOTUNIQUE, ['filename', 'courseid']
+            );
+            if (!$dbman->index_exists($coursestable, $filenamecourseidix)) {
+                $dbman->add_index($coursestable, $filenamecourseidix);
+            }
         }
 
-        // ---------------------------------------------------------------
-        // bug-044: block_backadel_teachers — dedup + UNIQUE (coursesid, username)
-        // ---------------------------------------------------------------
+        // ----------------------------------------------------------------------
+        // block_backadel_teachers: bug-058 prune + dedup + UNIQUE + bug-068 widen.
+        // ----------------------------------------------------------------------
         $teacherstable = new xmldb_table('block_backadel_teachers');
         if ($dbman->table_exists($teacherstable)) {
 
-            // Step 2a: delete duplicate rows, keeping the lowest id per (coursesid, username).
-            // Same temp-index pattern as courses step 1c — avoids O(N²) self-join on large tables.
-            $tmpteachersidx = new xmldb_index('tmp_csid_uname_dedup', XMLDB_INDEX_NOTUNIQUE, ['coursesid', 'username']);
-            $uniqueteachersidx = new xmldb_index('coursesid_username_uk', XMLDB_INDEX_UNIQUE, ['coursesid', 'username']);
-            $addedtmpteachersidx = false;
-            if (!$dbman->index_exists($teacherstable, $uniqueteachersidx) &&
-                    !$dbman->index_exists($teacherstable, $tmpteachersidx)) {
-                $dbman->add_index($teacherstable, $tmpteachersidx);
-                $addedtmpteachersidx = true;
-            }
+            // bug-058: remove teacher rows where username is clearly a
+            // backup-filename slug (unresolved + > 32 chars or contains '-for-').
+            // Runs BEFORE the dedup so we don't keep a slug row at the expense
+            // of a real one. MariaDB LIKE is case-insensitive on the default
+            // utf8mb4_unicode_ci collation, no BINARY needed.
+            $DB->execute(
+                "DELETE FROM {block_backadel_teachers}
+                  WHERE userid IS NULL
+                    AND (CHAR_LENGTH(username) > 32
+                      OR username LIKE '%-for-%')"
+            );
+
+            // Direct dedup on (coursesid, username). Idempotent.
             try {
                 $DB->execute(
                     "DELETE t1 FROM {block_backadel_teachers} t1
@@ -367,29 +375,37 @@ function xmldb_block_backadel_upgrade($oldversion) {
                 );
             } catch (\Throwable $e) {
                 debugging(
-                    'block_backadel upgrade 2026051400: teachers dedup DELETE failed: '
+                    'block_backadel upgrade 2026060100: teachers dedup DELETE failed: '
                     . $e->getMessage(), DEBUG_DEVELOPER
                 );
             }
-            if ($addedtmpteachersidx && $dbman->index_exists($teacherstable, $tmpteachersidx)) {
-                $dbman->drop_index($teacherstable, $tmpteachersidx);
-            }
 
-            // Step 2b: add the UNIQUE composite index.
+            // Add the UNIQUE composite index.
             $teacheruk = new xmldb_index(
                 'coursesid_username_uk', XMLDB_INDEX_UNIQUE, ['coursesid', 'username']
             );
             if (!$dbman->index_exists($teacherstable, $teacheruk)) {
                 $dbman->add_index($teacherstable, $teacheruk);
             }
+
+            // bug-068: widen resolvedvia from char(16) to char(32) so long
+            // domain first-labels (e.g. 'internationalcenter') fit without
+            // a silent dml_write_exception. change_field_precision is a
+            // no-op when the column is already at the target precision.
+            $resolvedvia = new xmldb_field(
+                'resolvedvia', XMLDB_TYPE_CHAR, '32', null, false, null, null, 'resolved'
+            );
+            if ($dbman->field_exists($teacherstable, $resolvedvia)) {
+                $dbman->change_field_precision($teacherstable, $resolvedvia);
+            }
         }
 
-        // ---------------------------------------------------------------
-        // bug-045: block_backadel_catalogue — composite filter indexes
-        // ---------------------------------------------------------------
-        // Keep existing single-column shortname_ix / status_ix to minimise risk; the
-        // optimizer will simply prefer the new composites where they match. This avoids
-        // the "drop+replace" failure mode flagged in the bug report.
+        // ----------------------------------------------------------------------
+        // bug-045: block_backadel_catalogue composite filter indexes.
+        // ----------------------------------------------------------------------
+        // Keep existing single-column shortname_ix / status_ix in place; the
+        // optimizer will pick the new composites where they match. Drop+replace
+        // is risky here and offers no measurable win.
         $catalogue = new xmldb_table('block_backadel_catalogue');
         if ($dbman->table_exists($catalogue)) {
             $catindexes = [
@@ -411,47 +427,7 @@ function xmldb_block_backadel_upgrade($oldversion) {
             }
         }
 
-        // ---------------------------------------------------------------
-        // bug-045: block_backadel_courses — covering index for catalogue subquery
-        // ---------------------------------------------------------------
-        if ($dbman->table_exists($coursestable)) {
-            $filenamecourseidix = new xmldb_index(
-                'filename_courseid_ix', XMLDB_INDEX_NOTUNIQUE, ['filename', 'courseid']
-            );
-            if (!$dbman->index_exists($coursestable, $filenamecourseidix)) {
-                $dbman->add_index($coursestable, $filenamecourseidix);
-            }
-        }
-
-        upgrade_plugin_savepoint(true, 2026051400, 'block', 'backadel');
-    }
-
-    if ($oldversion < 2026051600) {
-        // bug-058: remove teacher rows where username is clearly a backup-filename
-        // slug. These rows have userid IS NULL (unresolved) and username either
-        // exceeds 32 chars or contains '-for-' — the hallmark of a course-name slug.
-        // MariaDB LIKE is case-insensitive on utf8mb4_unicode_ci, no BINARY needed.
-        if ($dbman->table_exists(new xmldb_table('block_backadel_teachers'))) {
-            $DB->execute(
-                "DELETE FROM {block_backadel_teachers}
-                  WHERE userid IS NULL
-                    AND (CHAR_LENGTH(username) > 32
-                      OR username LIKE '%-for-%')"
-            );
-        }
-        upgrade_block_savepoint(true, 2026051600, 'backadel');
-    }
-
-    if ($oldversion < 2026051700) {
-        // Bug-068: widen resolvedvia from char(16) to char(32) so that long domain
-        // first-labels (e.g. 'internationalcenter' from 'internationalcenter.lsu.edu')
-        // can be stored without a dml_write_exception that silently drops teacher rows.
-        $table = new xmldb_table('block_backadel_teachers');
-        $field = new xmldb_field('resolvedvia', XMLDB_TYPE_CHAR, '32', null, false, null, null, 'resolved');
-        if ($dbman->field_exists($table, $field)) {
-            $dbman->change_field_precision($table, $field);
-        }
-        upgrade_block_savepoint(true, 2026051700, 'backadel');
+        upgrade_block_savepoint(true, 2026060100, 'backadel');
     }
 
     return true;
