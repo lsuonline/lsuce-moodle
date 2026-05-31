@@ -330,7 +330,7 @@ function xmldb_block_backadel_upgrade($oldversion) {
                 );
             }
             if ($addedtmpcoursesidx && $dbman->index_exists($coursestable, $tmpcoursesidx)) {
-                $dbman->remove_index($coursestable, $tmpcoursesidx);
+                $dbman->drop_index($coursestable, $tmpcoursesidx);
             }
 
             // Step 1d: add the UNIQUE index via xmldb_index (Moodle treats unique indexes
@@ -372,7 +372,7 @@ function xmldb_block_backadel_upgrade($oldversion) {
                 );
             }
             if ($addedtmpteachersidx && $dbman->index_exists($teacherstable, $tmpteachersidx)) {
-                $dbman->remove_index($teacherstable, $tmpteachersidx);
+                $dbman->drop_index($teacherstable, $tmpteachersidx);
             }
 
             // Step 2b: add the UNIQUE composite index.
