@@ -25,20 +25,22 @@ require_once($CFG->libdir . '/upgradelib.php');
 require_once($CFG->dirroot . '/blocks/backadel/db/upgrade.php');
 
 /**
- * Tests for the consolidated MD-2189 upgrade step (2026060100).
+ * Tests for the collapsed MD-2189 upgrade step (2026060100).
  *
  * The Moodle test DB is built from install.xml, so it already contains the
- * post-MD-2189 schema (filepath_hash column, UNIQUE keys, composite indexes).
- * To simulate the pre-MD-2189 state we drop the relevant column / indexes /
- * keys before inserting fixture data, then call xmldb_block_backadel_upgrade()
- * with $oldversion = 2026051301 and assert post-upgrade state.
+ * post-MD-2189 schema. To simulate a pre-MD-2189 state we drop the relevant
+ * columns / indexes / keys (and in one case, whole tables) before inserting
+ * fixture data, then call xmldb_block_backadel_upgrade() and assert
+ * post-upgrade state.
  *
- * Three scenarios:
+ * Four scenarios:
  *   1. Upgrade from pre-MD-2189 with duplicate data → dedup fires, all
  *      fields + indexes land, deduped rows are gone.
  *   2. Idempotent re-run → guards short-circuit cleanly, no crash.
  *   3. Upgrade on a clean schema with no duplicates → fields + indexes land,
  *      no rows lost.
+ *   4. Upgrade from a very old (2018-era) site that has NONE of the MD-2189
+ *      tables → block must create every missing table from scratch.
  *
  * @package    block_backadel
  * @copyright  2026 Louisiana State University
@@ -57,10 +59,13 @@ final class upgrade_test extends \advanced_testcase {
     /** @var int Just-before-target version we pretend the DB is at. */
     private const VERSION_PRE = 2026051301;
 
+    /** @var int Very old (2018-era) pre-MD-2189 version with none of the new tables. */
+    private const VERSION_ANCIENT = 2018042500;
+
     /**
      * Strip the post-MD-2189 schema additions off the existing tables and
      * pin config_plugins.version to VERSION_PRE so upgrade_block_savepoint()
-     * accepts the bump.
+     * accepts the bump. Tables themselves are kept.
      */
     private function rewind_schema_to_pre_md2189(): void {
         global $DB;
@@ -132,12 +137,47 @@ final class upgrade_test extends \advanced_testcase {
     }
 
     /**
+     * Drop ALL MD-2189 tables to simulate a 2018-era site that never had them.
+     * The block_backadel_statuses table is left in place (it predates MD-2189).
+     * For that table we drop the timecreated / timemodified columns so the
+     * upgrade has to add them back.
+     */
+    private function rewind_schema_to_ancient(): void {
+        global $DB;
+        $dbman = $DB->get_manager();
+
+        foreach ([
+            'block_backadel_periods',
+            'block_backadel_teachers',
+            'block_backadel_courses',
+            'block_backadel_catalogue',
+        ] as $tablename) {
+            $table = new \xmldb_table($tablename);
+            if ($dbman->table_exists($table)) {
+                $dbman->drop_table($table);
+            }
+        }
+
+        // Strip timecreated / timemodified from statuses table.
+        $statuses = new \xmldb_table('block_backadel_statuses');
+        if ($dbman->table_exists($statuses)) {
+            foreach (['timecreated', 'timemodified'] as $fieldname) {
+                $field = new \xmldb_field($fieldname);
+                if ($dbman->field_exists($statuses, $field)) {
+                    $dbman->drop_field($statuses, $field);
+                }
+            }
+        }
+
+        // Drop any migration_state config so we can confirm the upgrade re-sets it.
+        unset_config('migration_state', self::COMPONENT);
+
+        // Pin plugin version.
+        set_config('version', (string)self::VERSION_ANCIENT, self::COMPONENT);
+    }
+
+    /**
      * Count indexes on $tablename matching the given column list and uniqueness.
-     *
-     * We can't assert on xmldb_index names (e.g. 'filepath_hash_uk') because
-     * Moodle's DBAL generates short auto-derived DB-side names like
-     * 'm_blocbackcour_fil_uix'. Instead we count indexes by (columns, unique)
-     * tuple.
      *
      * @param string $tablename Unprefixed table name.
      * @param array<int,string> $columns Ordered column list.
@@ -151,8 +191,6 @@ final class upgrade_test extends \advanced_testcase {
             if ((bool)$info['unique'] !== $unique) {
                 continue;
             }
-            // Use array_values so positional comparison ignores any holes
-            // in $info['columns'] (DBAL fills by Seq_in_index − 1).
             if (array_values($info['columns']) === $columns) {
                 $count++;
             }
@@ -209,6 +247,12 @@ final class upgrade_test extends \advanced_testcase {
         $coursestable = new \xmldb_table('block_backadel_courses');
         $teacherstable = new \xmldb_table('block_backadel_teachers');
         $catalogue = new \xmldb_table('block_backadel_catalogue');
+
+        // Tables exist at all.
+        $this->assertTrue($dbman->table_exists($coursestable));
+        $this->assertTrue($dbman->table_exists($teacherstable));
+        $this->assertTrue($dbman->table_exists($catalogue));
+        $this->assertTrue($dbman->table_exists(new \xmldb_table('block_backadel_periods')));
 
         // Courses: filepath_hash field present.
         $this->assertTrue(
@@ -383,5 +427,70 @@ final class upgrade_test extends \advanced_testcase {
 
         // Schema complete.
         $this->assert_post_upgrade_schema();
+    }
+
+    /**
+     * Ancient (2018-era) site: NONE of the MD-2189 tables exist, and the
+     * legacy statuses table is missing its timecreated / timemodified columns.
+     * The collapsed upgrade block must create every table from scratch and
+     * add the legacy columns.
+     */
+    public function test_upgrade_from_ancient_schema(): void {
+        global $DB;
+        $this->resetAfterTest(true);
+        $this->rewind_schema_to_ancient();
+
+        $dbman = $DB->get_manager();
+
+        // Sanity: tables really are gone before the upgrade.
+        $this->assertFalse($dbman->table_exists(new \xmldb_table('block_backadel_periods')));
+        $this->assertFalse($dbman->table_exists(new \xmldb_table('block_backadel_teachers')));
+        $this->assertFalse($dbman->table_exists(new \xmldb_table('block_backadel_courses')));
+        $this->assertFalse($dbman->table_exists(new \xmldb_table('block_backadel_catalogue')));
+
+        // statuses table exists but is missing the two timestamp columns.
+        $statuses = new \xmldb_table('block_backadel_statuses');
+        $this->assertTrue($dbman->table_exists($statuses));
+        $this->assertFalse($dbman->field_exists($statuses,
+            new \xmldb_field('timecreated')));
+        $this->assertFalse($dbman->field_exists($statuses,
+            new \xmldb_field('timemodified')));
+
+        // Insert a legacy statuses row so we can verify the backfill happens.
+        $DB->insert_record('block_backadel_statuses', (object)[
+            'coursesid' => 7,
+            'status'    => 'BACKUP',
+        ]);
+
+        // Run upgrade from the ancient version.
+        $this->assertTrue(xmldb_block_backadel_upgrade(self::VERSION_ANCIENT));
+
+        // The fresh create_table for courses (which declares filepath_hash with
+        // DEFAULT '') plus the upgrade-step add_field for the same column both
+        // emit XMLDB's "empty string default" debugging warning. Swallow them.
+        $this->assertDebuggingCalledCount(2);
+
+        // All MD-2189 tables now present, with their schema.
+        $this->assert_post_upgrade_schema();
+
+        // statuses got its timestamp columns back, with non-zero backfill.
+        $this->assertTrue($dbman->field_exists($statuses,
+            new \xmldb_field('timecreated')));
+        $this->assertTrue($dbman->field_exists($statuses,
+            new \xmldb_field('timemodified')));
+        $row = $DB->get_record('block_backadel_statuses', ['coursesid' => 7]);
+        $this->assertGreaterThan(0, (int)$row->timecreated,
+            'timecreated must be backfilled on legacy rows');
+        $this->assertGreaterThan(0, (int)$row->timemodified,
+            'timemodified must be backfilled on legacy rows');
+
+        // migration_state config was re-set.
+        $this->assertSame('pending', get_config(self::COMPONENT, 'migration_state'));
+
+        // Fresh tables are empty (no data was carried in).
+        $this->assertSame(0, $DB->count_records('block_backadel_courses'));
+        $this->assertSame(0, $DB->count_records('block_backadel_teachers'));
+        $this->assertSame(0, $DB->count_records('block_backadel_catalogue'));
+        $this->assertSame(0, $DB->count_records('block_backadel_periods'));
     }
 }
