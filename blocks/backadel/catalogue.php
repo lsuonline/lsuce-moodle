@@ -34,6 +34,7 @@ $status = optional_param('status', '', PARAM_ALPHA);
 $source = optional_param('source', '', PARAM_ALPHANUMEXT);
 $pattern = optional_param('pattern', '', PARAM_ALPHAEXT);
 $coursetype = optional_param('coursetype', '', PARAM_ALPHA);
+$instructor = optional_param('instructor', '', PARAM_USERNAME);
 $download = optional_param('download', '', PARAM_ALPHA);
 
 $yeardistinct = $DB->get_fieldset_sql(
@@ -135,6 +136,9 @@ if ($pattern !== '') {
 if ($coursetype !== '') {
     $urlargs['coursetype'] = $coursetype;
 }
+if ($instructor !== '') {
+    $urlargs['instructor'] = $instructor;
+}
 
 admin_externalpage_setup('block_backadel_catalogue', '', $urlargs);
 
@@ -154,11 +158,15 @@ $filtersactive = (
     || $source !== ''
     || $pattern !== ''
     || $coursetype !== ''
+    || $instructor !== ''
     || $yearraw !== null
 );
 
 $activefiltercount = 0;
 if ($coursetype !== '') {
+    $activefiltercount++;
+}
+if ($instructor !== '') {
     $activefiltercount++;
 }
 if ($semester !== '') {
@@ -182,9 +190,9 @@ $form = new \block_backadel\form\catalogue_filter_form(new moodle_url('/blocks/b
     'semesters' => $semesteroptions,
     'filtersactive' => $filtersactive,
 ]);
-$form->set_data(compact('q', 'year', 'semester', 'status', 'source', 'pattern', 'coursetype'));
+$form->set_data(compact('q', 'year', 'semester', 'status', 'source', 'pattern', 'coursetype', 'instructor'));
 
-$tablefilters = compact('q', 'year', 'semester', 'status', 'source', 'pattern', 'coursetype');
+$tablefilters = compact('q', 'year', 'semester', 'status', 'source', 'pattern', 'coursetype', 'instructor');
 $table = new \block_backadel\local\table\catalogue_table('backadel-catalogue', $tablefilters);
 $table->define_baseurl(new moodle_url('/blocks/backadel/catalogue.php', $urlargs));
 $table->is_downloading($download, 'backadel-catalogue');

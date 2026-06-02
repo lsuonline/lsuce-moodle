@@ -305,6 +305,13 @@ function backadel_catalogue_to_where(array $filters): array {
         $params[$pk] = $coursetype;
     }
 
+    $instructor = isset($filters['instructor']) ? trim((string) $filters['instructor']) : '';
+    if ($instructor !== '') {
+        [$incl, $inparams] = \block_backadel\local\sql_helpers::instructor_where($instructor);
+        $clauses[] = $incl;
+        $params = array_merge($params, $inparams);
+    }
+
     if ($clauses === []) {
         return ['1=1', []];
     }
