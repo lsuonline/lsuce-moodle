@@ -47,8 +47,6 @@ $string['contains'] = 'contains';
 $string['startswith'] = 'starts with';
 $string['endswith'] = 'ends with';
 $string['equals'] = 'equals';
-$string['adminfilter'] = 'Filter Courses';
-
 $string['semester_backups'] = 'Semester Backups';
 
 $string['filter_search'] = 'Search';

@@ -72,15 +72,16 @@ $archivemode = $courseid == SITEID && get_config('simple_restore', 'is_archive_s
 $adminmode = $archivemode || $courseid == SITEID;
 
 if ($adminmode) {
-    // Admin layout: registers the page with the admin tree, wires breadcrumbs,
-    // sidebar highlight, page layout, and triggers settings.php's tab strip.
-    // External admin node resolves to catalogue (see settings.php); keep this page canonical on list.php.
+    // Admin nav entry (settings.php) routes to catalogue.php. Redirect immediately
+    // so admins land on the full Backadel catalogue with instructor/year/semester
+    // filters instead of the retired shortname-form gate.
     admin_externalpage_setup(
         'block_simple_restore_list',
         '',
         $listurlparams,
         (new moodle_url('/blocks/simple_restore/list.php'))->out(false)
     );
+    redirect(new moodle_url('/blocks/backadel/catalogue.php'));
 } else {
     // Teacher path: course-context login + permission check.
     require_login();
@@ -191,34 +192,6 @@ if (!$adminmode) {
 $system = context_system::instance();
 
 $isadmin = has_capability('moodle/course:create', $system);
-
-if (empty($shortname) && $isadmin) {
-    require_once('list_form.php');
-
-    $form = new list_form();
-
-    if ($form->is_cancelled()) {
-        redirect(new moodle_url('/course/view.php', array('id' => $courseid)));
-    } else if ($data = $form->get_data()) {
-        $warn = $OUTPUT->notification(simple_restore_utils::_s('no_filter'));
-    }
-
-    $form->set_data(array('id' => $courseid, 'restore_to' => $restoreto));
-
-    echo $OUTPUT->header();
-    echo $OUTPUT->heading(simple_restore_utils::_s('adminfilter'));
-
-    if (!empty($warn)) {
-        echo $warn;
-    }
-
-    echo $OUTPUT->box_start();
-    $form->display();
-    echo $OUTPUT->box_end();
-
-    echo $OUTPUT->footer();
-    die;
-}
 
 // Count active catalogue filters for the pill-button badge.
 $sractivefiltercount = 0;
