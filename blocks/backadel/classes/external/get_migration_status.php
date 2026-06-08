@@ -29,8 +29,8 @@ namespace block_backadel\external;
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
-require_once($CFG->libdir . '/externallib.php');
-require_once($CFG->dirroot . '/blocks/backadel/block_backadel.php');
+// externallib.php (Moodle 3.x shim) is intentionally omitted —
+// core_external\external_api (Moodle 4+) is autoloaded.
 
 use context_system;
 use core_external\external_api;
@@ -72,7 +72,7 @@ class get_migration_status extends external_api {
         $elapsed   = '';
         if ($isrunning) {
             $secs = (int) round(time() - (int) $running);
-            $elapsed = \block_backadel::seconds2human($secs);
+            $elapsed = self::seconds_to_human($secs);
         }
 
         return [
@@ -95,5 +95,38 @@ class get_migration_status extends external_api {
             'is_running'    => new external_value(PARAM_BOOL, 'Whether a migration / backup job is currently running'),
             'elapsed_human' => new external_value(PARAM_TEXT, 'Human-readable elapsed time since the job started'),
         ]);
+    }
+
+    /**
+     * Convert a number of seconds to a human-readable string.
+     * Duplicates block_backadel::seconds2human() to avoid loading the
+     * non-namespaced block class (which requires block_base infrastructure).
+     *
+     * @param int $secondsrun
+     * @return string
+     */
+    private static function seconds_to_human(int $secondsrun): string {
+        $months = (int) floor($secondsrun / 2592000);
+        $days   = (int) floor(($secondsrun % 2592000) / 86400);
+        $hours  = (int) floor(($secondsrun % 86400) / 3600);
+        $mins   = (int) floor(($secondsrun % 3600) / 60);
+        $secs   = $secondsrun % 60;
+
+        $parts = [];
+        if ($months > 0) {
+            $parts[] = $months . ' months';
+        }
+        if ($days > 0) {
+            $parts[] = $days . ' days';
+        }
+        if ($hours > 0) {
+            $parts[] = $hours . ' hours';
+        }
+        if ($mins > 0) {
+            $parts[] = $mins . ' minutes';
+        }
+        $parts[] = $secs . ' seconds';
+
+        return implode(', ', $parts);
     }
 }

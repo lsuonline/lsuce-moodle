@@ -48,6 +48,12 @@ class catalogue_filter_form extends moodleform {
         $mform->addElement('text', 'q', get_string('search'));
         $mform->setType('q', PARAM_TEXT);
 
+        $mform->addElement('text', 'instructor',
+            get_string('catalogue_filter_instructor', 'block_backadel'),
+            ['placeholder' => get_string('catalogue_filter_instructor_placeholder', 'block_backadel')]
+        );
+        $mform->setType('instructor', PARAM_USERNAME);
+
         $years = $this->_customdata['years'] ?? [];
         $mform->addElement('select', 'year', get_string('catalogue_filter_year', 'block_backadel'), $years);
         $mform->setType('year', PARAM_INT);

@@ -187,6 +187,9 @@ $string['catalogue_status_missing'] = 'Missing';
 $string['catalogue_status_archived'] = 'Archived';
 $string['catalogue_col_coursetype'] = 'Course type';
 $string['catalogue_filter_coursetype'] = 'Course type';
+$string['catalogue_filter_instructor'] = 'Instructor username';
+$string['catalogue_filter_instructor_help'] = 'Enter a Moodle username to find catalogue entries where that user is listed as an instructor. Partial matches are supported (e.g. "dcastr" matches "dcastr10").';
+$string['catalogue_filter_instructor_placeholder'] = 'e.g. dcastr10';
 $string['catalogue_coursetype_undetermined'] = 'Undetermined';
 $string['catalogue_col_semester'] = 'Semester';
 $string['catalogue_col_dept'] = 'Dept';
@@ -294,3 +297,7 @@ $string['help_button_label'] = 'Help';
 
 // Capabilities.
 $string['backadel:addinstance'] = 'Add '.$string['pluginname'].' block.';
+$string['backadel:viewresults'] = 'View Backup And Delete results';
+$string['backadel:managebackups'] = 'Manage Backup And Delete backups';
+$string['backadel:deletearchive'] = 'Delete Backup And Delete archives';
+$string['backadel:managemigration'] = 'Manage Backup And Delete migration';

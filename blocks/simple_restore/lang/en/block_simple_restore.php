@@ -47,8 +47,6 @@ $string['contains'] = 'contains';
 $string['startswith'] = 'starts with';
 $string['endswith'] = 'ends with';
 $string['equals'] = 'equals';
-$string['adminfilter'] = 'Filter Courses';
-
 $string['semester_backups'] = 'Semester Backups';
 
 $string['filter_search'] = 'Search';
@@ -160,3 +158,5 @@ $string['notify_restore_complete_body'] = 'Your course restore for "{$a}" has co
 $string['notify_restore_complete_body_html'] = 'Your course restore for "<a href="{$a->courseurl}">{$a->coursename}</a>" has completed successfully.';
 $string['notify_restore_failed_subject'] = 'Restore failed: {$a}';
 $string['notify_restore_failed_body'] = 'Your course restore for "{$a->coursename}" failed. Please contact your administrator. (Details: {$a->error})';
+
+$string['admin_redirected_to_catalogue'] = 'Admin backup management has moved to the Backadel Catalogue. You have been redirected automatically.';

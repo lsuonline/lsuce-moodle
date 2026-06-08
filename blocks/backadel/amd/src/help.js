@@ -17,14 +17,25 @@ import Pending from 'core/pending';
 
 const contentCache = new Map();
 
+/** Track the currently-open topic to prevent double-open. */
+let activeModalTopic = null;
+
 /**
  * Show a help modal for the given topic.
+ *
+ * Content is injected on the 'shown.bs.modal' event (after Bootstrap's
+ * animation completes) to avoid layout flashes during the open transition.
+ * A guard prevents re-opening a modal that is already visible.
  *
  * @param {string} topic The help topic key.
  * @param {string} title The modal title.
  * @param {HTMLElement} returnElement Element to return focus to.
  */
 const showHelp = async(topic, title, returnElement) => {
+    if (activeModalTopic === topic) {
+        return;
+    }
+
     const pendingPromise = new Pending(`block_backadel/help:${topic}`);
 
     try {
@@ -39,17 +50,30 @@ const showHelp = async(topic, title, returnElement) => {
 
         const bodyHtml = `<div class="block_backadel-modal-body">${html}</div>`;
 
+        // Create without show:true so we can inject content after animation.
         const modal = await Modal.create({
             title,
-            body: bodyHtml,
-            show: true,
             large: true,
             removeOnClose: true,
             returnElement,
         });
 
         modal.getModal().addClass('block_backadel-modal-dialog');
+
+        const rootEl = modal.getRoot()[0];
+        activeModalTopic = topic;
+
+        rootEl.addEventListener('shown.bs.modal', () => {
+            modal.setBody(bodyHtml);
+        }, {once: true});
+
+        rootEl.addEventListener('hidden.bs.modal', () => {
+            activeModalTopic = null;
+        }, {once: true});
+
+        modal.show();
     } catch (error) {
+        activeModalTopic = null;
         Notification.exception(error);
     } finally {
         pendingPromise.resolve();

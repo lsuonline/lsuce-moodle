@@ -32,6 +32,7 @@ use ReflectionClass;
  *
  * @covers     \block_backadel\form\queue_backup_form
  * @coversDefaultClass \block_backadel\form\queue_backup_form
+ * @runInSeparateProcess
  */
 final class queue_backup_form_test extends \advanced_testcase {
 

@@ -72,14 +72,27 @@ $archivemode = $courseid == SITEID && get_config('simple_restore', 'is_archive_s
 $adminmode = $archivemode || $courseid == SITEID;
 
 if ($adminmode) {
-    // Admin layout: registers the page with the admin tree, wires breadcrumbs,
-    // sidebar highlight, page layout, and triggers settings.php's tab strip.
-    // External admin node resolves to catalogue (see settings.php); keep this page canonical on list.php.
+    // Admin nav entry (settings.php) routes to catalogue.php. Redirect immediately
+    // so admins land on the full Backadel catalogue with instructor/year/semester
+    // filters instead of the retired shortname-form gate.
     admin_externalpage_setup(
         'block_simple_restore_list',
         '',
         $listurlparams,
         (new moodle_url('/blocks/simple_restore/list.php'))->out(false)
+    );
+    $catalogueparams = array_filter([
+        'q'          => $listfltq,
+        'year'       => $listfltyear ?: null,
+        'semester'   => $listfltsem ?: null,
+        'coursetype' => $listfltcourse ?: null,
+        'status'     => ($listfltstatus !== 'available') ? $listfltstatus : null,
+    ], fn($v) => $v !== null && $v !== '');
+    redirect(
+        new moodle_url('/blocks/backadel/catalogue.php', $catalogueparams),
+        get_string('admin_redirected_to_catalogue', 'block_simple_restore'),
+        null,
+        \core\output\notification::NOTIFY_INFO
     );
 } else {
     // Teacher path: course-context login + permission check.
@@ -192,34 +205,6 @@ $system = context_system::instance();
 
 $isadmin = has_capability('moodle/course:create', $system);
 
-if (empty($shortname) && $isadmin) {
-    require_once('list_form.php');
-
-    $form = new list_form();
-
-    if ($form->is_cancelled()) {
-        redirect(new moodle_url('/course/view.php', array('id' => $courseid)));
-    } else if ($data = $form->get_data()) {
-        $warn = $OUTPUT->notification(simple_restore_utils::_s('no_filter'));
-    }
-
-    $form->set_data(array('id' => $courseid, 'restore_to' => $restoreto));
-
-    echo $OUTPUT->header();
-    echo $OUTPUT->heading(simple_restore_utils::_s('adminfilter'));
-
-    if (!empty($warn)) {
-        echo $warn;
-    }
-
-    echo $OUTPUT->box_start();
-    $form->display();
-    echo $OUTPUT->box_end();
-
-    echo $OUTPUT->footer();
-    die;
-}
-
 // Count active catalogue filters for the pill-button badge.
 $sractivefiltercount = 0;
 if ($listfltq !== '') {
@@ -246,9 +231,20 @@ echo $OUTPUT->header();
 $data = new stdClass;
 $data->restore_to = $restoreto;
 $data->courseid = $courseid;
-// Admins can filter by shortname.
+// Admins can filter by shortname via the search form. When no shortname was
+// submitted, default to the course's own shortname so backup_list() takes
+// the catalogue lookup path (year-bucketed layout) instead of the legacy
+// filesystem scan. Without this, admins who are not listed as instructors
+// in the catalogue get the raw filesystem list (LSUO-102 / Bug-102).
 if ($isadmin) {
-    $data->shortname = $shortname;
+    $data->shortname = ($shortname !== null && $shortname !== '')
+        ? $shortname
+        : $course->shortname;
+    // Bug-083: expose the text-search token (q param) so backup_list() can
+    // pass it as instructorusername when the shortname predicate returns 0 rows.
+    // Without this, admin searching 'lafry' gets catalogueshort='<course code>'
+    // + instructorusername='' and the instructor-JSON fallback never fires.
+    $data->qsearch = $listfltq;
 }
 $data->lists = array();
 

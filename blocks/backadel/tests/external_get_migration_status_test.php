@@ -26,16 +26,16 @@ declare(strict_types=1);
 
 namespace block_backadel\tests;
 
-use advanced_testcase;
 use block_backadel\external\get_migration_status;
 use core_external\external_api;
 
 defined('MOODLE_INTERNAL') || die();
 
+
 /**
  * @covers \block_backadel\external\get_migration_status
  */
-final class external_get_migration_status_test extends advanced_testcase {
+final class external_get_migration_status_test extends \advanced_testcase {
 
     /**
      * Helper: insert a status row directly.

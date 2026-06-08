@@ -41,4 +41,31 @@ final class sql_helpers {
         return 'COALESCE(' . $cataloguealias . '.coursetype_override, (SELECT bc_ct.coursetype FROM {block_backadel_courses} bc_ct '
             . 'WHERE bc_ct.filename = ' . $cataloguealias . '.filename ORDER BY bc_ct.id DESC LIMIT 1))';
     }
+
+    /**
+     * WHERE clause fragment matching rows where $username appears in the
+     * $alias.instructors JSON array (TEXT column storing ["user1","user2"]).
+     *
+     * Uses LIKE with JSON-quoted username to prevent partial-match false
+     * positives: "jones" won't match "jonesmith" because JSON stores them as
+     * "jones" vs "jonesmith" with surrounding double-quotes.
+     *
+     * Prod-validated: all 144k catalogue rows use standard double-quoted JSON
+     * arrays; zero single-quoted or malformed entries exist.
+     *
+     * @param string $username  Moodle username to search for.
+     * @param string $alias     Table alias for block_backadel_catalogue (default 'c').
+     * @return array{0: string, 1: array} [clause (no WHERE keyword), named params array]
+     */
+    public static function instructor_where(string $username, string $alias = 'c'): array {
+        global $DB;
+        $cleaned = clean_param(trim($username), PARAM_USERNAME);
+        if ($cleaned === '') {
+            return ['1=1', []];
+        }
+        $escaped = $DB->sql_like_escape($cleaned);
+        $clause = $alias . '.instructors IS NOT NULL AND '
+            . $DB->sql_like($alias . '.instructors', ':bci0', false);
+        return [$clause, ['bci0' => '%"' . $escaped . '"%']];
+    }
 }

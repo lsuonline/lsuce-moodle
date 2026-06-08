@@ -108,6 +108,12 @@ function begin_backup_task() {
                 $safeshort = preg_replace($matchers, '-', $course->shortname);
                 $backadelfile = "backadel-{$safeshort}{$suffix}.zip";
                 $backadelpath = $CFG->dataroot . get_config('block_backadel', 'path');
+                // Resolve year subfolder so migrate_directory targets the same
+                // directory that backup_course_backadel() wrote into (Bug-082).
+                $backupyear = \block_backadel\local\period_resolver::year_for_course($course);
+                if ($backupyear > 0) {
+                    $backadelpath = rtrim($backadelpath, '/\\') . DIRECTORY_SEPARATOR . $backupyear . DIRECTORY_SEPARATOR;
+                }
                 $filepath = $backadelpath . $backadelfile;
                 (new \block_backadel\local\migrator())->migrate_directory(dirname($filepath), 'backadel_current');
             } catch (\Throwable $e) {

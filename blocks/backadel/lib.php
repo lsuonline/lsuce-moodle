@@ -305,6 +305,13 @@ function backadel_catalogue_to_where(array $filters): array {
         $params[$pk] = $coursetype;
     }
 
+    $instructor = isset($filters['instructor']) ? trim((string) $filters['instructor']) : '';
+    if ($instructor !== '') {
+        [$incl, $inparams] = \block_backadel\local\sql_helpers::instructor_where($instructor);
+        $clauses[] = $incl;
+        $params = array_merge($params, $inparams);
+    }
+
     if ($clauses === []) {
         return ['1=1', []];
     }
@@ -439,17 +446,17 @@ function backadel_backup_course($course) {
     // Build the path.
     $backadelpath = $CFG->dataroot . get_config('block_backadel', 'path');
 
-    // Resolve semester subfolder for new backups.
-    $periodslug = \block_backadel\local\period_resolver::for_course($course);
-    if (!empty($periodslug)) {
-        $subfolder = rtrim($backadelpath, '/\\') . DIRECTORY_SEPARATOR . $periodslug;
+    // Store new backups in backadelpath/year/ subfolder (MD-2189 Bug-082).
+    $backupyear = \block_backadel\local\period_resolver::year_for_course($course);
+    if ($backupyear > 0) {
+        $subfolder = rtrim($backadelpath, '/\\') . DIRECTORY_SEPARATOR . $backupyear;
         try {
             if (!is_dir($subfolder)) {
                 make_writable_directory($subfolder);
             }
             $backadelpath = $subfolder . DIRECTORY_SEPARATOR;
         } catch (\moodle_exception $e) {
-            mtrace('Backadel: could not create period subfolder ' . $subfolder . ' — ' . $e->getMessage());
+            mtrace('Backadel: could not create year subfolder ' . $subfolder . ' — ' . $e->getMessage());
         }
     }
 

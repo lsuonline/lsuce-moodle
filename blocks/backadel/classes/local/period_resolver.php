@@ -42,6 +42,20 @@ class period_resolver {
         return $resolver->resolve($year, $semester);
     }
 
+    /**
+     * Extract the bare four-digit academic year for a course (MD-2189 Bug-082).
+     *
+     * Returns 0 when year cannot be determined (no idnumber/shortname/fullname
+     * token and no usable startdate).
+     *
+     * @param \stdClass $course Moodle course record (needs idnumber, shortname, fullname, startdate).
+     * @return int Four-digit year, or 0 if unknown.
+     */
+    public static function year_for_course(\stdClass $course): int {
+        [$year, ] = self::infer_year_semester($course);
+        return $year;
+    }
+
     /** @var array<string, string> Title-case semester keyword to folder token.
      *
      * Keys must match the post-`ucfirst(strtolower())` form of the semester string emitted

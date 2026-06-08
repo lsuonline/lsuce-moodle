@@ -2,18 +2,25 @@
 
 The **Simple Restore** list shows backup archives linked to this course from the course backup library, grouped by year.
 
+## Admin vs teacher path
+
+- **Admins** (users with `moodle/course:create` at system level, or accessing via the site-level admin nav entry) are **immediately redirected** to the Backadel **Catalogue** with an info notification. Any filter parameters (`q`, `year`, `semester`, `coursetype`, `status`) are forwarded to the catalogue URL. Admins do not see the per-course list at all.
+- **Teachers** see the per-course backup list as described below.
+
 ## Semester Backups
 
 Each row represents a backup archive. Backups are sorted newest-year first, then by filename.
 
+Teaching backups appear in **year buckets** (one heading per calendar year). Blueprint and Other backups appear in collapsible sections above/below the year buckets.
+
 ### Actions
 
-- **Restore** — Stages the archive and launches the Moodle restore wizard. You choose at restore time whether to **Overwrite** (replaces existing content) or **Import** (adds content alongside existing).
+- **Restore** — Stages the archive and launches the Simple Restore confirm page. You confirm the operation before it executes.
 - **Download** — Downloads the raw archive file directly.
 
 ## Filters
 
-Use the **Filters** button (top right) to open the filter panel:
+Use the **Filters** button (top right) to open the offcanvas filter panel:
 
 - **Search** — Filter by filename keyword.
 - **Year** — Limit results to a specific academic year.

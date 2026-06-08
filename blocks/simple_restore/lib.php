@@ -138,18 +138,44 @@ abstract class simple_restore_utils {
         $bysearch = function ($file) use ($search) {
             return preg_match("/{$search}/i", $file);
         };
-        $tobackup = function ($file) use ($backadelpath) {
+        // $dirpath is the directory the file lives in (may be root or a year subdir).
+        $tobackup = function ($file, $dirpath) {
             $backadel = new stdClass;
+            $fullpath = $dirpath . $file;
             $backadel->id = $file;
             $backadel->filename = $file;
-            $backadel->filepath = $backadelpath . $file;
-            $backadel->filesize = filesize($backadelpath . $file);
-            $backadel->timemodified = filemtime($backadelpath . $file);
+            $backadel->filepath = $fullpath;
+            $backadel->filesize = filesize($fullpath);
+            $backadel->timemodified = filemtime($fullpath);
 
             return $backadel;
         };
-        $potentials = array_filter(scandir($backadelpath), $bysearch);
-        return array_map($tobackup, $potentials);
+
+        $backups = [];
+
+        // Collect top-level files (legacy flat layout).
+        $potentials = array_filter(scandir($backadelpath) ?: [], $bysearch);
+        foreach ($potentials as $file) {
+            $backups[] = $tobackup($file, $backadelpath);
+        }
+
+        // Also scan year subdirectories (4-digit numeric dirs, e.g. "2024", "2025")
+        // so files stored in backadelpath/year/ appear in the filesystem fallback
+        // list before the periodic cron catalogues them (MD-2189 Bug-082).
+        $isyeardir = function ($entry) use ($backadelpath) {
+            return is_numeric($entry) && strlen($entry) === 4
+                && is_dir($backadelpath . $entry);
+        };
+        $yeardirs = array_filter(scandir($backadelpath) ?: [], $isyeardir);
+        foreach ($yeardirs as $yeardir) {
+            $subpath = $backadelpath . $yeardir . '/';
+            $subdirfiles = array_filter(scandir($subpath) ?: [], $bysearch);
+            foreach ($subdirfiles as $file) {
+                $backups[] = $tobackup($file, $subpath);
+            }
+        }
+
+        return $backups;
     }
 
     public static function backadel_criterion($course) {
@@ -587,8 +613,22 @@ abstract class simple_restore_utils {
         // Bug-040: in teacher mode (no admin shortname filter) also OR-match the
         // catalogue against the current user's username, so instructors find
         // their own historical backups even when no catalogue row's shortname
-        // matches their Moodle course shortname. Admin mode keeps shortname-only.
-        $instructorusername = isset($data->shortname) ? '' : (string) $USER->username;
+        // matches their Moodle course shortname.
+        // Bug-083: in admin mode, if a text-search token (q param) was submitted,
+        // use it as instructorusername so the instructor-JSON OR fallback fires in
+        // backups_from_catalogue() when the shortname predicate returns 0 rows
+        // (e.g. admin searches 'lafry' — shortname='lafry' finds nothing, but
+        // instructors JSON LIKE '%"lafry"%' returns their catalogue rows).
+        if (!isset($data->shortname)) {
+            // Teacher/instructor path: always match by current user's username.
+            $instructorusername = (string) $USER->username;
+        } else {
+            // Admin path: use the explicit q-search token if provided, otherwise
+            // empty (shortname-only lookup; LSUO-102 default preserved).
+            $instructorusername = (isset($data->qsearch) && (string) $data->qsearch !== '')
+                ? (string) $data->qsearch
+                : '';
+        }
         // Bug-049: pass the instructor username so the Year/Semester filter
         // dropdowns match the same OR-shortname-OR-instructor row-set the list
         // body queries. Without this, teachers with mostly-blueprint backups

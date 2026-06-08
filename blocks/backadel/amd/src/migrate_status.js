@@ -21,7 +21,11 @@ let wasQueued = false;
 /**
  * Update all data-region elements with the latest response data.
  *
- * @param {string} status  'idle' or 'queued'
+ * When status is not 'queued' and no web-UI task was ever seen (wasQueued
+ * is false), the migration was completed via CLI. In that case we still show
+ * the success banner so the spinner doesn't stay stuck indefinitely.
+ *
+ * @param {string} status  'idle', 'queued', 'not_running', 'completed', or 'done'
  * @param {object} data    Full response from get_migrate_status
  */
 const applyState = (status, data) => {
@@ -42,7 +46,7 @@ const applyState = (status, data) => {
             pollTimer = setInterval(poll, POLL_MS);
         }
     } else {
-        // Idle — task finished or was never queued.
+        // Idle/done — task finished, never queued, or completed via CLI.
         if (btn)     { btn.disabled = false; }
 
         if (pollTimer) {
@@ -50,7 +54,9 @@ const applyState = (status, data) => {
             pollTimer = null;
         }
 
-        if (wasQueued && successBadge) {
+        // Show success banner whether the task was queued via the web UI or
+        // completed externally via CLI (wasQueued stays false in that case).
+        if (successBadge && (wasQueued || Number(data.catalogue_count) > 0 || Number(data.courses_count) > 0)) {
             successBadge.classList.remove('d-none');
         }
     }
