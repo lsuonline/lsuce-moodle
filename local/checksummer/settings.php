@@ -39,6 +39,15 @@ if (is_siteadmin()) {
         PARAM_RAW
     ));
 
+    // Timeout Limit.
+    $settings->add(new admin_setting_configtext(
+        'local_checksummer/timeout',
+        get_string('timeout', 'local_checksummer'),
+        get_string('timeout_desc', 'local_checksummer'),
+        '60',
+        PARAM_INT
+    ));
+
     // Mode (Generate or Compare).
     $modes = [
         'generate' => get_string('mode_generate', 'local_checksummer'),

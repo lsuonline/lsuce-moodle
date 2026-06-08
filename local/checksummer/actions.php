@@ -42,6 +42,7 @@ if ($action === 'schedule') {
 
     // Schedule the checksummer adhoc task to run during the next available cron cycle.
     $task = new \local_checksummer\task\run_checksummer_task();
+    $task->set_custom_data(['is_continuation' => false]);
     \core\task\manager::queue_adhoc_task($task);
 
     // Send the admin back to the settings page with a success message.

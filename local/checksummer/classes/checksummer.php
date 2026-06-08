@@ -58,99 +58,134 @@ class checksummer {
     }
 
     /**
-     * Builds an inventory of files in a directory.
+     * Generates a manifest CSV for a directory by processing files and logging them to the database.
      *
-     * Iterates through the given directory and its subdirectories to gather file details,
-     * including size, path, and a calculated SHA-256 hash.
-     *
-     * @param string $directory Absolute path to the directory to scan.
-     * @return array Array of file details keyed by filename. Each entry contains 'size', 'sha256', and 'path'.
-     */
-    public function build_file_inventory(string $directory): array {
-        // Ensure the provided path is a valid directory.
-        if (!is_dir($directory)) {
-            $this->output_progress("Directory not found: {$directory}");
-            return [];
-        }
-
-        $files = [];
-
-        // Set up the iterator to traverse all directories and files, skipping '.' and '..'.
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator(
-                $directory,
-                \FilesystemIterator::SKIP_DOTS
-            ),
-            \RecursiveIteratorIterator::LEAVES_ONLY
-        );
-
-        $count = 0;
-
-        // Process each item found by the iterator.
-        foreach ($iterator as $fileinfo) {
-            // We only care about actual files, skip directories or symlinks.
-            if (!$fileinfo->isFile()) {
-                continue;
-            }
-
-            $filename = $fileinfo->getFilename();
-            $fullpath = $fileinfo->getPathname();
-
-            // Calculate the SHA-256 checksum for the file. Use @ to suppress warnings if unreadable.
-            $hash = @hash_file('sha256', $fullpath);
-
-            if ($hash === false) {
-                $this->output_progress("Failed to hash: {$fullpath}");
-                continue;
-            }
-
-            // Store the file information.
-            $files[$filename] = [
-                'size' => $fileinfo->getSize(),
-                'sha256' => strtolower($hash),
-                'path' => $fullpath,
-            ];
-
-            $count++;
-
-            // Periodically output progress to avoid timeouts or silent long-running processes.
-            if (($count % 1000) === 0) {
-                $this->output_progress("Processed {$count} files...");
-            }
-        }
-
-        // Sort the resulting array alphabetically by filename for consistent output.
-        ksort($files, SORT_NATURAL | SORT_FLAG_CASE);
-
-        return $files;
-    }
-
-    /**
-     * Generates a manifest CSV for a directory.
-     *
-     * Scans the directory to build a file inventory and writes the results to a CSV file.
-     * The generated file is then stored in Moodle's file storage.
+     * Scans the directory, calculates checksums, logs to local_checksummer_data,
+     * and then generates a CSV file from the sorted database records.
      *
      * @param string $directory Path to the directory to process.
      * @param string $filename Name of the output file (without the .csv extension).
-     * @return bool True if the manifest was successfully generated and stored, false otherwise.
+     * @param bool $is_continuation True if continuing from a previous run, false for a fresh start.
+     * @param int $timeout_seconds The maximum time (in seconds) the task should run before yielding.
+     * @return array Status array with key 'status' as either 'timeout', 'complete', or 'error'.
      */
-    public function generate_manifest(string $directory, string $filename): bool {
-        // Retrieve the inventory of files.
-        $localfiles = $this->build_file_inventory($directory);
+    public function generate_manifest(string $directory, string $filename, bool $is_continuation = false, int $timeout_seconds = 3600): array {
+        global $DB;
 
-        if (empty($localfiles)) {
-            $this->output_progress("No files found or directory is invalid.");
-            return false;
+        $starttime = time();
+
+        if (!is_dir($directory)) {
+            $this->output_progress("Directory not found: {$directory}");
+            return ['status' => 'error'];
         }
 
-        // Create a temporary file path to store the CSV before moving it to Moodle storage.
+        if (!$is_continuation) {
+            // Truncate the table for a fresh start.
+            $DB->delete_records('local_checksummer_data');
+            $this->output_progress("Cleared old data from local_checksummer_data table.");
+
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator(
+                    $directory,
+                    \FilesystemIterator::SKIP_DOTS
+                ),
+                \RecursiveIteratorIterator::LEAVES_ONLY
+            );
+
+            $count = 0;
+            $now = time();
+
+            // First, populate the database with all files, leaving sha256 as null.
+            $this->output_progress("Populating file list into the database...");
+            foreach ($iterator as $fileinfo) {
+                if (!$fileinfo->isFile()) {
+                    continue;
+                }
+
+                // Set the time to when we look at this file.
+                $filetime = time();
+
+                // Get filename and path info.
+                $name = $fileinfo->getFilename();
+                $fullpath = $fileinfo->getPathname();
+
+                $record = new \stdClass();
+                $record->filename = $name;
+                $record->path = $fullpath;
+
+                // Get the real size.
+                $record->size = $fileinfo->getSize();
+
+                // Set this to null for not.
+                $record->sha256 = null;
+
+                // Look for an underscore followed by exactly 10 digits, followed by any file extensions.
+                if (preg_match('/_(\d{10})(?:\.[^.]+)*$/', $name, $matches)) {
+                    $record->filemtime = (int)$matches[1];
+                } else {
+                    $record->filemtime = $fileinfo->getMTime();
+                }
+
+                // Set the real scan time.
+                $record->lastscanned = $filetime;
+
+                $DB->insert_record('local_checksummer_data', $record);
+
+                $count++;
+                if (($count % 1000) === 0) {
+                    $this->output_progress("Found {$count} files...");
+                }
+            }
+            $this->output_progress("Finished file list population. Found {$count} files.");
+        }
+
+        // Now, hash the files that need hashing.
+        $this->output_progress("Starting/continuing hashing process...");
+        $rs = $DB->get_recordset_select('local_checksummer_data', 'sha256 IS NULL', null, 'id ASC');
+        $hashed_count = 0;
+
+        foreach ($rs as $record) {
+            $hash = @hash_file('sha256', $record->path);
+            
+            if ($hash === false) {
+                $this->output_progress("Failed to hash: {$record->path}");
+                // To prevent infinite loops on unreadable files, we set a dummy/error hash or 'error'.
+                $hash = 'error';
+            }
+
+            $updaterecord = new \stdClass();
+            $updaterecord->id = $record->id;
+            $updaterecord->sha256 = strtolower($hash);
+            $DB->update_record('local_checksummer_data', $updaterecord);
+            
+            $hashed_count++;
+
+            if (($hashed_count % 100) === 0) {
+                $this->output_progress("Hashed {$hashed_count} files in this run...");
+                // Check timeout
+                if ((time() - $starttime) >= $timeout_seconds) {
+                    $rs->close();
+                    $this->output_progress("Time limit reached. Saving progress and scheduling continuation.");
+                    return ['status' => 'timeout'];
+                }
+            }
+        }
+        $rs->close();
+        $this->output_progress("All files hashed.");
+
+        $count = $DB->count_records('local_checksummer_data');
+        if ($count === 0) {
+            $this->output_progress("No files found or directory is invalid.");
+            return ['status' => 'error'];
+        }
+
+        // Now read from the DB sorted by filename to generate the CSV.
         $tempfile = make_request_directory() . '/' . $filename . '.csv';
         $out = fopen($tempfile, 'wb');
 
         if ($out === false) {
             $this->output_progress("Cannot write temporary manifest.");
-            return false;
+            return ['status' => 'error'];
         }
 
         // Write the CSV header.
@@ -160,14 +195,16 @@ class checksummer {
             'sha256'
         ]);
 
-        // Write each file's details as a new row in the CSV.
-        foreach ($localfiles as $name => $file) {
+        // Get records ordered by filename. We use recordset to handle many records efficiently.
+        $rs = $DB->get_recordset('local_checksummer_data', null, 'filename ASC');
+        foreach ($rs as $record) {
             fputcsv($out, [
-                $name,
-                $file['size'],
-                $file['sha256']
+                $record->filename,
+                $record->size,
+                $record->sha256 === 'error' ? '' : $record->sha256
             ]);
         }
+        $rs->close();
 
         fclose($out);
 
@@ -175,53 +212,184 @@ class checksummer {
         $this->store_file_in_moodle($tempfile, $filename . '.csv', 'generated');
 
         $this->output_progress("Manifest generated successfully.");
-        $this->output_progress("Files: " . count($localfiles));
+        $this->output_progress("Total Files Processed: " . $count);
 
-        return true;
+        return ['status' => 'complete'];
     }
 
     /**
      * Compares a directory against a source manifest CSV.
      *
-     * This method builds an inventory of the target directory and compares it against an expected
-     * state defined in a source manifest. A report is generated detailing matches, mismatches,
-     * missing files, and extra files found in the directory.
+     * This method builds an inventory of the target directory, compares it against an expected
+     * state defined in a source manifest, and logs results directly to the local_checksummer_comp table.
+     * A report is then generated detailing matches, mismatches, missing files, and extra files.
      *
      * @param string $directory Path to the directory to compare.
      * @param string $source_manifest_path File path to the uploaded source manifest CSV.
      * @param string $report_filename Name of the output report file (without the .csv extension).
-     * @return bool True if the report was successfully generated, false otherwise.
+     * @param bool $is_continuation True if continuing from a previous run, false for a fresh start.
+     * @param int $timeout_seconds The maximum time (in seconds) the task should run before yielding.
+     * @return array Status array with key 'status' as either 'timeout', 'complete', or 'error'.
      */
-    public function compare_manifest(string $directory, string $source_manifest_path, string $report_filename): bool {
+    public function compare_manifest(string $directory, string $source_manifest_path, string $report_filename, bool $is_continuation = false, int $timeout_seconds = 3600): array {
+        global $DB;
+
+        $starttime = time();
+
         // Ensure the provided manifest file exists and can be read.
         if (!is_readable($source_manifest_path)) {
             $this->output_progress("Cannot read source manifest: {$source_manifest_path}");
-            return false;
+            return ['status' => 'error'];
         }
 
-        // Build the actual inventory of files in the destination directory.
-        $localfiles = $this->build_file_inventory($directory);
+        if (!is_dir($directory)) {
+            $this->output_progress("Directory not found: {$directory}");
+            return ['status' => 'error'];
+        }
 
-        $expected = [];
-        $in = fopen($source_manifest_path, 'rb');
+        if (!$is_continuation) {
+            // Truncate the table for a fresh start.
+            $DB->delete_records('local_checksummer_comp');
+            $this->output_progress("Cleared old data from local_checksummer_comp table.");
 
-        // Skip the CSV header row.
-        fgetcsv($in);
+            $expected = [];
+            $in = fopen($source_manifest_path, 'rb');
 
-        // Parse the expected files from the source manifest.
-        while (($row = fgetcsv($in)) !== false) {
-            if (count($row) < 3) {
-                continue; // Skip invalid rows.
+            // Skip the CSV header row.
+            fgetcsv($in);
+
+            // Parse the expected files from the source manifest.
+            while (($row = fgetcsv($in)) !== false) {
+                if (count($row) < 3) {
+                    continue; // Skip invalid rows.
+                }
+                [$filename, $size, $sha256] = $row;
+                $expected[$filename] = [
+                    'size' => (int)$size,
+                    'sha256' => strtolower($sha256),
+                    'found' => false // Track if we found it in the directory
+                ];
             }
-            [$filename, $size, $sha256] = $row;
-            $expected[$filename] = [
-                'size' => (int)$size,
-                'sha256' => strtolower($sha256),
-            ];
-        }
-        fclose($in);
+            fclose($in);
 
-        // Prepare the temporary file for the comparison report.
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator(
+                    $directory,
+                    \FilesystemIterator::SKIP_DOTS
+                ),
+                \RecursiveIteratorIterator::LEAVES_ONLY
+            );
+
+            $now = time();
+            $count = 0;
+
+            $this->output_progress("Populating database with actual and expected files...");
+
+            foreach ($iterator as $fileinfo) {
+                if (!$fileinfo->isFile()) {
+                    continue;
+                }
+
+                $name = $fileinfo->getFilename();
+                $fullpath = $fileinfo->getPathname();
+                $actual_size = $fileinfo->getSize();
+
+                $record = new \stdClass();
+                $record->filename = $name;
+                $record->path = $fullpath;
+                $record->actual_size = $actual_size;
+                $record->actual_hash = null; // Will hash later
+                $record->scandate = $now;
+
+                if (isset($expected[$name])) {
+                    $expected[$name]['found'] = true;
+                    $record->expected_size = $expected[$name]['size'];
+                    $record->expected_hash = $expected[$name]['sha256'];
+                    // Temporarily set status to pending, we'll finalize during hashing.
+                    $record->status = 'pending';
+                } else {
+                    $record->expected_size = null;
+                    $record->expected_hash = null;
+                    // For extra files, we still want to compute actual hash if needed, or we can just set status now.
+                    // But to be consistent, we'll hash them too.
+                    $record->status = 'pending_extra';
+                }
+
+                $DB->insert_record('local_checksummer_comp', $record);
+
+                $count++;
+                if (($count % 1000) === 0) {
+                    $this->output_progress("Found {$count} files...");
+                }
+            }
+
+            // Now find all expected files that were NOT found in the destination.
+            $missing = 0;
+            foreach ($expected as $name => $data) {
+                if (!$data['found']) {
+                    $record = new \stdClass();
+                    $record->filename = $name;
+                    $record->path = null;
+                    $record->expected_size = $data['size'];
+                    $record->actual_size = null;
+                    $record->expected_hash = $data['sha256'];
+                    $record->actual_hash = null;
+                    $record->status = 'missing_on_destination';
+                    $record->scandate = $now;
+
+                    $DB->insert_record('local_checksummer_comp', $record);
+                    $missing++;
+                }
+            }
+            $this->output_progress("Finished populating database. Added {$count} actual files, {$missing} missing files.");
+        }
+
+        $this->output_progress("Starting/continuing hashing and comparison process...");
+
+        // Find files that need hashing and comparison (those with actual_size IS NOT NULL but actual_hash IS NULL)
+        $rs = $DB->get_recordset_select('local_checksummer_comp', 'actual_size IS NOT NULL AND actual_hash IS NULL', null, 'id ASC');
+        $hashed_count = 0;
+
+        foreach ($rs as $record) {
+            $hash = @hash_file('sha256', $record->path);
+            if ($hash === false) {
+                $this->output_progress("Failed to hash: {$record->path}");
+                $hash = 'error';
+            }
+            $actual_hash = strtolower($hash);
+
+            $updaterecord = new \stdClass();
+            $updaterecord->id = $record->id;
+            $updaterecord->actual_hash = $actual_hash;
+
+            // Determine final status
+            if ($record->status === 'pending') {
+                if ((int)$record->expected_size === (int)$record->actual_size && $record->expected_hash === $actual_hash) {
+                    $updaterecord->status = 'matched';
+                } else {
+                    $updaterecord->status = 'mismatch';
+                }
+            } elseif ($record->status === 'pending_extra') {
+                $updaterecord->status = 'extra_on_destination';
+            }
+
+            $DB->update_record('local_checksummer_comp', $updaterecord);
+            $hashed_count++;
+
+            if (($hashed_count % 100) === 0) {
+                $this->output_progress("Processed {$hashed_count} files in this run...");
+                // Check timeout
+                if ((time() - $starttime) >= $timeout_seconds) {
+                    $rs->close();
+                    $this->output_progress("Time limit reached. Saving progress and scheduling continuation.");
+                    return ['status' => 'timeout'];
+                }
+            }
+        }
+        $rs->close();
+        $this->output_progress("All files hashed and compared.");
+
+        // Generate the report CSV from the database.
         $tempfile = make_request_directory() . '/' . $report_filename . '.csv';
         $out = fopen($tempfile, 'wb');
 
@@ -241,59 +409,47 @@ class checksummer {
         $missing = 0;
         $extra = 0;
 
-        // Iterate through expected files to find matches, mismatches, and missing files.
-        foreach ($expected as $filename => $expectedfile) {
-            // Check if expected file is entirely missing from the destination directory.
-            if (!isset($localfiles[$filename])) {
-                fputcsv($out, [
-                    $filename,
-                    'missing_on_destination',
-                    $expectedfile['size'],
-                    '',
-                    $expectedfile['sha256'],
-                    '',
-                    '',
-                ]);
-                $missing++;
+        $rs = $DB->get_recordset('local_checksummer_comp', null, 'filename ASC');
+        foreach ($rs as $record) {
+            // Count statistics
+            switch ($record->status) {
+                case 'matched':
+                    $matched++;
+                    break;
+                case 'mismatch':
+                    $mismatched++;
+                    break;
+                case 'missing_on_destination':
+                    $missing++;
+                    break;
+                case 'extra_on_destination':
+                    $extra++;
+                    break;
+            }
+
+            // Handle null values to match previous CSV output (empty string)
+            $expected_size = $record->expected_size !== null ? $record->expected_size : '';
+            $actual_size = $record->actual_size !== null ? $record->actual_size : '';
+            $expected_hash = $record->expected_hash !== null ? $record->expected_hash : '';
+            $actual_hash = $record->actual_hash !== null ? ($record->actual_hash === 'error' ? '' : $record->actual_hash) : '';
+            $actual_path = $record->path !== null ? $record->path : '';
+
+            // make the new compare csv match the old one.
+            if ($record->status === 'matched') {
                 continue;
             }
 
-            $actual = $localfiles[$filename];
-
-            // Verify both size and sha256 checksum perfectly match.
-            if ($expectedfile['size'] === $actual['size'] && $expectedfile['sha256'] === $actual['sha256']) {
-                $matched++;
-                continue;
-            }
-
-            // Record a mismatch if either size or hash is different.
             fputcsv($out, [
-                $filename,
-                'mismatch',
-                $expectedfile['size'],
-                $actual['size'],
-                $expectedfile['sha256'],
-                $actual['sha256'],
-                $actual['path'],
+                $record->filename,
+                $record->status,
+                $expected_size,
+                $actual_size,
+                $expected_hash,
+                $actual_hash,
+                $actual_path,
             ]);
-            $mismatched++;
         }
-
-        // Identify any files present in the destination that were not in the expected manifest.
-        foreach ($localfiles as $filename => $actual) {
-            if (!isset($expected[$filename])) {
-                fputcsv($out, [
-                    $filename,
-                    'extra_on_destination',
-                    '',
-                    $actual['size'],
-                    '',
-                    $actual['sha256'],
-                    $actual['path'],
-                ]);
-                $extra++;
-            }
-        }
+        $rs->close();
 
         fclose($out);
 
@@ -307,7 +463,7 @@ class checksummer {
         $this->output_progress("Mismatched: {$mismatched}");
         $this->output_progress("Extra: {$extra}");
 
-        return true;
+        return ['status' => 'complete'];
     }
 
     /**

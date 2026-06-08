@@ -5,10 +5,11 @@ It provides an administrative UI to schedule the process via an adhoc task.
 
 ## Features
 
-- **Generate Mode**: Creates a manifest CSV containing the filename, size, and SHA256 checksum of every file in a directory.
+- **Generate Mode**: Creates a manifest CSV containing the filename, size, and SHA256 checksum of every file in a directory. Also intelligently extracts modification time if the filename contains a timestamp suffix (e.g. `_1261705402.zip`).
 - **Compare Mode**: Compares a directory against a known source manifest and generates a report detailing matched, mismatched, missing, and extra files.
 - **Admin UI**: Manage settings, schedule background adhoc tasks, upload source manifests, and download generated manifests and reports.
 - **CLI Utility**: For backward compatibility and system administration, a CLI script is provided that performs the same functions.
+- **Robust Processing**: Uses database-backed state tracking for operations and supports adhoc task continuation, preventing timeouts on extremely large directories.
 
 ## Installation
 
