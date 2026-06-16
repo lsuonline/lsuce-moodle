@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="report/content2fix/db" VERSION="20250220" COMMENT="XMLDB file for report_content2fix"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="report_content2fix" COMMENT="Malformed HTML content found in activity modules (mod_*)">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="component" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="e.g. mod_page"/>
+        <FIELD NAME="comptable" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="Table name e.g. page"/>
+        <FIELD NAME="compfield" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false" COMMENT="Field name e.g. content"/>
+        <FIELD NAME="rowid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="ID of the record in comptable"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="course_modules.id for linking"/>
+        <FIELD NAME="summary" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Short description of the issue"/>
+        <FIELD NAME="htmlerrors" TYPE="text" LENGTH="big" NOTNULL="false" SEQUENCE="false" COMMENT="Scanner/parser errors for malformed HTML"/>
+        <FIELD NAME="malformedhtml" TYPE="text" LENGTH="big" NOTNULL="false" SEQUENCE="false" COMMENT="Original malformed HTML content"/>
+        <FIELD NAME="timechecked" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="When the scan ran"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="courseid" UNIQUE="false" FIELDS="courseid"/>
+        <INDEX NAME="component" UNIQUE="false" FIELDS="component"/>
+        <INDEX NAME="timechecked" UNIQUE="false" FIELDS="timechecked"/>
+        <INDEX NAME="course_component" UNIQUE="false" FIELDS="courseid, component"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
