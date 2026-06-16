@@ -1982,28 +1982,47 @@ abstract class cc_assesment_helper {
         pkg_resource_dependencies::instance()->reset();
         $questioncount = 0;
         $questionforexport = 0;
-        $qids = $qdoc->nodeList('//question_instances//questionid');
-        foreach ($qids as $qid) {
-            /** @var DOMNode $qid */
-            $value = $qid->nodeValue;
-            if (intval($value) == 0) {
-                continue;
+
+        // BEGIN LSU Moodle 4.0+ question bank XPath support for IMS CC export.
+        $qrefs = $qdoc->nodeList('//question_instances/question_instance/question_reference');
+        $use_new_format = (!empty($qrefs) && $qrefs->length > 0);
+
+        $question_nodes = array();
+        if ($use_new_format) {
+            foreach ($qrefs as $qref) {
+                $qbe_id = $qdoc->nodeValue('questionbankentryid', $qref);
+                if (intval($qbe_id) == 0) {
+                    continue;
+                }
+                $question_node = $questions->node(
+                    "//question_category/question_bank_entries/question_bank_entry[@id='{$qbe_id}']"
+                    . "/question_version/question_versions/questions/question"
+                );
+                if (!empty($question_node)) {
+                    $question_nodes[] = $question_node;
+                }
             }
-            $question_node = $questions->node("//question_category/questions/question[@id='{$value}']");
-            if (empty($question_node)) {
-                continue;
+        } else {
+            $qids = $qdoc->nodeList('//question_instances//questionid');
+            foreach ($qids as $qid) {
+                $value = $qid->nodeValue;
+                if (intval($value) == 0) {
+                    continue;
+                }
+                $question_node = $questions->node("//question_category/questions/question[@id='{$value}']");
+                if (!empty($question_node)) {
+                    $question_nodes[] = $question_node;
+                }
             }
+        }
+
+        foreach ($question_nodes as $question_node) {
             ++$questionforexport;
-            //process question
-            //question type
             $qtype = $questions->nodeValue('qtype', $question_node);
             $question_processor = null;
             switch ($qtype) {
                 case 'multichoice':
                     $single_correct_answer = (int)$questions->nodeValue('plugin_qtype_multichoice_question/multichoice/single', $question_node) > 0;
-                    //TODO: Add checking for the nunmber of valid responses
-                    //If question is marked as multi response but contains only one valid answer it
-                    //should be handle as single response - classic multichoice
                     if ($single_correct_answer) {
                         $question_processor = new cc_assesment_question_multichoice($qdoc, $questions, $manifest, $section, $question_node, $rootpath, $contextid, $outdir);
                     } else {
@@ -2023,12 +2042,7 @@ abstract class cc_assesment_helper {
                     ++$questioncount;
                 break;
                 case 'shortanswer':
-                    //This is rather ambiguos since shortanswer supports partial pattern match
-                    //In order to detect pattern match we need to scan for all the responses
-                    //if at least one of the responses uses wildcards it should be treated as
-                    //pattern match, otherwise it should be simple fill in the blank
                     if (self::has_matching_element($questions, $question_node)) {
-                        //$question_processor = new cc_assesment_question_patternmatch($qdoc, $questions, $manifest, $section, $question_node, $rootpath, $contextid, $outdir);
                         $questionforexport--;
                     } else {
                         $question_processor = new cc_assesment_question_sfib($qdoc, $questions, $manifest, $section, $question_node, $rootpath, $contextid, $outdir);
@@ -2042,8 +2056,8 @@ abstract class cc_assesment_helper {
                     ;
                 break;
             }
-
         }
+        // END LSU Moodle 4.0+ question bank XPath support for IMS CC export.
 
         //return dependencies
         return ($questioncount == 0) || ($questioncount != $questionforexport)?

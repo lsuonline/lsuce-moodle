@@ -382,6 +382,14 @@ class XMLGenericDocument {
      * @return DOMNode
      */
     public function append_new_attribute_ns(DOMNode &$node, $namespace, $name, $value = null) {
+        // BEGIN LSU Fix IMS CC attribute namespace for unprefixed names.
+        // XML default namespace does NOT apply to attributes. Unprefixed attribute names
+        // (no colon) must be created without a namespace, otherwise PHP DOM invents
+        // prefixes like "default:ident" which break IMS CC assessment/quiz import.
+        if (strpos($name, ':') === false) {
+            return $node->appendChild($this->create_attribute($name, $value));
+        }
+        // END LSU Fix IMS CC attribute namespace for unprefixed names.
         return $node->appendChild($this->create_attribute_ns($namespace, $name, $value));
     }
 

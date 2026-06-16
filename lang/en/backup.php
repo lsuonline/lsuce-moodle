@@ -197,6 +197,10 @@ $string['currentstage8'] = 'Perform backup';
 $string['currentstage16'] = 'Complete';
 $string['enableasyncbackup'] = 'Enable asynchronous backups';
 $string['enableasyncbackup_help'] = 'If enabled, backup and restore operations will be done asynchronously. This provides a better user experience allowing users to do other operations while a backup or restore is in progress. This does not affect imports and exports.';
+// BEGIN LSU IMS CC namespace fix.
+$string['imscc_namespace_fix'] = 'Fix IMS CC quiz export namespace error';
+$string['imscc_namespace_fix_help'] = 'When enabled (recommended), applies a fix for the "Namespace Error" that occurs when exporting courses with quizzes to IMS Common Cartridge format. The fix skips the reserved "xmlns" prefix during XML generation. Disable only if you need the original (buggy) behavior for compatibility testing.';
+// END LSU IMS CC namespace fix.
 $string['enterasearch'] = 'Enter a search';
 $string['error_block_for_module_not_found'] = 'Orphan block instance (id: {$a->bid}) for course module (id: {$a->mid}) found. This block will not be backed up';
 $string['error_course_module_not_found'] = 'Orphan course module (id: {$a}) found. This module will not be backed up.';

@@ -49,10 +49,17 @@ class general_cc_file extends XMLGenericDocument {
                                                $this->ccnamespaces[$this->rootns],
                                                $this->rootname);
         //add all namespaces
+        // BEGIN LSU IMS CC namespace fix - skip reserved 'xmlns' prefix to avoid DOMException.
+        $raw = get_config('backup', 'imscc_namespace_fix');
+        $usenamespacefix = ($raw === false) ? true : (bool) $raw; // Default to fix when not set.
         foreach ($this->ccnamespaces as $key => $value) {
+            if ($usenamespacefix && $key === 'xmlns') {
+                continue; // 'xmlns' is reserved in XML - cannot use with createAttributeNS().
+            }
             $dummy_attr = "{$key}:dummy";
             $this->doc->createAttributeNS($value,$dummy_attr);
         }
+        // END LSU IMS CC namespace fix.
 
         // add location of schemas
         $schemaLocation='';
